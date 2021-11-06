@@ -1,28 +1,5 @@
 #include "main.h"
 
-u32 StringCount(char *Data)
-{
-    u32 Result = 0;
-    while(Data++ != '\0') ++Result;
-    return Result;
-}
-
-bool StringCompare(char *A, char *B, int Size)
-{
-    bool Result = true;
-    for(i32 Index = 0;
-        Index < Size;
-        ++Index)
-    {
-        if(*A++ != *B++)
-        {
-            Result = false;
-            break;
-        } 
-    }
-    return Result;
-}
-
 void GameSetUp(memory *Memory)
 {
     game_state *GameSate = (game_state *)Memory->Data;
@@ -46,18 +23,14 @@ void GameSetUp(memory *Memory)
         // TODO: Logger...
     }
 
-#if 0
     // Initialize const buffers
-    const_buffer *WvpConstBuffer = 0;
-    CreateConstantBuffer(WvpConstBuffer, wvp_const_buffer_data, Renderer, &GameSate->ConstBufferArena);
+    CreateConstantBuffer(GameSate->WvpConstBuffer, wvp_const_buffer_data, GameSate->Renderer, &GameSate->ConstBufferArena);
     // map const buffer 
     wvp_const_buffer_data WvpData = {};
     WvpData.World = IdentityMat4();
     WvpData.View = ViewMat4({0.0f, 0.0f, -5.0f}, {0.0f, 0.0f, 0.0f}, {0.0f, 1.0f, 0.0f});
-    WvpData.Proj = OrthogonalProjMat4(WindowWidth, WindowHeight, 0.1f, 100.0f);
-    MapConstantBuffer(Renderer, WvpData, wvp_const_buffer_data, WvpConstBuffer, 0);
-#endif
-
+    WvpData.Proj = OrthogonalProjMat4(800, 600, 0.1f, 100.0f);
+    MapConstantBuffer(GameSate->Renderer, WvpData, wvp_const_buffer_data, GameSate->WvpConstBuffer, 0);
 }
 
 void GameUpdateAndRender(memory *Memory, r32 DeltaTime)

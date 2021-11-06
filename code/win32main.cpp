@@ -1,7 +1,5 @@
 #include "platform.h"
 #include <Windows.h>
-
-#include "directx.h"
 #include "directx.cpp"
 
 struct window
@@ -9,19 +7,6 @@ struct window
     HWND Win32Window;
     i32 Width;
     i32 Height;
-};
-
-// TODO: check for a better way to do this
-struct wvp_const_buffer_data
-{
-    mat4 World;
-    mat4 View;
-    mat4 Proj; 
-};
-
-struct const_buffer
-{
-    ID3D11Buffer *Buffer;
 };
 
 static bool GlobalRunning;

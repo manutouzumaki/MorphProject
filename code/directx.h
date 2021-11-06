@@ -12,6 +12,11 @@ struct renderer
     ID3D11RenderTargetView *BackBuffer; 
 };
 
+struct const_buffer
+{
+    ID3D11Buffer *Buffer;
+};
+
 void InitializeD3D11(HWND Window, u32 Width, u32 Height, renderer *Renderer);
 void UninitializeD3D11(renderer *Renderer);
 ID3DBlob *D3D11CompileShader(char *FileName, char *MainFuncName, char *ShaderVersion, arena *Arena);

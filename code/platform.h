@@ -27,12 +27,14 @@ typedef int8_t  i8;
 typedef float  r32;
 typedef double r64;
 
+#include "utility.h"
 #include "math.h"
 #include "arena.h"
 
 // opaque structs define in specific platforms
 struct window;
 struct renderer;
+struct const_buffer;
 
 #define PLATFORM_CREATE_WINDOW(name) window *name(i32 PosX, i32 PosY, i32 Width, i32 Height, char *Name, arena *Arena)
 #define PLATFORM_CREATE_RENDERER(name) renderer *name(window *Window, arena *Arena)
@@ -48,6 +50,7 @@ PLATFORM_READ_ENTIRE_FILE(PlatformReadEntireFile);
 PLATFORM_CLEAR_BUFFER(PlatformClearBuffer);
 PLATFORM_PRESENT(PlatformPresent);
 
+#include "directx.h"
 #include "main.cpp"
 
 #include "math.cpp"
