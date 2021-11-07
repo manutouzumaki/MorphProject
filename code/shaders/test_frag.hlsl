@@ -1,4 +1,7 @@
 // Pixel Shader
+Texture2D colorMap : register( t0 );
+SamplerState colorSampler : register( s0 );
+
 struct PS_Input
 {
    float4 pos : SV_POSITION;
@@ -8,5 +11,5 @@ struct PS_Input
 
 float4 PS_Main( PS_Input frag ) : SV_TARGET
 {
-   return float4(frag.tex1.rgb, 1);
+   return colorMap.Sample(colorSampler, frag.tex0);
 }

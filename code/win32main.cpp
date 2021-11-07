@@ -115,6 +115,7 @@ i32 WINAPI WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, LPSTR CmdLine, i3
         1.0f, 1.0f, 0.0f, 1.0f, 1.0f
     };
     mesh *Mesh = CreateMesh(Device, Vertices, ArrayCount(Vertices), &EngineArena);
+    texture *Texture = CreateTexture(Device, RenderContext, "../data/DOGGIE.bmp", &EngineArena);
 
     GlobalRunning = true;
     ShowWindow(Window, ShowCmd);
@@ -143,7 +144,7 @@ i32 WINAPI WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, LPSTR CmdLine, i3
         } 
         LARGE_INTEGER ActualCount = {};
         QueryPerformanceCounter(&ActualCount);
-        u64 DeltaCount = ActualCount.QuadPart - LastCount.QuadPart;            
+        u64 DeltaCount = ActualCount.QuadPart - LastCount.QuadPart;
         r32 DeltaTime = ((r32)DeltaCount / (r32)Frequency.QuadPart);
         LastCount = ActualCount;
         
@@ -168,6 +169,8 @@ i32 WINAPI WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, LPSTR CmdLine, i3
         RenderContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
         RenderContext->VSSetShader(Shader->VertexShader, 0, 0);
         RenderContext->PSSetShader(Shader->PixelShader,  0, 0);
+        RenderContext->PSSetShaderResources(0, 1, &Texture->ColorMap);
+        RenderContext->PSSetSamplers(0, 1, &Texture->ColorMapSampler);
         RenderContext->Draw(Mesh->VerticesCount/5, 0);
 
         SwapChain->Present(0, 0);

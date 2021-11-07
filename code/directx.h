@@ -20,27 +20,69 @@ struct mesh
     u32 VerticesCount;
 };
 
-mesh *CreateMesh(ID3D11Device *Device, r32 *Vertices, u32 VerticesCount, arena *Arena)
+struct texture
 {
-    mesh *Mesh = PushStruct(Arena, mesh);
-    Mesh->Vertices = PushArray(Arena, r32, VerticesCount);
-    Mesh->VerticesCount = VerticesCount;
-    for(int Index = 0;
-        Index < VerticesCount;
-        ++Index)
+    ID3D11ShaderResourceView *ColorMap;
+    ID3D11SamplerState *ColorMapSampler;
+};
+
+texture *CreateTexture(ID3D11Device *Device, ID3D11DeviceContext *RenderContext, char *FileName, arena *Arena)
+{
+    texture *Texture = PushStruct(Arena, texture);
+    bitmap Bitmap = LoadBMP(FileName, Arena);
+    D3D11_SUBRESOURCE_DATA Data = {};
+    Data.pSysMem = (void *)Bitmap.Pixels;
+    Data.SysMemPitch = Bitmap.Width*sizeof(u32);
+    Data.SysMemSlicePitch = 0;
+
+    D3D11_TEXTURE2D_DESC TextureDesc = {}; 
+    TextureDesc.Width = Bitmap.Width;
+    TextureDesc.Height = Bitmap.Height;
+    TextureDesc.MipLevels = 0; // generate a full set of subtextures
+    TextureDesc.ArraySize = 1;
+    TextureDesc.Format = DXGI_FORMAT_B8G8R8A8_UNORM;//DXGI_FORMAT_R8G8B8A8_UNORM;
+    TextureDesc.SampleDesc.Count = 1;
+    TextureDesc.SampleDesc.Quality = 0;
+    TextureDesc.Usage = D3D11_USAGE_DEFAULT;
+    TextureDesc.BindFlags = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE;
+    TextureDesc.CPUAccessFlags = 0;
+    TextureDesc.MiscFlags = D3D11_RESOURCE_MISC_GENERATE_MIPS;
+
+    ID3D11Texture2D *TempTexture;
+    HRESULT Result = Device->CreateTexture2D(&TextureDesc, 0, &TempTexture);
+    if(SUCCEEDED(Result))
     {
-        Mesh->Vertices[Index] = Vertices[Index];
+        OutputDebugString("SUCCEEDED Creating texture\n");
     }
-    D3D11_BUFFER_DESC VertexDesc = {};
-    VertexDesc.Usage = D3D11_USAGE_DEFAULT;
-    VertexDesc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
-    VertexDesc.ByteWidth = sizeof(r32) * Mesh->VerticesCount;
-    // pass the buffer data (Vertices).
-    D3D11_SUBRESOURCE_DATA ResourceData = {};
-    ResourceData.pSysMem = Mesh->Vertices;
-    // Create the VertexBuffer
-    HRESULT Result = Device->CreateBuffer(&VertexDesc, &ResourceData, &Mesh->VertexBuffer);
-    return Mesh;
+
+    D3D11_SHADER_RESOURCE_VIEW_DESC ShaderResourceDesc = {};
+    ShaderResourceDesc.Format = DXGI_FORMAT_B8G8R8A8_UNORM;// DXGI_FORMAT_R8G8B8A8_UNORM;
+    ShaderResourceDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
+    ShaderResourceDesc.Texture2D.MipLevels = -1;
+    ShaderResourceDesc.Texture2D.MostDetailedMip = 0;
+    Result = Device->CreateShaderResourceView(TempTexture, &ShaderResourceDesc, &Texture->ColorMap);
+    if(SUCCEEDED(Result))
+    {
+        OutputDebugString("SUCCEEDED Creating Shader resource view\n");
+    }
+    RenderContext->UpdateSubresource(TempTexture, 0, 0, Data.pSysMem, Data.SysMemPitch, 0);
+    RenderContext->GenerateMips(Texture->ColorMap);
+
+    TempTexture->Release();
+
+    D3D11_SAMPLER_DESC ColorMapDesc = {};
+    ColorMapDesc.AddressU = D3D11_TEXTURE_ADDRESS_WRAP;
+    ColorMapDesc.AddressV = D3D11_TEXTURE_ADDRESS_WRAP;
+    ColorMapDesc.AddressW = D3D11_TEXTURE_ADDRESS_WRAP;
+    ColorMapDesc.ComparisonFunc = D3D11_COMPARISON_NEVER;
+    ColorMapDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR; //D3D11_FILTER_MIN_MAG_MIP_LINEAR | D3D11_FILTER_MIN_MAG_MIP_POINT
+    ColorMapDesc.MaxLOD = D3D11_FLOAT32_MAX;
+    Result = Device->CreateSamplerState(&ColorMapDesc, &Texture->ColorMapSampler);
+    if(SUCCEEDED(Result))
+    {
+        OutputDebugString("SUCCEEDED Creating sampler state\n");
+    }
+    return Texture;
 }
 
 #define CreateConstBuffer(Device, ConstBuffer, BufferType, Arena) \
@@ -201,4 +243,22 @@ shader *CompileShadersFromFile(ID3D11Device *Device, char *VSFileName, char *PSF
                                        &Shader->PixelShader); 
     PixelShaderCompiled->Release();
     return Shader;
+}
+
+mesh *CreateMesh(ID3D11Device *Device, r32 *Vertices, u32 VerticesCount, arena *Arena)
+{
+    mesh *Mesh = PushStruct(Arena, mesh);
+    Mesh->Vertices = PushArray(Arena, r32, VerticesCount);
+    Mesh->VerticesCount = VerticesCount;
+    memcpy(Mesh->Vertices, Vertices, VerticesCount*sizeof(r32));
+    D3D11_BUFFER_DESC VertexDesc = {};
+    VertexDesc.Usage = D3D11_USAGE_DEFAULT;
+    VertexDesc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
+    VertexDesc.ByteWidth = sizeof(r32) * Mesh->VerticesCount;
+    // pass the buffer data (Vertices).
+    D3D11_SUBRESOURCE_DATA ResourceData = {};
+    ResourceData.pSysMem = Mesh->Vertices;
+    // Create the VertexBuffer
+    HRESULT Result = Device->CreateBuffer(&VertexDesc, &ResourceData, &Mesh->VertexBuffer);
+    return Mesh;
 }
