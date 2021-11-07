@@ -1,8 +1,8 @@
+// Vertex Shader
 cbuffer CBufferProjection : register(b0)
 {
-    matrix World;
-    matrix View;
-    matrix Proj;
+   matrix Projection;
+   matrix World;
 };
 
 struct VS_Input
@@ -13,16 +13,15 @@ struct VS_Input
 
 struct PS_Input
 {
-    float4 pos : SV_POSITION;  // clip space position
-    float2 tex0 : TEXCOORD0;
+   float4 pos : SV_POSITION;
+   float2 tex0 : TEXCOORD0;
 };
 
 PS_Input VS_Main( VS_Input vertex )
-{   
-    PS_Input vsOut = (PS_Input)0;
-    // calculate the position of the vertex against the world, and projection matrix
-    float4 worldPos = mul(float4(vertex.pos, 1.0f), World);
-    vsOut.pos = mul(worldPos, View);
-    vsOut.pos = mul(vsOut.pos, Proj);
-    return vsOut;
+{
+   PS_Input vsOut = ( PS_Input )0;
+   vsOut.pos = mul(float4(vertex.pos, 1.0f), World);
+   vsOut.pos = mul(vsOut.pos, Projection);
+   vsOut.tex0 = vertex.tex0;
+   return vsOut;
 }

@@ -1,14 +1,17 @@
 #ifndef UTILITY_H
 #define UTILITY_H
 
-u32 StringCount(char *Data)
+i32 StringLength(char * String)
 {
-    u32 Result = 0;
-    while(Data++ != '\0') ++Result;
-    return Result;
+    i32 Count = 0;
+    while(*String++)
+    {
+        ++Count;
+    }
+    return Count;
 }
 
-bool StringCompare(char *A, char *B, int Size)
+bool StringCompare(char *A, char *B, i32 Size)
 {
     bool Result = true;
     for(i32 Index = 0;
