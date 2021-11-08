@@ -44,8 +44,9 @@ struct texture;
 #define CREATE_MESH(name) mesh *name(renderer *Renderer, r32 *Vertices, u32 VerticesCount, arena *Arena)
 #define CREATE_TEXTURE(name) texture *name(renderer *Renderer, char *FileName, arena *Arena)
 #define CREATE_CONST_BUFFER(name) const_buffer *name(renderer *Renderer, u32 DataSize, arena *Arena)
-#define MAP_CONST_BUFFER(name) void name(renderer *Renderer, const_buffer *ConstBuffer, void *BufferData, u32 DataSize)
+#define MAP_CONST_BUFFER(name) void name(renderer *Renderer, const_buffer *ConstBuffer, void *BufferData, u32 DataSize, u32 Register)
 #define RENDER_MESH(name) void name(renderer *Renderer, mesh *Mesh, shader *Shader, texture *Texture)
+#define RENDER_FRAME(name) void name(renderer *Renderer, mesh *Mesh, shader *Shader, texture *Texture, const_buffer *ConstBuffer, u32 TileWidth, u32 TileHeight, u32 FrameX, u32 FrameY)
 
 PLAFORM_CREATE_WINDOW(PlatformCreateWindow);
 PLAFORM_CREATE_RENDERER(PlatformCreateRenderer);
@@ -55,5 +56,6 @@ CREATE_TEXTURE(CreateTexture);
 CREATE_CONST_BUFFER(CreateConstBuffer);
 MAP_CONST_BUFFER(MapConstBuffer);
 RENDER_MESH(RenderMesh);
+RENDER_FRAME(RenderFrame);
 
 #endif

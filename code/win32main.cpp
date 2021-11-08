@@ -90,6 +90,10 @@ i32 WINAPI WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, LPSTR CmdLine, i3
     GlobalRunning = true;
     ShowWindow(Window->Window, ShowCmd);
 
+    input Input = {};
+    buttons OldButtons = {};
+    buttons ActualButtons = {};
+
     LARGE_INTEGER LastCount = {};
     QueryPerformanceCounter(&LastCount);
     while(GlobalRunning)
@@ -121,23 +125,97 @@ i32 WINAPI WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, LPSTR CmdLine, i3
         MSG Message = {}; // initialize to zero
         while(PeekMessageA(&Message, 0, 0, 0, PM_REMOVE))
         {
-            TranslateMessage(&Message);
-            DispatchMessage(&Message);
+            switch(Message.message)
+            {
+                case WM_KEYDOWN:
+                case WM_SYSKEYDOWN:
+                {
+                    DWORD VKCode = (DWORD)Message.wParam;
+                    if(VKCode == 'W' || VKCode == VK_UP)
+                    {
+                        ActualButtons.Up.IsDown = true;
+                    }
+                    if(VKCode == 'S' || VKCode == VK_DOWN)
+                    { 
+                        ActualButtons.Down.IsDown = true;
+                    }
+                    if(VKCode == 'A' || VKCode == VK_LEFT)
+                    {
+                        ActualButtons.Left.IsDown = true;
+                    }
+                    if(VKCode == 'D' || VKCode == VK_RIGHT)
+                    {
+                        ActualButtons.Right.IsDown = true;
+                    }
+                    if(VKCode == VK_RETURN || VKCode == VK_SPACE)
+                    {
+                        ActualButtons.Start.IsDown = true;
+                    }
+                    if(VKCode == VK_BACK || VKCode == VK_ESCAPE)
+                    {
+                        ActualButtons.Back.IsDown = true; 
+                    }
+                }break;
+                case WM_KEYUP:
+                case WM_SYSKEYUP:
+                {
+                    DWORD VKCode = (DWORD)Message.wParam;
+                    if(VKCode == 'W' || VKCode == VK_UP)
+                    {
+                        ActualButtons.Up.IsDown = false;
+                    }
+                    if(VKCode == 'S' || VKCode == VK_DOWN)
+                    { 
+                        ActualButtons.Down.IsDown = false;
+                    }
+                    if(VKCode == 'A' || VKCode == VK_LEFT)
+                    {
+                        ActualButtons.Left.IsDown = false;
+                    }
+                    if(VKCode == 'D' || VKCode == VK_RIGHT)
+                    {
+                        ActualButtons.Right.IsDown = false;
+                    }
+                    if(VKCode == VK_RETURN || VKCode == VK_SPACE)
+                    {
+                        ActualButtons.Start.IsDown = false;
+                    }
+                    if(VKCode == VK_BACK || VKCode == VK_ESCAPE)
+                    {
+                        ActualButtons.Back.IsDown = false;
+                    }
+                }break;
+                default:
+                {
+                    TranslateMessage(&Message);
+                    DispatchMessage(&Message);
+                }break;
+            }
+        }
+        for(i32 Index = 0;
+            Index < NUMB_OF_BUTTONS;
+            ++Index)
+        {
+            ActualButtons.Buttons[Index].WasDown = false;
+            if(OldButtons.Buttons[Index].IsDown)
+            {
+                ActualButtons.Buttons[Index].WasDown = true;
+            } 
         }
         // TODO(manuto): Update and Render
+        // Update
+        Input.Buttons = &ActualButtons;
+        // Render
         r32 ClearColor[4] = {0.0f, 0.2f, 0.5f, 1.0f};
         Renderer->RenderContext->ClearRenderTargetView(Renderer->BackBuffer, ClearColor);
-        
-        GameUpdateAndRender(&Memory, DeltaTime);
-
+        GameUpdateAndRender(&Memory, &Input, DeltaTime);
         Renderer->SwapChain->Present(0, 0);
+        OldButtons = ActualButtons;
     }
-
     if(Renderer->BackBuffer) Renderer->BackBuffer->Release();
     if(Renderer->SwapChain) Renderer->SwapChain->Release();
     if(Renderer->RenderContext) Renderer->RenderContext->Release();
     if(Renderer->Device) Renderer->Device->Release();
-
     return(0);
 }
 

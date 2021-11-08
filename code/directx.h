@@ -30,6 +30,9 @@ struct mesh
 
 struct texture
 {
+    void *Pixels;
+    u32 Width;
+    u32 Height;
     ID3D11ShaderResourceView *ColorMap;
     ID3D11SamplerState *ColorMapSampler;
 };
@@ -103,6 +106,23 @@ void InitializeDirecX11(HWND                   Window,
         BackBufferTexture->Release();
     }
     (*RenderContext)->OMSetRenderTargets(1, BackBuffer, 0);
+
+
+    // Create And Set the Alpha blend state
+    // Turn on Alpha blending
+    ID3D11BlendState *AlphaBlend = 0;
+    D3D11_BLEND_DESC BlendStateDesc = {};
+    BlendStateDesc.RenderTarget[0].BlendEnable = true;
+    BlendStateDesc.RenderTarget[0].SrcBlend = D3D11_BLEND_SRC_ALPHA;
+    BlendStateDesc.RenderTarget[0].DestBlend = D3D11_BLEND_INV_SRC_ALPHA;
+    BlendStateDesc.RenderTarget[0].BlendOp = D3D11_BLEND_OP_ADD;
+    BlendStateDesc.RenderTarget[0].SrcBlendAlpha = D3D11_BLEND_ONE;
+    BlendStateDesc.RenderTarget[0].DestBlendAlpha = D3D11_BLEND_ONE;
+    BlendStateDesc.RenderTarget[0].BlendOpAlpha = D3D11_BLEND_OP_ADD;
+    BlendStateDesc.RenderTarget[0].RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL;
+    (*Device)->CreateBlendState(&BlendStateDesc, &AlphaBlend);
+    (*RenderContext)->OMSetBlendState(AlphaBlend, 0, 0XFFFFFFFF);
+    if(AlphaBlend) AlphaBlend->Release();
 
     // -4: Set the viewport.
     D3D11_VIEWPORT Viewport;
@@ -250,13 +270,16 @@ CREATE_TEXTURE(CreateTexture)
     ColorMapDesc.AddressV = D3D11_TEXTURE_ADDRESS_WRAP;
     ColorMapDesc.AddressW = D3D11_TEXTURE_ADDRESS_WRAP;
     ColorMapDesc.ComparisonFunc = D3D11_COMPARISON_NEVER;
-    ColorMapDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR; //D3D11_FILTER_MIN_MAG_MIP_LINEAR | D3D11_FILTER_MIN_MAG_MIP_POINT
+    ColorMapDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_POINT; //D3D11_FILTER_MIN_MAG_MIP_LINEAR | D3D11_FILTER_MIN_MAG_MIP_POINT
     ColorMapDesc.MaxLOD = D3D11_FLOAT32_MAX;
     Result = Renderer->Device->CreateSamplerState(&ColorMapDesc, &Texture->ColorMapSampler);
     if(SUCCEEDED(Result))
     {
         OutputDebugString("SUCCEEDED Creating sampler state\n");
     }
+    Texture->Pixels = Bitmap.Pixels;
+    Texture->Width = Bitmap.Width;
+    Texture->Height = Bitmap.Height;
     return Texture;
 }
 
@@ -280,7 +303,7 @@ MAP_CONST_BUFFER(MapConstBuffer)
     Renderer->RenderContext->Map(ConstBuffer->Buffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &GPUConstantBufferData);
     memcpy(GPUConstantBufferData.pData, BufferData, DataSize);
     Renderer->RenderContext->Unmap(ConstBuffer->Buffer, 0);
-    Renderer->RenderContext->VSSetConstantBuffers( 0, 1, &ConstBuffer->Buffer);
+    Renderer->RenderContext->VSSetConstantBuffers(Register, 1, &ConstBuffer->Buffer);
 }
 
 RENDER_MESH(RenderMesh)
@@ -296,3 +319,17 @@ RENDER_MESH(RenderMesh)
     Renderer->RenderContext->PSSetSamplers(0, 1, &Texture->ColorMapSampler);
     Renderer->RenderContext->Draw(Mesh->VerticesCount/5, 0);
 }
+
+RENDER_FRAME(RenderFrame)
+{
+    frame_const_buffer ConstBufferData = {};
+    ConstBufferData.TexSize.X = Texture->Width;
+    ConstBufferData.TexSize.Y = Texture->Height;
+    ConstBufferData.TileSize.X = TileWidth;
+    ConstBufferData.TileSize.Y = TileHeight;
+    ConstBufferData.Frame.X = FrameX;
+    ConstBufferData.Frame.Y = FrameY;
+    MapConstBuffer(Renderer, ConstBuffer, &ConstBufferData, sizeof(frame_const_buffer), 1);
+    RenderMesh(Renderer, Mesh, Shader, Texture);
+}
+

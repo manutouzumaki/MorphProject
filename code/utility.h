@@ -25,7 +25,7 @@ struct bitmap_header
 #pragma pack(pop)
 
 // this is a opaque struct define in directx.h and opengl.h
-struct texture;
+//struct texture;
 
 struct bitmap
 {

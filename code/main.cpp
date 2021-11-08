@@ -5,6 +5,40 @@ struct vs_constant_buffer
     v3 Color;
 };
 
+struct frame_const_buffer
+{
+    v2 TexSize;
+    v2 TileSize;
+    v2 Frame;
+};
+
+struct button
+{
+    bool IsDown;
+    bool WasDown; 
+};
+
+#define NUMB_OF_BUTTONS 6
+
+union buttons
+{
+    struct
+    {
+        button Up;
+        button Down;
+        button Left;
+        button Right;
+        button Start;
+        button Back;
+    };
+    button Buttons[NUMB_OF_BUTTONS];
+};
+
+struct input
+{
+    buttons *Buttons;
+};
+
 struct game_state
 {
     window *Window;
@@ -14,6 +48,7 @@ struct game_state
 
     shader *Shader;
     const_buffer *ConstBuffer;
+    const_buffer *FrameConstBuffer;
     mesh *Mesh;
     texture *Texture;
 };
@@ -33,12 +68,15 @@ void GameSetUp(memory *Memory)
                                                "../code/shaders/test_frag.hlsl",
                                                &GameState->EngineArena);
 
-    vs_constant_buffer ConstBufferData= {};
     GameState->ConstBuffer = CreateConstBuffer(GameState->Renderer, sizeof(vs_constant_buffer), &GameState->EngineArena);
+    GameState->FrameConstBuffer = CreateConstBuffer(GameState->Renderer, sizeof(frame_const_buffer), &GameState->EngineArena);
+    
+    vs_constant_buffer ConstBufferData = {};
     ConstBufferData.Projection = OrthogonalProjMat4(800, 600, 1.0f, 100.0f);
     ConstBufferData.World = IdentityMat4();
     ConstBufferData.Color = {1.0f, 1.0f, 1.0f};
-    MapConstBuffer(GameState->Renderer, GameState->ConstBuffer, &ConstBufferData, sizeof(vs_constant_buffer));
+    MapConstBuffer(GameState->Renderer, GameState->ConstBuffer, &ConstBufferData, sizeof(vs_constant_buffer), 0);
+
 
     // Create a vertex Buffer.
     r32 Vertices[] = 
@@ -51,19 +89,27 @@ void GameSetUp(memory *Memory)
         1.0f, 1.0f, 0.0f, 1.0f, 1.0f
     };
     GameState->Mesh = CreateMesh(GameState->Renderer, Vertices, ArrayCount(Vertices), &GameState->EngineArena);
-    GameState->Texture = CreateTexture(GameState->Renderer, "../data/DOGGIE.bmp", &GameState->EngineArena);
+    GameState->Texture = CreateTexture(GameState->Renderer, "../data/town_tileset.bmp", &GameState->EngineArena);
 
 }
 
-void GameUpdateAndRender(memory *Memory, r32 DeltaTime)
+void GameUpdateAndRender(memory *Memory, input *Input, r32 DeltaTime)
 {
     game_state *GameState = (game_state *)Memory->Data;
     
+    if(Input->Buttons->Start.IsDown != Input->Buttons->Start.WasDown)
+    {
+        if(Input->Buttons->Start.IsDown)
+        {
+            OutputDebugString("Start\n"); 
+        }
+    }    
+
     vs_constant_buffer ConstBufferData= {};
     ConstBufferData.Projection = OrthogonalProjMat4(800, 600, 1.0f, 100.0f);
-    ConstBufferData.World = ScaleMat4({100, 100, 0.0f});
+    ConstBufferData.World = ScaleMat4({16*4, 16*4, 0.0f});
     ConstBufferData.Color = {1.0f, 0.0f, 0.0f};
-    MapConstBuffer(GameState->Renderer, GameState->ConstBuffer, &ConstBufferData, sizeof(vs_constant_buffer));  
-
-    RenderMesh(GameState->Renderer, GameState->Mesh, GameState->Shader, GameState->Texture);
+    MapConstBuffer(GameState->Renderer, GameState->ConstBuffer, &ConstBufferData, sizeof(vs_constant_buffer), 0); 
+    RenderFrame(GameState->Renderer, GameState->Mesh, GameState->Shader, GameState->Texture,
+                GameState->FrameConstBuffer, 16, 16, 0, 6);
 }
