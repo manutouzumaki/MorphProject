@@ -1,19 +1,16 @@
 #include <Windows.h>
-
 #include "platform.h"
-#include "math.h"
-#include "arena.h"
-#include "utility.h"
-#include "directx.h"
+#include "main.cpp"
 
-struct vs_constant_buffer
+struct window
 {
-    mat4 Projection;
-    mat4 World;
-    v3 Color;
+    HWND Window;
 };
 
+#include "directx.h"
+
 static bool GlobalRunning;
+static HINSTANCE GlobalInstace;
 
 LRESULT CALLBACK WindowProc(HWND Window, UINT Message, WPARAM WParam, LPARAM LParam)
 {
@@ -36,31 +33,49 @@ LRESULT CALLBACK WindowProc(HWND Window, UINT Message, WPARAM WParam, LPARAM LPa
     return Result;
 }
 
-i32 WINAPI WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, LPSTR CmdLine, i32 ShowCmd)
+PLAFORM_CREATE_WINDOW(PlatformCreateWindow)
 {
+    window *Window = PushStruct(Arena, window);
     WNDCLASSEX WindowClass = { 0 };
     WindowClass.cbSize = sizeof( WNDCLASSEX ) ;
     WindowClass.style = CS_HREDRAW | CS_VREDRAW;
     WindowClass.lpfnWndProc = WindowProc;
-    WindowClass.hInstance = Instance;
+    WindowClass.hInstance = GlobalInstace;
     WindowClass.hCursor = LoadCursor( 0, IDC_ARROW );
     WindowClass.hbrBackground = ( HBRUSH )( COLOR_WINDOW + 1 );
     WindowClass.lpszMenuName = 0;
-    WindowClass.lpszClassName = "MorphProject";
+    WindowClass.lpszClassName = Name;
 
     RegisterClassEx(&WindowClass);
 
-    RECT Rect = { 0, 0, 640, 480 };
-    AdjustWindowRect( &Rect, WS_OVERLAPPEDWINDOW, FALSE );
+    RECT Rect = { (LONG)X, (LONG)Y, (LONG)Width, (LONG)Height };
+    AdjustWindowRect( &Rect, WS_OVERLAPPEDWINDOW, false );
 
-    HWND Window = CreateWindowA("MorphProject",
-                                "MorphProject",
-                                WS_OVERLAPPEDWINDOW,
-                                CW_USEDEFAULT, CW_USEDEFAULT,
-                                Rect.right - Rect.left,
-                                Rect.bottom - Rect.top,
-                                0, 0, Instance, 0);
-    if(!Window)
+    Window->Window = CreateWindowA(Name,
+                                   Name,
+                                   WS_OVERLAPPEDWINDOW,
+                                   CW_USEDEFAULT, CW_USEDEFAULT,
+                                   Rect.right - Rect.left,
+                                   Rect.bottom - Rect.top,
+                                   0, 0, GlobalInstace, 0);
+    return Window;
+}
+
+i32 WINAPI WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, LPSTR CmdLine, i32 ShowCmd)
+{
+    GlobalInstace = Instance;
+    
+    // Alloc all the memory the program is going to use
+    memory Memory = {};
+    Memory.Size = Megabytes(256);
+    Memory.Data = VirtualAlloc(0, Memory.Size, MEM_RESERVE|MEM_COMMIT, PAGE_READWRITE);
+
+    GameSetUp(&Memory);
+
+    game_state *GameState = (game_state *)Memory.Data;
+    window *Window = GameState->Window;
+    renderer *Renderer = GameState->Renderer;
+    if(!Window || !Renderer)
     {
         // TODO: Logger...
         return 1;
@@ -72,53 +87,8 @@ i32 WINAPI WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, LPSTR CmdLine, i3
     r32 FPS = 60.0f;
     r32 TARGET_FPS = (1.0f / FPS);
 
-    RECT ClientDimensions = {};
-    GetClientRect(Window, &ClientDimensions);
-    u32 Width  = ClientDimensions.right - ClientDimensions.left;
-    u32 Height = ClientDimensions.bottom - ClientDimensions.top;
-
-    // Initialize DirectX
-    ID3D11Device           *Device        = 0;
-    ID3D11DeviceContext    *RenderContext = 0;
-    IDXGISwapChain         *SwapChain     = 0;
-    ID3D11RenderTargetView *BackBuffer    = 0;
-    InitializeDirecX11(Window, &Device, &RenderContext, &SwapChain, &BackBuffer);
- 
-    // Alloc all the memory the program is going to use
-    memory Memory = {};
-    Memory.Size = Megabytes(256);
-    Memory.Data = VirtualAlloc(0, Memory.Size, MEM_RESERVE|MEM_COMMIT, PAGE_READWRITE);
-
-    arena EngineArena = {};
-    InitArena(&Memory, &EngineArena, Megabytes(10));
-
-    shader *Shader = CompileShadersFromFile(Device,
-                                            "../code/shaders/test_vert.hlsl",  
-                                            "../code/shaders/test_frag.hlsl",
-                                            &EngineArena);
-    const_buffer *ConstBuffer;
-    vs_constant_buffer ConstBufferData= {};
-    CreateConstBuffer(Device, ConstBuffer, vs_constant_buffer, &EngineArena);
-    ConstBufferData.Projection = OrthogonalProjMat4(Width, Height, 1.0f, 100.0f);
-    ConstBufferData.World = IdentityMat4();
-    ConstBufferData.Color = {1.0f, 1.0f, 1.0f};
-    MapConstBuffer(RenderContext, ConstBuffer, ConstBufferData, vs_constant_buffer);
-
-    // Create a vertex Buffer.
-    r32 Vertices[] = 
-    {
-        1.0f, 1.0f, 0.0f, 1.0f, 1.0f,
-        1.0f, 0.0f, 0.0f, 1.0f, 0.0f,
-        0.0f, 0.0f, 0.0f, 0.0f, 0.0f,
-        0.0f, 0.0f, 0.0f, 0.0f, 0.0f,
-        0.0f, 1.0f, 0.0f, 0.0f, 1.0f,
-        1.0f, 1.0f, 0.0f, 1.0f, 1.0f
-    };
-    mesh *Mesh = CreateMesh(Device, Vertices, ArrayCount(Vertices), &EngineArena);
-    texture *Texture = CreateTexture(Device, RenderContext, "../data/DOGGIE.bmp", &EngineArena);
-
     GlobalRunning = true;
-    ShowWindow(Window, ShowCmd);
+    ShowWindow(Window->Window, ShowCmd);
 
     LARGE_INTEGER LastCount = {};
     QueryPerformanceCounter(&LastCount);
@@ -156,30 +126,17 @@ i32 WINAPI WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, LPSTR CmdLine, i3
         }
         // TODO(manuto): Update and Render
         r32 ClearColor[4] = {0.0f, 0.2f, 0.5f, 1.0f};
-        RenderContext->ClearRenderTargetView(BackBuffer, ClearColor);
-        // TODO: render Quad...
-        ConstBufferData.World = ScaleMat4({100, 100, 0.0f});
-        ConstBufferData.Color = {1.0f, 0.0f, 0.0f};
-        MapConstBuffer(RenderContext, ConstBuffer, ConstBufferData, vs_constant_buffer);
+        Renderer->RenderContext->ClearRenderTargetView(Renderer->BackBuffer, ClearColor);
         
-        u32 Stride =  5*sizeof(r32);
-        u32 Offset = 0;
-        RenderContext->IASetInputLayout(Shader->InputLayout);
-        RenderContext->IASetVertexBuffers(0, 1, &Mesh->VertexBuffer, &Stride, &Offset);
-        RenderContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-        RenderContext->VSSetShader(Shader->VertexShader, 0, 0);
-        RenderContext->PSSetShader(Shader->PixelShader,  0, 0);
-        RenderContext->PSSetShaderResources(0, 1, &Texture->ColorMap);
-        RenderContext->PSSetSamplers(0, 1, &Texture->ColorMapSampler);
-        RenderContext->Draw(Mesh->VerticesCount/5, 0);
+        GameUpdateAndRender(&Memory, DeltaTime);
 
-        SwapChain->Present(0, 0);
+        Renderer->SwapChain->Present(0, 0);
     }
 
-    if(BackBuffer) BackBuffer->Release();
-    if(SwapChain) SwapChain->Release();
-    if(RenderContext) RenderContext->Release();
-    if(Device) Device->Release();
+    if(Renderer->BackBuffer) Renderer->BackBuffer->Release();
+    if(Renderer->SwapChain) Renderer->SwapChain->Release();
+    if(Renderer->RenderContext) Renderer->RenderContext->Release();
+    if(Renderer->Device) Renderer->Device->Release();
 
     return(0);
 }

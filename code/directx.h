@@ -1,6 +1,14 @@
 #include <d3d11.h>
 #include <d3dcompiler.h>
 
+struct renderer
+{
+    ID3D11Device *Device;
+    ID3D11DeviceContext *RenderContext;
+    IDXGISwapChain *SwapChain;
+    ID3D11RenderTargetView *BackBuffer;
+};
+
 struct shader
 {
     ID3D11VertexShader *VertexShader;
@@ -25,87 +33,6 @@ struct texture
     ID3D11ShaderResourceView *ColorMap;
     ID3D11SamplerState *ColorMapSampler;
 };
-
-texture *CreateTexture(ID3D11Device *Device, ID3D11DeviceContext *RenderContext, char *FileName, arena *Arena)
-{
-    texture *Texture = PushStruct(Arena, texture);
-    bitmap Bitmap = LoadBMP(FileName, Arena);
-    D3D11_SUBRESOURCE_DATA Data = {};
-    Data.pSysMem = (void *)Bitmap.Pixels;
-    Data.SysMemPitch = Bitmap.Width*sizeof(u32);
-    Data.SysMemSlicePitch = 0;
-
-    D3D11_TEXTURE2D_DESC TextureDesc = {}; 
-    TextureDesc.Width = Bitmap.Width;
-    TextureDesc.Height = Bitmap.Height;
-    TextureDesc.MipLevels = 0; // generate a full set of subtextures
-    TextureDesc.ArraySize = 1;
-    TextureDesc.Format = DXGI_FORMAT_B8G8R8A8_UNORM;//DXGI_FORMAT_R8G8B8A8_UNORM;
-    TextureDesc.SampleDesc.Count = 1;
-    TextureDesc.SampleDesc.Quality = 0;
-    TextureDesc.Usage = D3D11_USAGE_DEFAULT;
-    TextureDesc.BindFlags = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE;
-    TextureDesc.CPUAccessFlags = 0;
-    TextureDesc.MiscFlags = D3D11_RESOURCE_MISC_GENERATE_MIPS;
-
-    ID3D11Texture2D *TempTexture;
-    HRESULT Result = Device->CreateTexture2D(&TextureDesc, 0, &TempTexture);
-    if(SUCCEEDED(Result))
-    {
-        OutputDebugString("SUCCEEDED Creating texture\n");
-    }
-
-    D3D11_SHADER_RESOURCE_VIEW_DESC ShaderResourceDesc = {};
-    ShaderResourceDesc.Format = DXGI_FORMAT_B8G8R8A8_UNORM;// DXGI_FORMAT_R8G8B8A8_UNORM;
-    ShaderResourceDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
-    ShaderResourceDesc.Texture2D.MipLevels = -1;
-    ShaderResourceDesc.Texture2D.MostDetailedMip = 0;
-    Result = Device->CreateShaderResourceView(TempTexture, &ShaderResourceDesc, &Texture->ColorMap);
-    if(SUCCEEDED(Result))
-    {
-        OutputDebugString("SUCCEEDED Creating Shader resource view\n");
-    }
-    RenderContext->UpdateSubresource(TempTexture, 0, 0, Data.pSysMem, Data.SysMemPitch, 0);
-    RenderContext->GenerateMips(Texture->ColorMap);
-
-    TempTexture->Release();
-
-    D3D11_SAMPLER_DESC ColorMapDesc = {};
-    ColorMapDesc.AddressU = D3D11_TEXTURE_ADDRESS_WRAP;
-    ColorMapDesc.AddressV = D3D11_TEXTURE_ADDRESS_WRAP;
-    ColorMapDesc.AddressW = D3D11_TEXTURE_ADDRESS_WRAP;
-    ColorMapDesc.ComparisonFunc = D3D11_COMPARISON_NEVER;
-    ColorMapDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR; //D3D11_FILTER_MIN_MAG_MIP_LINEAR | D3D11_FILTER_MIN_MAG_MIP_POINT
-    ColorMapDesc.MaxLOD = D3D11_FLOAT32_MAX;
-    Result = Device->CreateSamplerState(&ColorMapDesc, &Texture->ColorMapSampler);
-    if(SUCCEEDED(Result))
-    {
-        OutputDebugString("SUCCEEDED Creating sampler state\n");
-    }
-    return Texture;
-}
-
-#define CreateConstBuffer(Device, ConstBuffer, BufferType, Arena) \
-do{ \
-    ConstBuffer = PushStruct(Arena, const_buffer); \
-    D3D11_BUFFER_DESC ConstantBufferDesc; \
-    ConstantBufferDesc.ByteWidth = sizeof(BufferType) + (16 - (sizeof(BufferType) % 16)); \
-    ConstantBufferDesc.Usage = D3D11_USAGE_DYNAMIC; \
-    ConstantBufferDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER; \
-    ConstantBufferDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE; \
-    ConstantBufferDesc.MiscFlags = 0; \
-    ConstantBufferDesc.StructureByteStride = 0; \
-    Device->CreateBuffer(&ConstantBufferDesc, 0, &ConstBuffer->Buffer); \
-}while(0)
-
-#define MapConstBuffer(RenderContext, ConstBuffer, BufferData, BufferType) \
-do{ \
-    D3D11_MAPPED_SUBRESOURCE GPUConstantBufferData = {}; \
-    RenderContext->Map(ConstBuffer->Buffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &GPUConstantBufferData); \
-    memcpy(GPUConstantBufferData.pData, &BufferData, sizeof(BufferType)); \
-    RenderContext->Unmap(ConstBuffer->Buffer, 0); \
-    RenderContext->VSSetConstantBuffers( 0, 1, &ConstBuffer->Buffer); \
-}while(0)
 
 void InitializeDirecX11(HWND                   Window,
                         ID3D11Device           **Device,
@@ -188,7 +115,18 @@ void InitializeDirecX11(HWND                   Window,
     (*RenderContext)->RSSetViewports(1, &Viewport);
 }
 
-shader *CompileShadersFromFile(ID3D11Device *Device, char *VSFileName, char *PSFileName, arena *Arena)
+PLAFORM_CREATE_RENDERER(PlatformCreateRenderer)
+{
+    renderer *Renderer = PushStruct(Arena, renderer);
+    InitializeDirecX11(Window->Window,
+                       &Renderer->Device,
+                       &Renderer->RenderContext,
+                       &Renderer->SwapChain,
+                       &Renderer->BackBuffer);
+    return Renderer;
+}
+
+COMPILE_SHADERS_FROM_FILE(CompileShadersFromFile)
 {
     shader *Shader = PushStruct(Arena, shader);
     HRESULT Result;
@@ -206,7 +144,7 @@ shader *CompileShadersFromFile(ID3D11Device *Device, char *VSFileName, char *PSF
         ErrorVertexShader->Release();
     }
     // Create the Vertex Shader.
-    Result = Device->CreateVertexShader(VertexShaderCompiled->GetBufferPointer(),
+    Result = Renderer->Device->CreateVertexShader(VertexShaderCompiled->GetBufferPointer(),
                                         VertexShaderCompiled->GetBufferSize(), 0,
                                         &Shader->VertexShader);
     // Create the Input layout.
@@ -218,7 +156,7 @@ shader *CompileShadersFromFile(ID3D11Device *Device, char *VSFileName, char *PSF
          0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0}
     };
     u32 TotalLayoutElements = ArrayCount(InputLayoutDesc);
-    Result = Device->CreateInputLayout(InputLayoutDesc,
+    Result = Renderer->Device->CreateInputLayout(InputLayoutDesc,
                                        TotalLayoutElements,
                                        VertexShaderCompiled->GetBufferPointer(),
                                        VertexShaderCompiled->GetBufferSize(),
@@ -238,14 +176,14 @@ shader *CompileShadersFromFile(ID3D11Device *Device, char *VSFileName, char *PSF
         ErrorPixelShader->Release();
     }
     // Create Pixel Shader.
-    Result = Device->CreatePixelShader(PixelShaderCompiled->GetBufferPointer(),
+    Result = Renderer->Device->CreatePixelShader(PixelShaderCompiled->GetBufferPointer(),
                                        PixelShaderCompiled->GetBufferSize(), 0,
                                        &Shader->PixelShader); 
     PixelShaderCompiled->Release();
     return Shader;
 }
 
-mesh *CreateMesh(ID3D11Device *Device, r32 *Vertices, u32 VerticesCount, arena *Arena)
+CREATE_MESH(CreateMesh)
 {
     mesh *Mesh = PushStruct(Arena, mesh);
     Mesh->Vertices = PushArray(Arena, r32, VerticesCount);
@@ -259,6 +197,102 @@ mesh *CreateMesh(ID3D11Device *Device, r32 *Vertices, u32 VerticesCount, arena *
     D3D11_SUBRESOURCE_DATA ResourceData = {};
     ResourceData.pSysMem = Mesh->Vertices;
     // Create the VertexBuffer
-    HRESULT Result = Device->CreateBuffer(&VertexDesc, &ResourceData, &Mesh->VertexBuffer);
+    HRESULT Result = Renderer->Device->CreateBuffer(&VertexDesc, &ResourceData, &Mesh->VertexBuffer);
     return Mesh;
+}
+
+CREATE_TEXTURE(CreateTexture)
+{
+    texture *Texture = PushStruct(Arena, texture);
+    bitmap Bitmap = LoadBMP(FileName, Arena);
+    D3D11_SUBRESOURCE_DATA Data = {};
+    Data.pSysMem = (void *)Bitmap.Pixels;
+    Data.SysMemPitch = Bitmap.Width*sizeof(u32);
+    Data.SysMemSlicePitch = 0;
+
+    D3D11_TEXTURE2D_DESC TextureDesc = {}; 
+    TextureDesc.Width = Bitmap.Width;
+    TextureDesc.Height = Bitmap.Height;
+    TextureDesc.MipLevels = 0; // generate a full set of subtextures
+    TextureDesc.ArraySize = 1;
+    TextureDesc.Format = DXGI_FORMAT_B8G8R8A8_UNORM;//DXGI_FORMAT_R8G8B8A8_UNORM;
+    TextureDesc.SampleDesc.Count = 1;
+    TextureDesc.SampleDesc.Quality = 0;
+    TextureDesc.Usage = D3D11_USAGE_DEFAULT;
+    TextureDesc.BindFlags = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE;
+    TextureDesc.CPUAccessFlags = 0;
+    TextureDesc.MiscFlags = D3D11_RESOURCE_MISC_GENERATE_MIPS;
+
+    ID3D11Texture2D *TempTexture;
+    HRESULT Result = Renderer->Device->CreateTexture2D(&TextureDesc, 0, &TempTexture);
+    if(SUCCEEDED(Result))
+    {
+        OutputDebugString("SUCCEEDED Creating texture\n");
+    }
+
+    D3D11_SHADER_RESOURCE_VIEW_DESC ShaderResourceDesc = {};
+    ShaderResourceDesc.Format = DXGI_FORMAT_B8G8R8A8_UNORM;// DXGI_FORMAT_R8G8B8A8_UNORM;
+    ShaderResourceDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
+    ShaderResourceDesc.Texture2D.MipLevels = -1;
+    ShaderResourceDesc.Texture2D.MostDetailedMip = 0;
+    Result = Renderer->Device->CreateShaderResourceView(TempTexture, &ShaderResourceDesc, &Texture->ColorMap);
+    if(SUCCEEDED(Result))
+    {
+        OutputDebugString("SUCCEEDED Creating Shader resource view\n");
+    }
+    Renderer->RenderContext->UpdateSubresource(TempTexture, 0, 0, Data.pSysMem, Data.SysMemPitch, 0);
+    Renderer->RenderContext->GenerateMips(Texture->ColorMap);
+
+    TempTexture->Release();
+
+    D3D11_SAMPLER_DESC ColorMapDesc = {};
+    ColorMapDesc.AddressU = D3D11_TEXTURE_ADDRESS_WRAP;
+    ColorMapDesc.AddressV = D3D11_TEXTURE_ADDRESS_WRAP;
+    ColorMapDesc.AddressW = D3D11_TEXTURE_ADDRESS_WRAP;
+    ColorMapDesc.ComparisonFunc = D3D11_COMPARISON_NEVER;
+    ColorMapDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR; //D3D11_FILTER_MIN_MAG_MIP_LINEAR | D3D11_FILTER_MIN_MAG_MIP_POINT
+    ColorMapDesc.MaxLOD = D3D11_FLOAT32_MAX;
+    Result = Renderer->Device->CreateSamplerState(&ColorMapDesc, &Texture->ColorMapSampler);
+    if(SUCCEEDED(Result))
+    {
+        OutputDebugString("SUCCEEDED Creating sampler state\n");
+    }
+    return Texture;
+}
+
+CREATE_CONST_BUFFER(CreateConstBuffer)
+{
+    const_buffer *ConstBuffer = PushStruct(Arena, const_buffer);
+    D3D11_BUFFER_DESC ConstantBufferDesc;
+    ConstantBufferDesc.ByteWidth = DataSize + (16 - (DataSize % 16));
+    ConstantBufferDesc.Usage = D3D11_USAGE_DYNAMIC;
+    ConstantBufferDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+    ConstantBufferDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+    ConstantBufferDesc.MiscFlags = 0;
+    ConstantBufferDesc.StructureByteStride = 0;
+    Renderer->Device->CreateBuffer(&ConstantBufferDesc, 0, &ConstBuffer->Buffer);
+    return ConstBuffer;
+}
+
+MAP_CONST_BUFFER(MapConstBuffer)
+{
+    D3D11_MAPPED_SUBRESOURCE GPUConstantBufferData = {};
+    Renderer->RenderContext->Map(ConstBuffer->Buffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &GPUConstantBufferData);
+    memcpy(GPUConstantBufferData.pData, BufferData, DataSize);
+    Renderer->RenderContext->Unmap(ConstBuffer->Buffer, 0);
+    Renderer->RenderContext->VSSetConstantBuffers( 0, 1, &ConstBuffer->Buffer);
+}
+
+RENDER_MESH(RenderMesh)
+{
+    u32 Stride =  5*sizeof(r32);
+    u32 Offset = 0;
+    Renderer->RenderContext->IASetInputLayout(Shader->InputLayout);
+    Renderer->RenderContext->IASetVertexBuffers(0, 1, &Mesh->VertexBuffer, &Stride, &Offset);
+    Renderer->RenderContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+    Renderer->RenderContext->VSSetShader(Shader->VertexShader, 0, 0);
+    Renderer->RenderContext->PSSetShader(Shader->PixelShader,  0, 0);
+    Renderer->RenderContext->PSSetShaderResources(0, 1, &Texture->ColorMap);
+    Renderer->RenderContext->PSSetSamplers(0, 1, &Texture->ColorMapSampler);
+    Renderer->RenderContext->Draw(Mesh->VerticesCount/5, 0);
 }

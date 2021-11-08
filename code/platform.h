@@ -27,4 +27,33 @@ typedef int8_t  i8;
 typedef float  r32;
 typedef double r64;
 
+#include "math.h"
+#include "arena.h"
+#include "utility.h"
+
+struct window;
+struct renderer;
+struct shader;
+struct const_buffer;
+struct mesh;
+struct texture;
+
+#define PLAFORM_CREATE_WINDOW(name) window *name(u32 X, u32 Y, u32 Width, u32 Height, char *Name, arena *Arena)
+#define PLAFORM_CREATE_RENDERER(name) renderer *name(window *Window, arena *Arena)
+#define COMPILE_SHADERS_FROM_FILE(name) shader *name(renderer *Renderer, char *VSFileName, char *PSFileName, arena *Arena)
+#define CREATE_MESH(name) mesh *name(renderer *Renderer, r32 *Vertices, u32 VerticesCount, arena *Arena)
+#define CREATE_TEXTURE(name) texture *name(renderer *Renderer, char *FileName, arena *Arena)
+#define CREATE_CONST_BUFFER(name) const_buffer *name(renderer *Renderer, u32 DataSize, arena *Arena)
+#define MAP_CONST_BUFFER(name) void name(renderer *Renderer, const_buffer *ConstBuffer, void *BufferData, u32 DataSize)
+#define RENDER_MESH(name) void name(renderer *Renderer, mesh *Mesh, shader *Shader, texture *Texture)
+
+PLAFORM_CREATE_WINDOW(PlatformCreateWindow);
+PLAFORM_CREATE_RENDERER(PlatformCreateRenderer);
+COMPILE_SHADERS_FROM_FILE(CompileShadersFromFile);
+CREATE_MESH(CreateMesh);
+CREATE_TEXTURE(CreateTexture);
+CREATE_CONST_BUFFER(CreateConstBuffer);
+MAP_CONST_BUFFER(MapConstBuffer);
+RENDER_MESH(RenderMesh);
+
 #endif
