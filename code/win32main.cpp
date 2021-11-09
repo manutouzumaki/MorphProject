@@ -84,7 +84,7 @@ i32 WINAPI WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, LPSTR CmdLine, i3
     LARGE_INTEGER Frequency = {};
     QueryPerformanceFrequency(&Frequency);
     bool SleepIsGranular = (timeBeginPeriod(1) == TIMERR_NOERROR);
-    r32 FPS = 60.0f;
+    r32 FPS = 30.0f;
     r32 TARGET_FPS = (1.0f / FPS);
 
     GlobalRunning = true;

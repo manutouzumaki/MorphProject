@@ -13,29 +13,53 @@ struct frame_const_buffer
 };
 
 u32 Tiles1[] = {        
-    48, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 48,
-    48, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 48,
-    48, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 48,
-    48, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 48,
-    48, 0, 0, 0, 1, 0, 0, 37, 37, 0, 0, 0, 0, 0, 0, 48,
-    48, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 48,
-    48, 0, 0, 0, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 48,
-    48, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 48,
-    48, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 48,
-    48, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 48,
-    48, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 48,
-    48, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 48,
-    48, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 48,
-    48, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 48,
-    48, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 48,
-    48, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 48,
+    48, 3, 3, 0, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 48,
+    48, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 48,
+    48, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 48,
+    48, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 48,
+    48, 0, 0, 0, 3, 0, 0, 37, 37, 0, 0, 0, 0, 0, 0, 48,
+    48, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 48,
+    48, 0, 0, 0, 3, 3, 3, 3, 3, 3, 0, 0, 0, 0, 0, 48,
+    48, 0, 0, 0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0, 48,
+    48, 0, 0, 0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0, 48,
+    48, 0, 0, 0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0, 48,
+    48, 0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 48,
+    48, 0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 48,
+    48, 0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 48,
+    48, 0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 48,
+    48, 0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 48,
+    48, 3, 3, 3, 3, 3, 3, 3, 3, 0, 3, 3, 3, 3, 3, 48,
+};
+
+u32 Collitions[] {
+    48, 3, 3, 0, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 48,
+    48, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 48,
+    48, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 48,
+    48, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 48,
+    48, 0, 0, 0, 3, 0, 0, 37, 37, 0, 0, 0, 0, 0, 0, 48,
+    48, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 48,
+    48, 0, 0, 0, 3, 3, 3, 3, 3, 3, 0, 0, 0, 0, 0, 48,
+    48, 0, 0, 0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0, 48,
+    48, 0, 0, 0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0, 48,
+    48, 0, 0, 0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0, 48,
+    48, 0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 48,
+    48, 0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 48,
+    48, 0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 48,
+    48, 0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 48,
+    48, 0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 48,
+    48, 3, 3, 3, 3, 3, 3, 3, 3, 0, 3, 3, 3, 3, 3, 48,
 };
 
 struct entity
 {
     u32 ID;
     v2 Position;
+    u32 Frame;
     bool IsWalking;
+    bool Up;
+    bool Down;
+    bool Left;
+    bool Right;
 };
 
 struct game_state
@@ -62,6 +86,17 @@ struct game_state
     v2 OldPosiotion;
     v2 NextPosition;
 };
+
+bool IsCollision(v2 Position)
+{
+    i32 TileX = Position.X / 16;
+    i32 TileY = Position.Y / 16;
+    if(TileX >= 0 && TileX < 16 && TileY >= 0 && TileY < 16)
+    {
+        return Collitions[TileY * 16 + TileX] != 0;
+    }
+    return true;
+}
 
 void SetEntityPosition(entity *Entity, i32 TileX, i32 TileY)
 {
@@ -116,35 +151,70 @@ void GameUpdateAndRender(memory *Memory, input *Input, r32 DeltaTime)
 {
     game_state *GameState = (game_state *)Memory->Data;
     // TODO(manuto): Update...
+        
     if(!GameState->HeroEntity.IsWalking)
     {
         if(Input->Buttons->Up.IsDown)
         {
-            GameState->HeroEntity.IsWalking = true;
             GameState->OldPosiotion = GameState->HeroEntity.Position;
-            GameState->NextPosition = GameState->OldPosiotion;
-            GameState->NextPosition.Y += 16.0f;
+            v2 NextPosition = GameState->OldPosiotion;
+            NextPosition.Y += 16.0f;
+            if(!IsCollision(NextPosition))
+            {
+                GameState->NextPosition = NextPosition;
+                GameState->HeroEntity.IsWalking = true;
+                GameState->HeroEntity.Up = true;
+                GameState->HeroEntity.Down = false;
+                GameState->HeroEntity.Left = false;
+                GameState->HeroEntity.Right = false;
+            }
         }
         if(Input->Buttons->Down.IsDown)
         {
-            GameState->HeroEntity.IsWalking = true;
             GameState->OldPosiotion = GameState->HeroEntity.Position;
-            GameState->NextPosition = GameState->OldPosiotion;
-            GameState->NextPosition.Y -= 16.0f;
+            v2 NextPosition = GameState->OldPosiotion;
+            NextPosition.Y -= 16.0f;
+            if(!IsCollision(NextPosition))
+            {
+                GameState->NextPosition = NextPosition;
+                GameState->HeroEntity.IsWalking = true;
+                GameState->HeroEntity.Up = false;
+                GameState->HeroEntity.Down = true;
+                GameState->HeroEntity.Left = false;
+                GameState->HeroEntity.Right = false;
+            }
         }    
         if(Input->Buttons->Left.IsDown)
         {
-            GameState->HeroEntity.IsWalking = true;
             GameState->OldPosiotion = GameState->HeroEntity.Position;
-            GameState->NextPosition = GameState->OldPosiotion;
-            GameState->NextPosition.X -= 16.0f;
+            v2 NextPosition = GameState->OldPosiotion;
+            NextPosition.X -= 16.0f;
+            if(!IsCollision(NextPosition))
+            {
+                GameState->NextPosition = NextPosition;
+                GameState->HeroEntity.IsWalking = true;
+                GameState->HeroEntity.Up = false;
+                GameState->HeroEntity.Down = false;
+                GameState->HeroEntity.Left = true;
+                GameState->HeroEntity.Right = false;
+
+            }
         }
         if(Input->Buttons->Right.IsDown)
         {
-            GameState->HeroEntity.IsWalking = true;
             GameState->OldPosiotion = GameState->HeroEntity.Position;
-            GameState->NextPosition = GameState->OldPosiotion;
-            GameState->NextPosition.X += 16.0f;
+            v2 NextPosition = GameState->OldPosiotion;
+            NextPosition.X += 16.0f;
+            if(!IsCollision(NextPosition))
+            {
+                GameState->NextPosition = NextPosition;
+                GameState->HeroEntity.IsWalking = true;
+                GameState->HeroEntity.Up = false;
+                GameState->HeroEntity.Down = false;
+                GameState->HeroEntity.Left = false;
+                GameState->HeroEntity.Right = true;
+
+            }
         }
     }
 
@@ -162,6 +232,31 @@ void GameUpdateAndRender(memory *Memory, input *Input, r32 DeltaTime)
             SetEntityPosition(&GameState->HeroEntity, TileX, TileY);
         }
         T += 2.0f*DeltaTime;
+
+
+        // TODO(manuto): Update Player Animation
+        static r32 Counter = 0.0f;
+        GameState->HeroEntity.Frame = (u32)Counter % 4;
+        Counter += 5.0f*DeltaTime;
+
+        if(GameState->HeroEntity.Up)
+        {
+            GameState->HeroEntity.Frame += 0; 
+        }
+        if(GameState->HeroEntity.Down)
+        {
+            GameState->HeroEntity.Frame += 8; 
+        }
+        if(GameState->HeroEntity.Left)
+        {
+            GameState->HeroEntity.Frame += 12; 
+        }
+        if(GameState->HeroEntity.Right)
+        {
+            GameState->HeroEntity.Frame += 4; 
+        }
+
+
     }
 
     GameState->CamPosition.X = GameState->HeroEntity.Position.X;
@@ -181,7 +276,7 @@ void GameUpdateAndRender(memory *Memory, input *Input, r32 DeltaTime)
             X < 16;
             ++X)
         {
-            i32 Index = Row * 16 + X;
+            i32 Index = Y * 16 + X;
             u32 TileSheetCols = 176 / 16;
             u32 XFrame = Tiles1[Index] % TileSheetCols;
             u32 YFrame = Tiles1[Index] / TileSheetCols;  
@@ -203,6 +298,6 @@ void GameUpdateAndRender(memory *Memory, input *Input, r32 DeltaTime)
     MapConstBuffer(GameState->Renderer, GameState->ConstBuffer,
                    &GameState->ConstBufferData, sizeof(vs_constant_buffer), 0); 
     RenderFrame(GameState->Renderer, GameState->Mesh, GameState->Shader, GameState->HeroTexture,
-                GameState->FrameConstBuffer, 16, 24, 8, 0);
+                GameState->FrameConstBuffer, 16, 24, GameState->HeroEntity.Frame, 0);
 
 }
