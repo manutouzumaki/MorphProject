@@ -308,7 +308,7 @@ MAP_CONST_BUFFER(MapConstBuffer)
 
 RENDER_MESH(RenderMesh)
 {
-    u32 Stride =  5*sizeof(r32);
+    u32 Stride =  5 * sizeof(r32);
     u32 Offset = 0;
     Renderer->RenderContext->IASetInputLayout(Shader->InputLayout);
     Renderer->RenderContext->IASetVertexBuffers(0, 1, &Mesh->VertexBuffer, &Stride, &Offset);
@@ -332,4 +332,3 @@ RENDER_FRAME(RenderFrame)
     MapConstBuffer(Renderer, ConstBuffer, &ConstBufferData, sizeof(frame_const_buffer), 1);
     RenderMesh(Renderer, Mesh, Shader, Texture);
 }
-

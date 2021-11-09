@@ -1,6 +1,34 @@
 #ifndef UTILITY_H
 #define UTILITY_H
 
+struct button
+{
+    bool IsDown;
+    bool WasDown; 
+};
+
+#define NUMB_OF_BUTTONS 6
+
+union buttons
+{
+    struct
+    {
+        button Up;
+        button Down;
+        button Left;
+        button Right;
+        button Start;
+        button Back;
+    };
+    button Buttons[NUMB_OF_BUTTONS];
+};
+
+struct input
+{
+    buttons *Buttons;
+};
+
+
 #pragma pack(push, 1)
 struct bitmap_header
 {

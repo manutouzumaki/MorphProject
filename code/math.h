@@ -127,6 +127,27 @@ v3 operator*(v3 A, r32 S)
     return Result;
 }
 
+mat4 operator*(mat4& A, mat4& B)
+{
+    mat4 Result;
+    for(int Y = 0;
+        Y < 4;
+        ++Y)
+    {
+        for(int X = 0;
+            X < 4;
+            ++X)
+        {
+                Result.m[Y][X] =
+                A.m[Y][0] * B.m[0][X] +
+                A.m[Y][1] * B.m[1][X] +
+                A.m[Y][2] * B.m[2][X] +
+                A.m[Y][3] * B.m[3][X];
+        }
+    }
+    return Result;
+}
+
 r32 DotV3(v3 A, v3 B)
 {
     r32 Result = A.X*B.X + A.Y*B.Y + A.Z*B.Z;
@@ -261,6 +282,13 @@ mat4 OrthogonalProjMat4(i32 Width, i32 Height, r32 ZNear, r32 ZFar)
         {0.0f,     0.0f,     1.0f / (ZFar - ZNear),  0.0f},
         {0.0f,     0.0f,     ZNear / (ZNear - ZFar), 1.0f}
     }};
+    return Result;
+}
+
+v2 Lerp(v2 A, v2 B, r32 T)
+{
+    v2 Result = {};
+    Result = A + ((B - A) * T);
     return Result;
 }
 

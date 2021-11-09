@@ -6,10 +6,9 @@ struct PS_Input
 {
     float4 pos : SV_POSITION;
     float2 tex0 : TEXCOORD0;
-    float3 tex1 : TEXCOORD1;
-    float2 TexSize : TEXCOORD2;
-    float2 TileSize : TEXCOORD3;
-    float2 Frame : TEXCOORD4;
+    float2 TexSize : TEXCOORD1;
+    float2 TileSize : TEXCOORD2;
+    float2 Frame : TEXCOORD3;
 };
 
 float4 PS_Main( PS_Input frag ) : SV_TARGET
