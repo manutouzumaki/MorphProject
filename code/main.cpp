@@ -1,4 +1,7 @@
 #include "tilemap.h"
+
+
+static r32 Zoom = 1.0f;
 #include "map_editor.h"
 #include "hero.h"
 
@@ -82,7 +85,7 @@ void GameSetUp(memory *Memory)
     GameState->CamPosition = {400.0f, 300.0f, -0.1f};
     GameState->CamTarget = {400.0f, 300.0f, 0.0f};
 
-    GameState->ConstBufferData.Projection = OrthogonalProjMat4(WND_WIDTH, WND_HEIGHT, 1.0f, 100.0f);
+    GameState->ConstBufferData.Projection = OrthogonalProjMat4(WND_WIDTH*Zoom, WND_HEIGHT*Zoom, 1.0f, 100.0f);
     GameState->ConstBufferData.World = IdentityMat4();
     GameState->ConstBufferData.View = ViewMat4(GameState->CamPosition, GameState->CamTarget, {0.0f, 1.0f, 0.0f});
     MapConstBuffer(GameState->Renderer, GameState->ConstBuffer, &GameState->ConstBufferData, sizeof(vs_constant_buffer), 0);
@@ -132,6 +135,8 @@ void GameUpdateAndRender(memory *Memory, input *Input, r32 DeltaTime)
     
     if(GameState->AppState == GAME_STATE)
     {
+        Zoom = 0.5f;
+        GameState->ConstBufferData.Projection = OrthogonalProjMat4(WND_WIDTH*Zoom, WND_HEIGHT*Zoom, 1.0f, 100.0f);
         GetHeroInput(Input ,&GameState->HeroEntity);
         MoveEntity(&GameState->HeroEntity, DeltaTime);
 
@@ -194,6 +199,26 @@ void GameUpdateAndRender(memory *Memory, input *Input, r32 DeltaTime)
         { 
             GameState->CamPosition.X += CameraSpeed * DeltaTime; 
         }
+        if(Input->Buttons->Start.IsDown)
+        { 
+            Zoom -= DeltaTime; 
+        }
+        if(Input->Buttons->Back.IsDown)
+        { 
+            Zoom += DeltaTime; 
+        }
+
+        if(Zoom >= 1.0f)
+        {
+            Zoom = 1.0f;
+        }
+        if(Zoom <= 0.1f)
+        {
+            Zoom = 0.1f;
+        }
+
+
+
         GameState->CamTarget.X = GameState->CamPosition.X;
         GameState->CamTarget.Y = GameState->CamPosition.Y;
         GameState->ConstBufferData.View = ViewMat4(GameState->CamPosition, GameState->CamTarget, {0.0f, 1.0f, 0.0f});
@@ -235,8 +260,10 @@ void GameUpdateAndRender(memory *Memory, input *Input, r32 DeltaTime)
                                       TileSheet->Position.Y - WND_HEIGHT*0.5f,
                                       0.0f});
         GameState->ConstBufferData.World = Trans * Scale;
+        GameState->ConstBufferData.Projection = OrthogonalProjMat4(WND_WIDTH, WND_HEIGHT, 1.0f, 100.0f);
         MapConstBuffer(GameState->Renderer, GameState->ConstBuffer,
                        &GameState->ConstBufferData, sizeof(vs_constant_buffer), 0);
         RenderMesh(GameState->Renderer, GameState->Mesh, GameState->UIShader, TileSheet->Texture);
+        GameState->ConstBufferData.Projection = OrthogonalProjMat4(WND_WIDTH*Zoom, WND_HEIGHT*Zoom, 1.0f, 100.0f);
     }
 }

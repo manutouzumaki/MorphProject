@@ -50,11 +50,11 @@ PLAFORM_CREATE_WINDOW(PlatformCreateWindow)
     RegisterClassEx(&WindowClass);
 
     RECT Rect = { (LONG)X, (LONG)Y, (LONG)Width, (LONG)Height };
-    AdjustWindowRect( &Rect, WS_OVERLAPPEDWINDOW, false );
+    AdjustWindowRect( &Rect, WS_VISIBLE|WS_OVERLAPPED|WS_CAPTION|WS_SYSMENU, false );
 
     Window->Window = CreateWindowA(Name,
                                    Name,
-                                   WS_OVERLAPPEDWINDOW,
+                                   WS_VISIBLE|WS_OVERLAPPED|WS_CAPTION|WS_SYSMENU,
                                    CW_USEDEFAULT, CW_USEDEFAULT,
                                    Rect.right - Rect.left,
                                    Rect.bottom - Rect.top,

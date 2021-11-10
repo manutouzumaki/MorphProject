@@ -60,7 +60,6 @@ void SetBrushValue(input *Input, editor *Editor)
         {
             if(Input->MouseButtons->Left.IsDown)
             {
-
                 i32 XFrame = (i32)((Input->MouseX - TileSheet->Position.X) / TileSheet->TileWidth);
                 i32 YFrame = (i32)((Input->MouseY - TileSheet->Position.Y) / TileSheet->TileHeight);
                 i32 NumberOfCols = TileSheet->TexWidth / TileSheet->TileWidth;
@@ -81,14 +80,21 @@ void PaintTilemap(input *Input, editor *Editor, v3 CamPosition)
     {
         if(Input->MouseButtons->Left.IsDown)
         {
-            // Adjust the camera...
-            CamPosition.X -= WND_WIDTH*0.5f;
-            CamPosition.Y -= WND_HEIGHT*0.5f;
-            i32 MouseX = Input->MouseX + CamPosition.X;
-            i32 MouseY = Input->MouseY + CamPosition.Y;
+            // TODO(manuto): mapping mouse to camera size TEST...
+            r32 XRatio = (WND_WIDTH*Zoom) / WND_WIDTH;
+            r32 YRatio = (WND_HEIGHT*Zoom) / WND_HEIGHT;
 
-            if(PointOnQuad(0, 0, Tilemap->Cols*Tilemap->TileWidth, Tilemap->Rows*Tilemap->TileHeight,
-                        MouseX, MouseY))
+            // Adjust the camera...
+            CamPosition.X -= WND_WIDTH*0.5f*XRatio;
+            CamPosition.Y -= WND_HEIGHT*0.5f*YRatio;
+
+            i32 MouseX = (Input->MouseX * XRatio) + CamPosition.X;
+            i32 MouseY = (Input->MouseY * YRatio) + CamPosition.Y;
+
+            if(PointOnQuad(0, 0,
+                           Tilemap->Cols*Tilemap->TileWidth,
+                           Tilemap->Rows*Tilemap->TileHeight,
+                           MouseX, MouseY))
             {
                 i32 XFrame = (i32)(MouseX / Tilemap->TileWidth);
                 i32 YFrame = (i32)(MouseY / Tilemap->TileHeight);
