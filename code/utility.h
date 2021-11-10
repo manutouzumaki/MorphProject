@@ -1,13 +1,16 @@
 #ifndef UTILITY_H
 #define UTILITY_H
 
+#define BIT(Value) (1 << Value)
+#define GET_BIT(BitField, Bit) ((BitField & BIT(Bit)) >> Bit)
+
 struct button
 {
     bool IsDown;
     bool WasDown; 
 };
 
-#define NUMB_OF_BUTTONS 6
+#define NUMB_OF_BUTTONS 7
 
 union buttons
 {
@@ -19,15 +22,33 @@ union buttons
         button Right;
         button Start;
         button Back;
+        button Debug;
     };
     button Buttons[NUMB_OF_BUTTONS];
 };
 
-struct input
+#define NUMB_OF_MOUSE_BUTTONS 3
+
+union mouse_buttons
 {
-    buttons *Buttons;
+    struct
+    {
+        button Left;
+        button Middle;
+        button Right;
+    };
+    button Buttons[NUMB_OF_MOUSE_BUTTONS];
 };
 
+struct input
+{
+    // Gameplay Buttons
+    buttons *Buttons;
+
+    // Debug and editor Buttons
+    i32 MouseX, MouseY;
+    mouse_buttons *MouseButtons;
+};
 
 #pragma pack(push, 1)
 struct bitmap_header
@@ -63,6 +84,13 @@ struct bitmap
     i32 Height;
     i32 BitsPerPixel;
     u32 *ColorPalette;
+};
+
+struct texture_info
+{
+    i32 Width;
+    i32 Height;
+    void *Pixels;
 };
 
 void *ReadEntireFile(char *FileName, size_t *FileSizePtr, arena *Arena)

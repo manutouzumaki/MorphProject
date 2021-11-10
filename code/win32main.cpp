@@ -1,4 +1,5 @@
 #include <Windows.h>
+#include <Windowsx.h>
 #include "platform.h"
 #include "main.cpp"
 
@@ -93,6 +94,8 @@ i32 WINAPI WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, LPSTR CmdLine, i3
     input Input = {};
     buttons OldButtons = {};
     buttons ActualButtons = {};
+    mouse_buttons OldMouseButtons = {};
+    mouse_buttons ActualMouseButtons = {};
 
     LARGE_INTEGER LastCount = {};
     QueryPerformanceCounter(&LastCount);
@@ -147,6 +150,10 @@ i32 WINAPI WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, LPSTR CmdLine, i3
                     {
                         ActualButtons.Right.IsDown = true;
                     }
+                    if(VKCode == 'E')
+                    {
+                        ActualButtons.Debug.IsDown = true;
+                    }
                     if(VKCode == VK_RETURN || VKCode == VK_SPACE)
                     {
                         ActualButtons.Start.IsDown = true;
@@ -176,6 +183,10 @@ i32 WINAPI WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, LPSTR CmdLine, i3
                     {
                         ActualButtons.Right.IsDown = false;
                     }
+                    if(VKCode == 'E')
+                    {
+                        ActualButtons.Debug.IsDown = false;
+                    }
                     if(VKCode == VK_RETURN || VKCode == VK_SPACE)
                     {
                         ActualButtons.Start.IsDown = false;
@@ -184,6 +195,22 @@ i32 WINAPI WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, LPSTR CmdLine, i3
                     {
                         ActualButtons.Back.IsDown = false;
                     }
+                }break;
+                case WM_MOUSEMOVE:
+                {
+                    Input.MouseX = (int)GET_X_LPARAM(Message.lParam); 
+                    Input.MouseY = WND_HEIGHT - (int)GET_Y_LPARAM(Message.lParam); 
+                }break;
+                case WM_LBUTTONDOWN:
+                case WM_LBUTTONUP:
+                case WM_RBUTTONDOWN:
+                case WM_RBUTTONUP:
+                case WM_MBUTTONDOWN:
+                case WM_MBUTTONUP:
+                {
+                    ActualMouseButtons.Left.IsDown = ((Message.wParam & MK_LBUTTON) != 0);
+                    ActualMouseButtons.Middle.IsDown = ((Message.wParam & MK_MBUTTON) != 0);
+                    ActualMouseButtons.Right.IsDown = ((Message.wParam & MK_RBUTTON) != 0);
                 }break;
                 default:
                 {
@@ -202,15 +229,27 @@ i32 WINAPI WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, LPSTR CmdLine, i3
                 ActualButtons.Buttons[Index].WasDown = true;
             } 
         }
+        for(i32 Index = 0;
+            Index < NUMB_OF_MOUSE_BUTTONS;
+            ++Index)
+        {
+            ActualMouseButtons.Buttons[Index].WasDown = false;
+            if(OldMouseButtons.Buttons[Index].IsDown)
+            {
+                ActualMouseButtons.Buttons[Index].WasDown = true;
+            }
+        }
         // TODO(manuto): Update and Render
         // Update
         Input.Buttons = &ActualButtons;
+        Input.MouseButtons = &ActualMouseButtons;
         // Render
         r32 ClearColor[4] = {0.0f, 0.2f, 0.5f, 1.0f};
         Renderer->RenderContext->ClearRenderTargetView(Renderer->BackBuffer, ClearColor);
         GameUpdateAndRender(&Memory, &Input, DeltaTime);
         Renderer->SwapChain->Present(0, 0);
         OldButtons = ActualButtons;
+        OldMouseButtons = ActualMouseButtons;
     }
     if(Renderer->BackBuffer) Renderer->BackBuffer->Release();
     if(Renderer->SwapChain) Renderer->SwapChain->Release();

@@ -332,3 +332,12 @@ RENDER_FRAME(RenderFrame)
     MapConstBuffer(Renderer, ConstBuffer, &ConstBufferData, sizeof(frame_const_buffer), 1);
     RenderMesh(Renderer, Mesh, Shader, Texture);
 }
+
+GET_TEXTURE_INFO(GetTextureInfo)
+{
+    texture_info Result = {};
+    Result.Width = Texture->Width;
+    Result.Height = Texture->Height;
+    Result.Pixels = Texture->Pixels;
+    return Result;
+}

@@ -14,6 +14,9 @@
 #define Gigabytes(Value) (Megabytes(Value)*1024LL)
 #define Terabytes(Value) (Gigabytes(Value)*1024LL)
 
+#define WND_WIDTH 800
+#define WND_HEIGHT 600
+
 typedef uint64_t u64;
 typedef uint32_t u32;
 typedef uint16_t u16;
@@ -38,6 +41,7 @@ struct const_buffer;
 struct mesh;
 struct texture;
 
+// GAME and GENERAL Use
 #define PLAFORM_CREATE_WINDOW(name) window *name(u32 X, u32 Y, u32 Width, u32 Height, char *Name, arena *Arena)
 #define PLAFORM_CREATE_RENDERER(name) renderer *name(window *Window, arena *Arena)
 #define COMPILE_SHADERS_FROM_FILE(name) shader *name(renderer *Renderer, char *VSFileName, char *PSFileName, arena *Arena)
@@ -47,6 +51,7 @@ struct texture;
 #define MAP_CONST_BUFFER(name) void name(renderer *Renderer, const_buffer *ConstBuffer, void *BufferData, u32 DataSize, u32 Register)
 #define RENDER_MESH(name) void name(renderer *Renderer, mesh *Mesh, shader *Shader, texture *Texture)
 #define RENDER_FRAME(name) void name(renderer *Renderer, mesh *Mesh, shader *Shader, texture *Texture, const_buffer *ConstBuffer, u32 TileWidth, u32 TileHeight, u32 FrameX, u32 FrameY)
+#define GET_TEXTURE_INFO(name) texture_info name(texture *Texture)
 
 PLAFORM_CREATE_WINDOW(PlatformCreateWindow);
 PLAFORM_CREATE_RENDERER(PlatformCreateRenderer);
@@ -57,5 +62,6 @@ CREATE_CONST_BUFFER(CreateConstBuffer);
 MAP_CONST_BUFFER(MapConstBuffer);
 RENDER_MESH(RenderMesh);
 RENDER_FRAME(RenderFrame);
+GET_TEXTURE_INFO(GetTextureInfo);
 
 #endif
