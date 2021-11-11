@@ -50,11 +50,11 @@ PLAFORM_CREATE_WINDOW(PlatformCreateWindow)
     RegisterClassEx(&WindowClass);
 
     RECT Rect = { (LONG)X, (LONG)Y, (LONG)Width, (LONG)Height };
-    AdjustWindowRect( &Rect, WS_VISIBLE|WS_OVERLAPPED|WS_CAPTION|WS_SYSMENU, false );
+    AdjustWindowRect( &Rect, WS_OVERLAPPED|WS_CAPTION|WS_SYSMENU, false ); //WS_OVERLAPPEDWINDOW WS_VISIBLE|WS_OVERLAPPED|WS_CAPTION|WS_SYSMENU
 
     Window->Window = CreateWindowA(Name,
                                    Name,
-                                   WS_VISIBLE|WS_OVERLAPPED|WS_CAPTION|WS_SYSMENU,
+                                   WS_OVERLAPPED|WS_CAPTION|WS_SYSMENU,
                                    CW_USEDEFAULT, CW_USEDEFAULT,
                                    Rect.right - Rect.left,
                                    Rect.bottom - Rect.top,
@@ -85,11 +85,8 @@ i32 WINAPI WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, LPSTR CmdLine, i3
     LARGE_INTEGER Frequency = {};
     QueryPerformanceFrequency(&Frequency);
     bool SleepIsGranular = (timeBeginPeriod(1) == TIMERR_NOERROR);
-    r32 FPS = 30.0f;
+    r32 FPS = 60.0f;
     r32 TARGET_FPS = (1.0f / FPS);
-
-    GlobalRunning = true;
-    ShowWindow(Window->Window, ShowCmd);
 
     input Input = {};
     buttons OldButtons = {};
@@ -99,6 +96,10 @@ i32 WINAPI WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, LPSTR CmdLine, i3
 
     LARGE_INTEGER LastCount = {};
     QueryPerformanceCounter(&LastCount);
+
+    GlobalRunning = true;
+    ShowWindow(Window->Window, ShowCmd);
+
     while(GlobalRunning)
     {
         LARGE_INTEGER WorkCount = {};
