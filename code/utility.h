@@ -114,6 +114,33 @@ void *ReadEntireFile(char *FileName, size_t *FileSizePtr, arena *Arena)
     return FileBuffer;
 }
 
+bool WriteEntireFile(char* FileName, u32 MemorySize, void* Memory)
+{
+    bool Result = false;
+    HANDLE FileHandle = CreateFileA(FileName,
+                                    GENERIC_WRITE, 0,
+                                    0, CREATE_ALWAYS, 0, 0);
+    if(FileHandle != INVALID_HANDLE_VALUE)
+    {
+        DWORD BytesWritten;
+        if(WriteFile(FileHandle, Memory, MemorySize, &BytesWritten, 0))
+        {
+            // NOTE: File Read Successfully.
+            Result = (BytesWritten == MemorySize);
+        }
+        else
+        {
+            OutputDebugString("Error Written the FILE\n");
+        }
+        CloseHandle(FileHandle);
+    }
+    else
+    {
+        OutputDebugString("Error Opening FILE\n");
+    }
+    return(Result);
+}
+
 bitmap LoadBMP(char *FileName, arena *Arena)
 {
     bitmap Result = {};   

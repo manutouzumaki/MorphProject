@@ -68,7 +68,7 @@ i32 WINAPI WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, LPSTR CmdLine, i3
     
     // Alloc all the memory the program is going to use
     memory Memory = {};
-    Memory.Size = Megabytes(256);
+    Memory.Size = Megabytes(512);
     Memory.Data = VirtualAlloc(0, Memory.Size, MEM_RESERVE|MEM_COMMIT, PAGE_READWRITE);
 
     GameSetUp(&Memory);
@@ -106,6 +106,7 @@ i32 WINAPI WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, LPSTR CmdLine, i3
         QueryPerformanceCounter(&WorkCount);
         u64 DeltaWorkCount = WorkCount.QuadPart - LastCount.QuadPart;            
         r32 SecondElapseForFrame = ((r32)DeltaWorkCount / (r32)Frequency.QuadPart);
+#if 1
         while(SecondElapseForFrame < TARGET_FPS)
         {
             if(SleepIsGranular)
@@ -120,6 +121,7 @@ i32 WINAPI WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, LPSTR CmdLine, i3
                 SecondElapseForFrame = ((r32)DeltaWorkCount / (r32)Frequency.QuadPart);
             }
         } 
+#endif
         LARGE_INTEGER ActualCount = {};
         QueryPerformanceCounter(&ActualCount);
         u64 DeltaCount = ActualCount.QuadPart - LastCount.QuadPart;

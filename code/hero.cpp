@@ -4,7 +4,7 @@ void SetEntityPosition(entity *Entity, i32 TileX, i32 TileY)
     Entity->Position.Y = TileY * 16.0f;
 }
 
-void GetHeroInput(input *Input, entity *Entity)
+void GetHeroInput(input *Input, entity *Entity, tilemap *Tilemap)
 {
     if(!Entity->IsWalking)
     {
@@ -14,7 +14,7 @@ void GetHeroInput(input *Input, entity *Entity)
             v2 NextPosition = Entity->OldPosiotion;
             NextPosition.Y += 16.0f;
             Entity->Facing = BIT(UP);
-            if(!IsCollision(NextPosition))
+            if(!IsCollision(NextPosition, 0, Tilemap))
             {
                 Entity->NextPosition = NextPosition;
                 Entity->IsWalking = true;
@@ -26,7 +26,7 @@ void GetHeroInput(input *Input, entity *Entity)
             v2 NextPosition = Entity->OldPosiotion;
             NextPosition.Y -= 16.0f;
             Entity->Facing = BIT(DOWN);
-            if(!IsCollision(NextPosition))
+            if(!IsCollision(NextPosition, 0, Tilemap))
             {
                 Entity->NextPosition = NextPosition;
                 Entity->IsWalking = true;
@@ -38,7 +38,7 @@ void GetHeroInput(input *Input, entity *Entity)
             v2 NextPosition = Entity->OldPosiotion;
             NextPosition.X -= 16.0f;
             Entity->Facing = BIT(LEFT);
-            if(!IsCollision(NextPosition))
+            if(!IsCollision(NextPosition, 0, Tilemap))
             {
                 Entity->NextPosition = NextPosition;
                 Entity->IsWalking = true;
@@ -50,7 +50,7 @@ void GetHeroInput(input *Input, entity *Entity)
             v2 NextPosition = Entity->OldPosiotion;
             NextPosition.X += 16.0f;
             Entity->Facing = BIT(RIGHT);
-            if(!IsCollision(NextPosition))
+            if(!IsCollision(NextPosition, 0, Tilemap))
             {
                 Entity->NextPosition = NextPosition;
                 Entity->IsWalking = true;

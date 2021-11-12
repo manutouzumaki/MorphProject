@@ -31,7 +31,9 @@ void GameSetUp(memory *Memory)
     Memory->Used = sizeof(game_state);
 
     InitArena(Memory, &GameState->EngineArena, Megabytes(100));
+    InitArena(Memory, &GameState->TileMapArena, Megabytes(50));
     InitArena(Memory, &GameState->MapEditorArena, Megabytes(50));
+    InitArena(Memory, &GameState->MapEditorSaves, Megabytes(50));
 
     GameState->Window = PlatformCreateWindow(0, 0, WND_WIDTH, WND_HEIGHT, "MorphProject", &GameState->EngineArena);
     GameState->Renderer = PlatformCreateRenderer(GameState->Window, &GameState->EngineArena);
@@ -78,6 +80,10 @@ void GameSetUp(memory *Memory)
     GameState->MapTexture2 = CreateTexture(GameState->Renderer, "../data/tileset_arena.bmp", &GameState->EngineArena);
     GameState->HeroTexture = CreateTexture(GameState->Renderer, "../data/walk_cycle.bmp", &GameState->EngineArena);
 
+    // TODO(manuto): Try to load Maps
+    GameState->Tilemap = LoadMap(GameState, "../data/map.save");
+
+
     SetEntityPosition(&GameState->HeroEntity, 8, 11);
     GameState->HeroEntity.Facing = BIT(DOWN);
 
@@ -112,7 +118,7 @@ void GameUpdateAndRender(memory *Memory, input *Input, r32 DeltaTime)
     
     if(GameState->AppState == GAME_STATE)
     {
-        GetHeroInput(Input ,&GameState->HeroEntity);
+        GetHeroInput(Input ,&GameState->HeroEntity, &GameState->Tilemap);
         MoveEntity(&GameState->HeroEntity, DeltaTime);
 
         GameState->CamPosition.X = GameState->HeroEntity.Position.X;
@@ -121,33 +127,60 @@ void GameUpdateAndRender(memory *Memory, input *Input, r32 DeltaTime)
         GameState->CamTarget.Y = GameState->CamPosition.Y;
         SetViewMat4(GameState, ViewMat4(GameState->CamPosition, GameState->CamTarget, {0.0f, 1.0f, 0.0f}));
 
-        // TODO(manuto): Render...    
-        for(i32 Y = 0;
-            Y < 16;
-            ++Y)
+        // TODO(manuto): Render...
+        // TODO: Render Tilemaip...
+        tilemap *Tilemap = &GameState->Tilemap;
+        if(Tilemap->LayersCount > 0)
         {
-            for(i32 X = 0;
-                X < 16;
-                ++X)
+            for(i32 Index = 0;
+                Index < Tilemap->LayersCount;
+                ++Index)
             {
-                i32 Index = Y * 16 + X;
-                u32 TileSheetCols = 176 / 16;
-                u32 XFrame = Tiles1[Index] % TileSheetCols;
-                u32 YFrame = Tiles1[Index] / TileSheetCols;  
-                
-                mat4 Scale = ScaleMat4({16, 16, 0.0f});
-                mat4 Trans = TranslationMat4({16.0f * X, 16.0f * Y, 0.0f});
-                SetWorldMat4(GameState, Trans * Scale);
-                RenderFrame(GameState->Renderer, GameState->Mesh, GameState->FrameShader, GameState->MapTexture,
-                            GameState->FrameConstBuffer, 16, 16, XFrame, YFrame);
+                layer *FirstLayer = Tilemap->Layers;
+                FirstLayer -= (Tilemap->LayersCount - 1);
+                layer *ActualLayer = FirstLayer + Index;
+                for(i32 Y = 0;
+                    Y < Tilemap->Rows;
+                    ++Y)
+                {
+                    for(i32 X = 0;
+                        X < Tilemap->Cols;
+                        ++X)
+                    {
+                        i32 Index = Y * Tilemap->Cols + X; 
+                        u32 TileSheetCols = Tilemap->TexWidth / Tilemap->TileWidth;
+                        mat4 Scale = ScaleMat4({(r32)Tilemap->TileWidth, (r32)Tilemap->TileHeight, 0.0f});
+                        mat4 Trans = TranslationMat4({(r32)Tilemap->TileWidth * X, (r32)Tilemap->TileHeight * Y, 0.0f});
+                        SetWorldMat4(GameState, Trans * Scale);
+
+                        if(ActualLayer->Tiles[Index].Base != 0)
+                        {
+                            u32 XFrame = ActualLayer->Tiles[Index].Base % TileSheetCols;
+                            u32 YFrame = ActualLayer->Tiles[Index].Base / TileSheetCols; 
+                            RenderFrame(GameState->Renderer, GameState->Mesh, GameState->FrameShader, GameState->MapTexture,
+                                        GameState->FrameConstBuffer, 16, 16, XFrame, YFrame);
+                        }
+                        if(ActualLayer->Tiles[Index].Decoration != 0)
+                        {
+                            u32 XFrame = ActualLayer->Tiles[Index].Decoration % TileSheetCols;
+                            u32 YFrame = ActualLayer->Tiles[Index].Decoration / TileSheetCols; 
+                            RenderFrame(GameState->Renderer, GameState->Mesh, GameState->FrameShader, GameState->MapTexture,
+                                        GameState->FrameConstBuffer, 16, 16, XFrame, YFrame);
+                        }                                    
+                    }
+                }
+                if(Index == 0)
+                {
+                    mat4 Scale = ScaleMat4({16, 24, 0.0f});
+                    mat4 Trans = TranslationMat4({GameState->HeroEntity.Position.X, GameState->HeroEntity.Position.Y, 0.0f});
+                    SetWorldMat4(GameState, Trans * Scale);
+                    RenderFrame(GameState->Renderer, GameState->Mesh, GameState->FrameShader, GameState->HeroTexture,
+                                GameState->FrameConstBuffer, 16, 24, GameState->HeroEntity.Frame, 0);
+
+                }
             }
         } 
 
-        mat4 Scale = ScaleMat4({16, 24, 0.0f});
-        mat4 Trans = TranslationMat4({GameState->HeroEntity.Position.X, GameState->HeroEntity.Position.Y, 0.0f});
-        SetWorldMat4(GameState, Trans * Scale);
-        RenderFrame(GameState->Renderer, GameState->Mesh, GameState->FrameShader, GameState->HeroTexture,
-                    GameState->FrameConstBuffer, 16, 24, GameState->HeroEntity.Frame, 0);
     }
     
     if(GameState->AppState == EDITOR_STATE)

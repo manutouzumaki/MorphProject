@@ -18,6 +18,18 @@ enum z_selected
     COLLISION,
 };
 
+enum add_layer_state
+{
+    ADD_LAYER,
+    REMOVE_LAYER,
+};
+
+enum layer_selected
+{
+    UP_LAYER,
+    DOWN_LAYER,
+};
+
 struct ui_state
 {
     v2 Position;
@@ -38,7 +50,9 @@ struct editor
     texture *UITexture2;
 
     z_selected ZSelected;
+    i32 LayerSelected;
     ui_state UIState;
+
 };
 
 #endif

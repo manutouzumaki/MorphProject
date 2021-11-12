@@ -33,7 +33,9 @@ struct game_state
     app_state AppState; 
 
     arena EngineArena;
+    arena TileMapArena;
     arena MapEditorArena;
+    arena MapEditorSaves;
 
     const_buffer *ConstBuffer;
     const_buffer *FrameConstBuffer;
@@ -53,6 +55,7 @@ struct game_state
     v3 CamTarget;
 
     entity HeroEntity;
+    tilemap Tilemap;
 
     editor Editor;
 };
