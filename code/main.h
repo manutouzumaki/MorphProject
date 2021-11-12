@@ -46,6 +46,7 @@ struct game_state
 
     mesh *Mesh;
     texture *MapTexture;
+    texture *MapTexture2;
     texture *HeroTexture;
 
     v3 CamPosition;

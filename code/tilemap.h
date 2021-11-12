@@ -8,7 +8,7 @@ struct tile
 {
     u32 Base;
     u32 Decoration;
-    u32 Collition; 
+    u32 Collision; 
 };
 
 struct layer

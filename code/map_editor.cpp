@@ -14,9 +14,10 @@ void InitEditor(editor *Editor, texture *Texture, u32 TileWidth, u32 TileHeight,
     Editor->Tilemap.TileHeight = TileHeight;
     Editor->Tilemap.Rows = TILEMAP_ROWS;
     Editor->Tilemap.Cols = TILEMAP_COLS;
-    Editor->Zoom = 0.5f;
+    Editor->Zoom = 1.0f;
     Editor->Tilemap.Layers = PushStruct(Arena, layer);
     ++Editor->Tilemap.LayersCount;
+    Editor->ZSelected = BASE;
 
     // Load Textures for editor only
     Editor->UITexture0 = CreateTexture(GameState->Renderer, "../data/TileSelector.bmp", &GameState->EngineArena);
@@ -54,10 +55,6 @@ void SetBrushValue(input *Input, editor *Editor)
             }
         }
     }
-    else
-    { 
-        Editor->MouseOnUI = false;
-    }
 }
 
 void PaintTilemap(input *Input, editor *Editor, v3 CamPosition)
@@ -86,13 +83,56 @@ void PaintTilemap(input *Input, editor *Editor, v3 CamPosition)
                 i32 XFrame = (i32)(MouseX / Tilemap->TileWidth);
                 i32 YFrame = (i32)(MouseY / Tilemap->TileHeight);
                 u32 Index = YFrame * Tilemap->Cols + XFrame;
-
-                Tilemap->Layers->Tiles[Index].Base = Editor->BrushValue; 
+                if(Editor->ZSelected == BASE)
+                    Tilemap->Layers->Tiles[Index].Base = Editor->BrushValue; 
+                if(Editor->ZSelected == DECORATION)
+                    Tilemap->Layers->Tiles[Index].Decoration = Editor->BrushValue; 
+                if(Editor->ZSelected == COLLISION)
+                    Tilemap->Layers->Tiles[Index].Collision = Editor->BrushValue; 
             }
         }
     }
 }
 
+i32 UpdateAndRenderEditorUI(game_state *GameState, input *Input, ui_state *UIState, texture *Texture, i32 NumOfButtons, i32 ButtonSelected)
+{
+    i32 OutValue = -1;
+    for(i32 Index = 0;
+        Index < NumOfButtons;
+        ++Index)
+    {
+        r32 ActualX = UIState->Position.X;//(UIState->Position.X * (UIState->Size.X + UIState->Offset.X)) + 0.0f; 
+        r32 ActualY = (UIState->Position.Y * (UIState->Size.Y + UIState->Offset.Y)) + 5.0f; 
+        // Update
+        if(PointOnQuad(ActualX, ActualY, UIState->Size.X, UIState->Size.Y,
+                       Input->MouseX, Input->MouseY))
+        {
+            GameState->Editor.MouseOnUI = true;
+            if(Input->MouseButtons->Left.IsDown != Input->MouseButtons->Left.WasDown)
+            {
+                if(Input->MouseButtons->Left.IsDown)
+                {
+                    OutValue = Index;
+                }
+            }
+        }
+
+        // Render
+        mat4 Scale = ScaleMat4({UIState->Size.X, UIState->Size.Y, 0.0f});
+        mat4 Trans = TranslationMat4({ActualX - WND_WIDTH*0.5f, ActualY - WND_HEIGHT*0.5f, 0.0f});
+        SetWorldMat4(GameState, Trans * Scale);
+        i32 Offset = 0;
+        if(Index == ButtonSelected && ButtonSelected != -1)
+        {
+            Offset = NumOfButtons;
+        }
+        RenderFrame(GameState->Renderer, GameState->Mesh, GameState->UIFrameShader, Texture,
+                    GameState->FrameConstBuffer, 16, 16, Index + Offset, 0);
+
+        ++UIState->Position.Y;
+    }
+    return OutValue;
+}
 
 void UpdateAndRenderEditor(game_state *GameState, input *Input, r32 DeltaTime)
 {
@@ -114,30 +154,25 @@ void UpdateAndRenderEditor(game_state *GameState, input *Input, r32 DeltaTime)
     { 
         GameState->CamPosition.X += CameraSpeed * DeltaTime; 
     }
-    if(Input->Buttons->Start.IsDown)
-    { 
-        Editor->Zoom -= DeltaTime; 
-    }
-    if(Input->Buttons->Back.IsDown)
-    { 
-        Editor->Zoom += DeltaTime; 
+    if(Input->Buttons->Start.IsDown != Input->Buttons->Start.WasDown)
+    {
+        if(Input->Buttons->Start.IsDown)
+        { 
+            if(Editor->Zoom == 1.0f)
+                Editor->Zoom = 0.5f;
+            else
+               Editor->Zoom = 1.0f; 
+        }
     }
 
-    if(Editor->Zoom >= 2.0f)
-    {
-        Editor->Zoom = 2.0f;
-    }
-    if(Editor->Zoom <= 0.1f)
-    {
-        Editor->Zoom = 0.1f;
-    }
-
+    GameState->CamPosition.X = floorf(GameState->CamPosition.X);
+    GameState->CamPosition.Y = floorf(GameState->CamPosition.Y);
     GameState->CamTarget.X = GameState->CamPosition.X;
     GameState->CamTarget.Y = GameState->CamPosition.Y;
     SetViewMat4(GameState, ViewMat4(GameState->CamPosition, GameState->CamTarget, {0.0f, 1.0f, 0.0f}));
 
+    Editor->MouseOnUI = false;
     SetBrushValue(Input, Editor);
-    PaintTilemap(Input, Editor, GameState->CamPosition);
 
     // TODO: Render Tilemaip...
     tilemap *Tilemap = &Editor->Tilemap;
@@ -152,15 +187,35 @@ void UpdateAndRenderEditor(game_state *GameState, input *Input, r32 DeltaTime)
             ++X)
         {
             i32 Index = Y * Tilemap->Cols + X;
-            u32 TileSheetCols = TileSheet->TexWidth / TileSheet->TileWidth;
-            u32 XFrame = Tilemap->Layers->Tiles[Index].Base % TileSheetCols;
-            u32 YFrame = Tilemap->Layers->Tiles[Index].Base / TileSheetCols;  
+            u32 TileSheetCols = TileSheet->TexWidth / TileSheet->TileWidth; 
             
             mat4 Scale = ScaleMat4({(r32)Tilemap->TileWidth, (r32)Tilemap->TileHeight, 0.0f});
             mat4 Trans = TranslationMat4({(r32)Tilemap->TileWidth * X, (r32)Tilemap->TileHeight * Y, 0.0f});
             SetWorldMat4(GameState, Trans * Scale);
-            RenderFrame(GameState->Renderer, GameState->Mesh, GameState->FrameShader, GameState->MapTexture,
-                        GameState->FrameConstBuffer, TileSheet->TileWidth, TileSheet->TileHeight, XFrame, YFrame);
+
+            if(Tilemap->Layers->Tiles[Index].Base != 0)
+            {
+                u32 XFrame = Tilemap->Layers->Tiles[Index].Base % TileSheetCols;
+                u32 YFrame = Tilemap->Layers->Tiles[Index].Base / TileSheetCols; 
+                RenderFrame(GameState->Renderer, GameState->Mesh, GameState->FrameShader, GameState->MapTexture,
+                            GameState->FrameConstBuffer, TileSheet->TileWidth, TileSheet->TileHeight, XFrame, YFrame);
+            }
+            if(Tilemap->Layers->Tiles[Index].Decoration != 0)
+            {
+                u32 XFrame = Tilemap->Layers->Tiles[Index].Decoration % TileSheetCols;
+                u32 YFrame = Tilemap->Layers->Tiles[Index].Decoration / TileSheetCols; 
+                RenderFrame(GameState->Renderer, GameState->Mesh, GameState->FrameShader, GameState->MapTexture,
+                            GameState->FrameConstBuffer, TileSheet->TileWidth, TileSheet->TileHeight, XFrame, YFrame);
+            }
+            // TODO(manuto): Only render collition in editor
+            if(Tilemap->Layers->Tiles[Index].Collision != 0)
+            {
+                u32 XFrame = Tilemap->Layers->Tiles[Index].Collision % TileSheetCols;
+                u32 YFrame = Tilemap->Layers->Tiles[Index].Collision / TileSheetCols; 
+                RenderFrame(GameState->Renderer, GameState->Mesh, GameState->FrameShader, GameState->MapTexture,
+                            GameState->FrameConstBuffer, TileSheet->TileWidth, TileSheet->TileHeight, XFrame, YFrame);
+            }
+                        
         }
     } 
 
@@ -176,58 +231,32 @@ void UpdateAndRenderEditor(game_state *GameState, input *Input, r32 DeltaTime)
     SetWorldMat4(GameState, Trans * Scale);
     RenderMesh(GameState->Renderer, GameState->Mesh, GameState->UIShader, TileSheet->Texture);
 
-    r32 XPos = 0.0f;
-    r32 YPos = 0.0f;
-    r32 Width = 32.0f;
-    r32 Height = 32.0f;
-    r32 XOffset = 5.0f;
-    r32 YOffset = 5.0f;
 
-    for(i32 Index = 0;
-        Index < 3;
-        ++Index)
+    ui_state UIState = {};
+    UIState.Position = {WND_WIDTH - 37.0f, 0.0f};
+    UIState.Size = {32.0f, 32.0f};
+    UIState.Offset = {5.0f, 5.0f};
+    
+    i32 OutValue;
+    OutValue = UpdateAndRenderEditorUI(GameState, Input, &UIState, Editor->UITexture0, 3, Editor->ZSelected);
+    if(OutValue == BASE)
     {
-        r32 ActualX = WND_WIDTH - 37.0f; 
-        r32 ActualY = (YPos * (Height + YOffset)) + 5.0f; 
-
-        mat4 Scale = ScaleMat4({Width, Height, 0.0f});
-        mat4 Trans = TranslationMat4({ActualX - WND_WIDTH*0.5f, ActualY - WND_HEIGHT*0.5f, 0.0f});
-        SetWorldMat4(GameState, Trans * Scale);
-        RenderFrame(GameState->Renderer, GameState->Mesh, GameState->UIFrameShader, Editor->UITexture0,
-                    GameState->FrameConstBuffer, 16, 16, Index, 0);
-
-        ++YPos;
+        Editor->ZSelected = BASE;
     }
-    for(i32 Index = 0;
-        Index < 2;
-        ++Index)
+    if(OutValue == DECORATION)
     {
-        r32 ActualX = WND_WIDTH - 37.0f; 
-        r32 ActualY = (YPos * (Height + YOffset)) + 5.0f; 
-
-        mat4 Scale = ScaleMat4({Width, Height, 0.0f});
-        mat4 Trans = TranslationMat4({ActualX - WND_WIDTH*0.5f, ActualY - WND_HEIGHT*0.5f, 0.0f});
-        SetWorldMat4(GameState, Trans * Scale);
-        RenderFrame(GameState->Renderer, GameState->Mesh, GameState->UIFrameShader, Editor->UITexture1,
-                    GameState->FrameConstBuffer, 16, 16, 1 - Index, 0);
-
-        ++YPos;
+        Editor->ZSelected = DECORATION;
     }
-    for(i32 Index = 0;
-        Index < 2;
-        ++Index)
+    if(OutValue == COLLISION)
     {
-        r32 ActualX = WND_WIDTH - 37.0f; 
-        r32 ActualY = (YPos * (Height + YOffset)) + 5.0f; 
-
-        mat4 Scale = ScaleMat4({Width, Height, 0.0f});
-        mat4 Trans = TranslationMat4({ActualX - WND_WIDTH*0.5f, ActualY - WND_HEIGHT*0.5f, 0.0f});
-        SetWorldMat4(GameState, Trans * Scale);
-        RenderFrame(GameState->Renderer, GameState->Mesh, GameState->UIFrameShader, Editor->UITexture2,
-                    GameState->FrameConstBuffer, 16, 16, 1 - Index, 0);
-
-        ++YPos;
+        Editor->ZSelected = COLLISION;
     }
+    OutValue = UpdateAndRenderEditorUI(GameState, Input, &UIState, Editor->UITexture1, 2, -1);
+    OutValue = UpdateAndRenderEditorUI(GameState, Input, &UIState, Editor->UITexture2, 2, -1);
+    //Editor->MouseOnUI = MouseOnUI;
+    
+    // TODO(manuto): Affter setup everithing we paint
+    PaintTilemap(Input, Editor, GameState->CamPosition);
 
     SetProjMat4(GameState, OrthogonalProjMat4(WND_WIDTH*GameState->Editor.Zoom,
                                               WND_HEIGHT*GameState->Editor.Zoom,

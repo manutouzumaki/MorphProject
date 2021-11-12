@@ -65,7 +65,8 @@ void MoveEntity(entity *Entity, r32 DeltaTime)
     {
         static float T = 0.0f;
         v2 ActualPosition = Lerp(Entity->OldPosiotion, Entity->NextPosition, T);
-        Entity->Position = ActualPosition;
+        Entity->Position.X = floorf(ActualPosition.X);
+        Entity->Position.Y = floorf(ActualPosition.Y);
         if(T > 1.0f)
         {
             Entity->IsWalking = false;

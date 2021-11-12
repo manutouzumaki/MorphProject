@@ -18,6 +18,13 @@ enum z_selected
     COLLISION,
 };
 
+struct ui_state
+{
+    v2 Position;
+    v2 Size;
+    v2 Offset;
+};
+
 struct editor
 {
     tilesheet TileSheet;
@@ -31,6 +38,7 @@ struct editor
     texture *UITexture2;
 
     z_selected ZSelected;
+    ui_state UIState;
 };
 
 #endif

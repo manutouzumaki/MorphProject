@@ -75,6 +75,7 @@ void GameSetUp(memory *Memory)
     };
     GameState->Mesh = CreateMesh(GameState->Renderer, Vertices, ArrayCount(Vertices), &GameState->EngineArena);
     GameState->MapTexture = CreateTexture(GameState->Renderer, "../data/town_tileset.bmp", &GameState->EngineArena);
+    GameState->MapTexture2 = CreateTexture(GameState->Renderer, "../data/tileset_arena.bmp", &GameState->EngineArena);
     GameState->HeroTexture = CreateTexture(GameState->Renderer, "../data/walk_cycle.bmp", &GameState->EngineArena);
 
     SetEntityPosition(&GameState->HeroEntity, 8, 11);
@@ -98,6 +99,8 @@ void GameUpdateAndRender(memory *Memory, input *Input, r32 DeltaTime)
             if(GameState->AppState == GAME_STATE)
             {
                 GameState->AppState = EDITOR_STATE;
+                GameState->CamPosition = {341.317627f, 176.0f, -0.1f};
+                GameState->CamTarget = {341.317627f, 176.0f, 0.0f};
             }
             else if(GameState->AppState == EDITOR_STATE)
             {
@@ -114,8 +117,8 @@ void GameUpdateAndRender(memory *Memory, input *Input, r32 DeltaTime)
 
         GameState->CamPosition.X = GameState->HeroEntity.Position.X;
         GameState->CamPosition.Y = GameState->HeroEntity.Position.Y;
-        GameState->CamTarget.X = GameState->HeroEntity.Position.X;
-        GameState->CamTarget.Y = GameState->HeroEntity.Position.Y;
+        GameState->CamTarget.X = GameState->CamPosition.X;
+        GameState->CamTarget.Y = GameState->CamPosition.Y;
         SetViewMat4(GameState, ViewMat4(GameState->CamPosition, GameState->CamTarget, {0.0f, 1.0f, 0.0f}));
 
         // TODO(manuto): Render...    
