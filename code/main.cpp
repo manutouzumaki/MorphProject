@@ -69,7 +69,6 @@ void RenderUInt(game_state *GameState, u32 Number, i32 XPos, i32 YPos)
     u32 *FirstDigit = Digits;
     FirstDigit -= (Counter - 1);
 
-    int I = 0;
     for(i32 Index = (Counter - 1);
         Index >= 0;
         --Index)
@@ -77,8 +76,7 @@ void RenderUInt(game_state *GameState, u32 Number, i32 XPos, i32 YPos)
         u32 *ActualDigit = FirstDigit + Index; 
         char IntToChar = (char)(*ActualDigit + 48);
 
-        RenderString(GameState, &IntToChar, (r32)XPos + (7*I), (r32)YPos);
-        ++I;
+        RenderString(GameState, &IntToChar, (r32)XPos + (7*((Counter - 1) - Index)), (r32)YPos);
     }
     // Restart the Arena
     GameState->IntToCharTempArena.Used = 0;
