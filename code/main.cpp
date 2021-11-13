@@ -21,6 +21,69 @@ void SetProjMat4(game_state *GameState, mat4 Proj)
                    &GameState->ConstBufferData, sizeof(vs_constant_buffer), 0); 
 }
 
+void RenderString(game_state *GameState, char *String, i32 XPos, i32 YPos)
+{
+    int Counter = 0;
+    XPos -= WND_WIDTH*0.5f;
+    YPos -= WND_HEIGHT*0.5f;
+    while(*String)
+    {
+        i32 Letter = (i32)*String++;
+        if(Letter >= 32 && Letter <= 126)
+        {
+            Letter -= 32;
+            texture_info TextureInfo = GetTextureInfo(GameState->FontTexture);
+            i32 TextureNumOfCols = (TextureInfo.Width / 7);
+            i32 FrameX = Letter % TextureNumOfCols;
+            i32 FrameY = Letter / TextureNumOfCols;
+            mat4 Scale = ScaleMat4({7.0f, 9.0f});
+            mat4 Trans = TranslationMat4({(r32)XPos + (7*Counter), (r32)YPos, 0.0f});
+            SetWorldMat4(GameState, Trans * Scale);
+            RenderFrame(GameState->Renderer, GameState->Mesh, GameState->UIFrameShader, GameState->FontTexture,
+                        GameState->FrameConstBuffer, 7, 9, FrameX, FrameY);
+            ++Counter;
+        }
+    }
+}
+
+void RenderUInt(game_state *GameState, u32 Number, i32 XPos, i32 YPos)
+{
+    u32 *Digits;
+    u32 UnitToGet = 10;
+    u32 Divisor = 1;
+    u32 Counter = 0;
+    while((Number / Divisor) >= 10)
+    {
+        u32 Result = Number % UnitToGet;
+        Result /= Divisor;
+        UnitToGet *= 10;
+        Divisor *= 10;
+        Digits = PushStruct(&GameState->IntToCharTempArena, u32);
+        *Digits = Result;
+        ++Counter;
+    }
+    Digits = PushStruct(&GameState->IntToCharTempArena, u32);
+    *Digits = Number / Divisor;
+    ++Counter;
+    
+    u32 *FirstDigit = Digits;
+    FirstDigit -= (Counter - 1);
+
+    int I = 0;
+    for(i32 Index = (Counter - 1);
+        Index >= 0;
+        --Index)
+    {
+        u32 *ActualDigit = FirstDigit + Index; 
+        char IntToChar = (char)(*ActualDigit + 48);
+
+        RenderString(GameState, &IntToChar, (r32)XPos + (7*I), (r32)YPos);
+        ++I;
+    }
+    // Restart the Arena
+    GameState->IntToCharTempArena.Used = 0;
+}
+
 #include "tilemap.cpp"
 #include "map_editor.cpp"
 #include "hero.cpp"
@@ -34,6 +97,7 @@ void GameSetUp(memory *Memory)
     InitArena(Memory, &GameState->TileMapArena, Megabytes(50));
     InitArena(Memory, &GameState->MapEditorArena, Megabytes(50));
     InitArena(Memory, &GameState->MapEditorSaves, Megabytes(50));
+    InitArena(Memory, &GameState->IntToCharTempArena, sizeof(u32) * 10);
 
     GameState->Window = PlatformCreateWindow(0, 0, WND_WIDTH, WND_HEIGHT, "MorphProject", &GameState->EngineArena);
     GameState->Renderer = PlatformCreateRenderer(GameState->Window, &GameState->EngineArena);
@@ -79,6 +143,7 @@ void GameSetUp(memory *Memory)
     GameState->MapTexture = CreateTexture(GameState->Renderer, "../data/town_tileset.bmp", &GameState->EngineArena);
     GameState->MapTexture2 = CreateTexture(GameState->Renderer, "../data/tileset_arena.bmp", &GameState->EngineArena);
     GameState->HeroTexture = CreateTexture(GameState->Renderer, "../data/walk_cycle.bmp", &GameState->EngineArena);
+    GameState->FontTexture = CreateTexture(GameState->Renderer, "../data/font.bmp", &GameState->EngineArena);
 
     // TODO(manuto): Try to load Maps
     GameState->Tilemap = LoadMap(GameState, "../data/map.save");
@@ -105,8 +170,6 @@ void GameUpdateAndRender(memory *Memory, input *Input, r32 DeltaTime)
             if(GameState->AppState == GAME_STATE)
             {
                 GameState->AppState = EDITOR_STATE;
-                GameState->CamPosition = {341.317627f, 176.0f, -0.1f};
-                GameState->CamTarget = {341.317627f, 176.0f, 0.0f};
             }
             else if(GameState->AppState == EDITOR_STATE)
             {
@@ -179,8 +242,14 @@ void GameUpdateAndRender(memory *Memory, input *Input, r32 DeltaTime)
 
                 }
             }
-        } 
+        }
+        
+        SetProjMat4(GameState, OrthogonalProjMat4(WND_WIDTH, WND_HEIGHT, 1.0f, 100.0f));
+        // TODO(manuto): Temporal for outputing numbers
+        RenderString(GameState, "FPS: ", 0, (WND_HEIGHT - 9));
+        RenderUInt(GameState, (u32)Input->FPS, 5*7, (WND_HEIGHT - 9));
 
+        SetProjMat4(GameState, OrthogonalProjMat4(WND_WIDTH*0.5f, WND_HEIGHT*0.5f, 1.0f, 100.0f));
     }
     
     if(GameState->AppState == EDITOR_STATE)

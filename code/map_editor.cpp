@@ -201,7 +201,7 @@ void UpdateAndRenderEditor(game_state *GameState, input *Input, r32 DeltaTime)
     {
         if(Input->Buttons->Back.IsDown)
         {
-            if(SaveTilemapToFile("../data/map.save", Editor, &GameState->MapEditorSaves))
+            if(SaveTilemapToFile("../data/new_map/map.save", Editor, &GameState->MapEditorSaves))
             {
                 OutputDebugString("Map saved!!\n");
             }
@@ -270,7 +270,6 @@ void UpdateAndRenderEditor(game_state *GameState, input *Input, r32 DeltaTime)
         }
     } 
 
-
     // Render UI
     SetProjMat4(GameState, OrthogonalProjMat4(WND_WIDTH, WND_HEIGHT, 1.0f, 100.0f));
 
@@ -302,16 +301,35 @@ void UpdateAndRenderEditor(game_state *GameState, input *Input, r32 DeltaTime)
     {
         Editor->ZSelected = COLLISION;
     }
-    OutValue = UpdateAndRenderEditorUI(GameState, Input, &UIState, Editor->UITexture1, 2, 1);
+    OutValue = UpdateAndRenderEditorUI(GameState, Input, &UIState, Editor->UITexture1, 2, -1);
     if(OutValue == ADD_LAYER)
     {
         OutputDebugString("Add LAYER\n");
         Editor->Tilemap.Layers = PushStruct(&GameState->MapEditorArena, layer);
         ++Editor->Tilemap.LayersCount;
+        Editor->LayerSelected = Editor->Tilemap.LayersCount - 1;
     }
     if(OutValue == REMOVE_LAYER)
     {
-        OutputDebugString("Remove LAYER\n");
+        if(Editor->Tilemap.LayersCount > 1)
+        {
+            OutputDebugString("Remove LAYER\n");
+            GameState->MapEditorArena.Used -= sizeof(layer);
+            for(i32 Index = 0;
+                Index < TILEMAP_ROWS*TILEMAP_COLS;
+                ++Index)
+            {
+                tile ZeroTile = {};
+                Editor->Tilemap.Layers->Tiles[Index] = ZeroTile;
+            }
+            --Editor->Tilemap.Layers;
+            --Editor->Tilemap.LayersCount;
+            --Editor->LayerSelected;
+            if(Editor->LayerSelected < 0)
+            {
+                Editor->LayerSelected = 0;
+            }
+        }
     }
     OutValue = UpdateAndRenderEditorUI(GameState, Input, &UIState, Editor->UITexture2, 2, -1);
     if(OutValue == UP_LAYER)

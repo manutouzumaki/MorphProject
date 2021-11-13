@@ -20,14 +20,14 @@ enum z_selected
 
 enum add_layer_state
 {
-    ADD_LAYER,
     REMOVE_LAYER,
+    ADD_LAYER,
 };
 
 enum layer_selected
 {
-    UP_LAYER,
     DOWN_LAYER,
+    UP_LAYER,
 };
 
 struct ui_state
@@ -51,7 +51,6 @@ struct editor
 
     z_selected ZSelected;
     i32 LayerSelected;
-    ui_state UIState;
 
 };
 

@@ -46,6 +46,7 @@ struct input
     buttons *Buttons;
 
     // Debug and editor Buttons
+    r32 FPS;
     i32 MouseX, MouseY;
     mouse_buttons *MouseButtons;
 };

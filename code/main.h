@@ -36,6 +36,7 @@ struct game_state
     arena TileMapArena;
     arena MapEditorArena;
     arena MapEditorSaves;
+    arena IntToCharTempArena;
 
     const_buffer *ConstBuffer;
     const_buffer *FrameConstBuffer;
@@ -50,6 +51,7 @@ struct game_state
     texture *MapTexture;
     texture *MapTexture2;
     texture *HeroTexture;
+    texture *FontTexture;
 
     v3 CamPosition;
     v3 CamTarget;

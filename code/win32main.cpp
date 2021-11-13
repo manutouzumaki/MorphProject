@@ -126,6 +126,7 @@ i32 WINAPI WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, LPSTR CmdLine, i3
         QueryPerformanceCounter(&ActualCount);
         u64 DeltaCount = ActualCount.QuadPart - LastCount.QuadPart;
         r32 DeltaTime = ((r32)DeltaCount / (r32)Frequency.QuadPart);
+        r32 FpsCounter = (r32)Frequency.QuadPart / (r32)DeltaCount;
         LastCount = ActualCount;
         
         MSG Message = {}; // initialize to zero
@@ -244,13 +245,14 @@ i32 WINAPI WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, LPSTR CmdLine, i3
         }
         // TODO(manuto): Update and Render
         // Update
+        Input.FPS = FpsCounter;
         Input.Buttons = &ActualButtons;
         Input.MouseButtons = &ActualMouseButtons;
         // Render
         r32 ClearColor[4] = {0.0f, 0.2f, 0.5f, 1.0f};
         Renderer->RenderContext->ClearRenderTargetView(Renderer->BackBuffer, ClearColor);
         GameUpdateAndRender(&Memory, &Input, DeltaTime);
-        Renderer->SwapChain->Present(0, 0);
+        Renderer->SwapChain->Present(1, 0);
         OldButtons = ActualButtons;
         OldMouseButtons = ActualMouseButtons;
     }

@@ -80,7 +80,7 @@ void MoveEntity(entity *Entity, r32 DeltaTime)
         // TODO(manuto): Update Player Animation
         static r32 Counter = 0.0f;
         Entity->Frame = (u32)Counter % 4;
-        Counter += 5.0f*DeltaTime;
+        Counter += 8.0f*DeltaTime;
     }
     else
     { 
