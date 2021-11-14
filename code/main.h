@@ -19,6 +19,11 @@ struct frame_const_buffer
     v2 Frame;
 };
 
+struct  memory_const_buffer
+{
+    r32 MemoryData;
+};
+
 enum app_state
 {
     GAME_STATE,
@@ -40,12 +45,14 @@ struct game_state
 
     const_buffer *ConstBuffer;
     const_buffer *FrameConstBuffer;
-    vs_constant_buffer ConstBufferData= {};
+    const_buffer *MemoryConstBuffer;
+    vs_constant_buffer ConstBufferData = {};
     
     shader *MainShader;
     shader *FrameShader;
     shader *UIShader;
     shader *UIFrameShader;
+    shader *MemBarShader;
 
     mesh *Mesh;
     texture *MapTexture;

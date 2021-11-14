@@ -1,6 +1,9 @@
 #ifndef MAPEDITOR_H
 #define MAPEDITOR_H
 
+#define SINGLE_BUTTON -1
+#define NO_BUTTON_SELECTED -2
+
 struct tilesheet
 {
     texture *Texture;
@@ -48,10 +51,11 @@ struct editor
     texture *UITexture0;
     texture *UITexture1;
     texture *UITexture2;
+    texture *UITexture3;
 
     z_selected ZSelected;
     i32 LayerSelected;
-
+    u32 LayersShowBitField;
 };
 
 #endif

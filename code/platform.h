@@ -50,6 +50,7 @@ struct texture;
 #define CREATE_CONST_BUFFER(name) const_buffer *name(renderer *Renderer, u32 DataSize, arena *Arena)
 #define MAP_CONST_BUFFER(name) void name(renderer *Renderer, const_buffer *ConstBuffer, void *BufferData, u32 DataSize, u32 Register)
 #define RENDER_MESH(name) void name(renderer *Renderer, mesh *Mesh, shader *Shader, texture *Texture)
+#define RENDER_MESH_NO_TEX(name) void name(renderer *Renderer, mesh *Mesh, shader *Shader)
 #define RENDER_FRAME(name) void name(renderer *Renderer, mesh *Mesh, shader *Shader, texture *Texture, const_buffer *ConstBuffer, u32 TileWidth, u32 TileHeight, u32 FrameX, u32 FrameY)
 #define GET_TEXTURE_INFO(name) texture_info name(texture *Texture)
 
@@ -61,6 +62,7 @@ CREATE_TEXTURE(CreateTexture);
 CREATE_CONST_BUFFER(CreateConstBuffer);
 MAP_CONST_BUFFER(MapConstBuffer);
 RENDER_MESH(RenderMesh);
+RENDER_MESH_NO_TEX(RenderMesh);
 RENDER_FRAME(RenderFrame);
 GET_TEXTURE_INFO(GetTextureInfo);
 

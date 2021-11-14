@@ -24,8 +24,6 @@ void SetProjMat4(game_state *GameState, mat4 Proj)
 void RenderString(game_state *GameState, char *String, i32 XPos, i32 YPos)
 {
     int Counter = 0;
-    XPos -= WND_WIDTH*0.5f;
-    YPos -= WND_HEIGHT*0.5f;
     while(*String)
     {
         i32 Letter = (i32)*String++;
@@ -91,10 +89,10 @@ void GameSetUp(memory *Memory)
     game_state *GameState = (game_state *)Memory->Data;
     Memory->Used = sizeof(game_state);
 
-    InitArena(Memory, &GameState->EngineArena, Megabytes(100));
-    InitArena(Memory, &GameState->TileMapArena, Megabytes(50));
-    InitArena(Memory, &GameState->MapEditorArena, Megabytes(50));
-    InitArena(Memory, &GameState->MapEditorSaves, Megabytes(50));
+    InitArena(Memory, &GameState->EngineArena, Megabytes(10));
+    InitArena(Memory, &GameState->TileMapArena, Megabytes(1));
+    InitArena(Memory, &GameState->MapEditorArena, Megabytes(1));
+    InitArena(Memory, &GameState->MapEditorSaves, Megabytes(2));
     InitArena(Memory, &GameState->IntToCharTempArena, sizeof(u32) * 10);
 
     GameState->Window = PlatformCreateWindow(0, 0, WND_WIDTH, WND_HEIGHT, "MorphProject", &GameState->EngineArena);
@@ -116,9 +114,14 @@ void GameSetUp(memory *Memory)
                                                       "../code/shaders/ui_frame_vert.hlsl",  
                                                       "../code/shaders/ui_frame_frag.hlsl",
                                                       &GameState->EngineArena);
+    GameState->MemBarShader = CompileShadersFromFile(GameState->Renderer,
+                                                     "../code/shaders/memory_vert.hlsl",  
+                                                     "../code/shaders/memory_frag.hlsl",
+                                                     &GameState->EngineArena);
 
     GameState->ConstBuffer = CreateConstBuffer(GameState->Renderer, sizeof(vs_constant_buffer), &GameState->EngineArena);
     GameState->FrameConstBuffer = CreateConstBuffer(GameState->Renderer, sizeof(frame_const_buffer), &GameState->EngineArena);
+    GameState->MemoryConstBuffer = CreateConstBuffer(GameState->Renderer, sizeof(memory_const_buffer), &GameState->EngineArena);
     
     GameState->CamPosition = {400.0f, 300.0f, -0.1f};
     GameState->CamTarget = {400.0f, 300.0f, 0.0f};
@@ -172,7 +175,6 @@ void GameUpdateAndRender(memory *Memory, input *Input, r32 DeltaTime)
             else if(GameState->AppState == EDITOR_STATE)
             {
                 GameState->AppState = GAME_STATE;
-                SetProjMat4(GameState, OrthogonalProjMat4(WND_WIDTH*0.5f, WND_HEIGHT*0.5f, 1.0f, 100.0f));
             }
         }
     }
@@ -187,6 +189,7 @@ void GameUpdateAndRender(memory *Memory, input *Input, r32 DeltaTime)
         GameState->CamTarget.X = GameState->CamPosition.X;
         GameState->CamTarget.Y = GameState->CamPosition.Y;
         SetViewMat4(GameState, ViewMat4(GameState->CamPosition, GameState->CamTarget, {0.0f, 1.0f, 0.0f}));
+        SetProjMat4(GameState, OrthogonalProjMat4(WND_WIDTH*0.5f, WND_HEIGHT*0.5f, 1.0f, 100.0f));
 
         // TODO(manuto): Render...
         // TODO: Render Tilemaip...
@@ -241,17 +244,60 @@ void GameUpdateAndRender(memory *Memory, input *Input, r32 DeltaTime)
                 }
             }
         }
-        
-        SetProjMat4(GameState, OrthogonalProjMat4(WND_WIDTH, WND_HEIGHT, 1.0f, 100.0f));
-        // TODO(manuto): Temporal for outputing numbers
-        RenderString(GameState, "FPS: ", 0, (WND_HEIGHT - 9));
-        RenderUInt(GameState, (u32)Input->FPS, 5*7, (WND_HEIGHT - 9));
-
-        SetProjMat4(GameState, OrthogonalProjMat4(WND_WIDTH*0.5f, WND_HEIGHT*0.5f, 1.0f, 100.0f));
     }
     
     if(GameState->AppState == EDITOR_STATE)
     {
         UpdateAndRenderEditor(GameState, Input, DeltaTime);
     }
+
+#if 1
+    // Show information about the memory of the system and debug info
+    SetProjMat4(GameState, OrthogonalProjMat4(WND_WIDTH, WND_HEIGHT, 1.0f, 100.0f));
+
+    RenderString(GameState, "FPS: ", -WND_WIDTH*0.5f, (WND_HEIGHT*0.5f - 9));
+    RenderUInt(GameState, (u32)Input->FPS, -WND_WIDTH*0.5f + 5*7, (WND_HEIGHT*0.5f - 9));
+    
+    i32 XPos = WND_WIDTH*0.5f - 205;
+    i32 YPos = WND_HEIGHT*0.5f - (9+5);
+    mat4 Trans = {};
+    mat4 Scale = ScaleMat4({200.0f, 9.0f, 0.0f});
+    memory_const_buffer MemConstBufferData = {};
+    // Engine Arena
+    //void RenderString(game_state *GameState, char *String, i32 XPos, i32 YPos)
+    RenderString(GameState, "Engine Arena:", XPos, YPos);
+    YPos -= 9;
+    MemConstBufferData.MemoryData = (r32)((r64)GameState->EngineArena.Used/(r64)GameState->EngineArena.Size);
+    MapConstBuffer(GameState->Renderer, GameState->MemoryConstBuffer, &MemConstBufferData, sizeof(memory_const_buffer), 1); 
+    Trans = TranslationMat4({(r32)XPos, (r32)YPos, 0.0f});
+    SetWorldMat4(GameState, Trans * Scale);
+    RenderMesh(GameState->Renderer, GameState->Mesh, GameState->MemBarShader);
+    YPos -= 9;
+    // TileMap Arena
+    RenderString(GameState, "Tilemap Arena:", XPos, YPos);
+    YPos -= 9;
+    MemConstBufferData.MemoryData = (r32)((r64)GameState->TileMapArena.Used/(r64)GameState->TileMapArena.Size);
+    MapConstBuffer(GameState->Renderer, GameState->MemoryConstBuffer, &MemConstBufferData, sizeof(memory_const_buffer), 1); 
+    Trans = TranslationMat4({(r32)XPos, (r32)YPos, 0.0f});
+    SetWorldMat4(GameState, Trans * Scale);
+    RenderMesh(GameState->Renderer, GameState->Mesh, GameState->MemBarShader);
+    YPos -= 9;
+    // MapEditor Arena
+    RenderString(GameState, "Map Editor Arena:", XPos, YPos);
+    YPos -= 9;
+    MemConstBufferData.MemoryData = (r32)((r64)GameState->MapEditorArena.Used/(r64)GameState->MapEditorArena.Size);
+    MapConstBuffer(GameState->Renderer, GameState->MemoryConstBuffer, &MemConstBufferData, sizeof(memory_const_buffer), 1); 
+    Trans = TranslationMat4({(r32)XPos, (r32)YPos, 0.0f});
+    SetWorldMat4(GameState, Trans * Scale);   
+    RenderMesh(GameState->Renderer, GameState->Mesh, GameState->MemBarShader);
+    YPos -= 9;
+    // MapEditorSaves Arena
+    RenderString(GameState, "Map Editor Saves Arena:", XPos, YPos);
+    YPos -= 9;
+    MemConstBufferData.MemoryData = (r32)((r64)GameState->MapEditorSaves.Used/(r64)GameState->MapEditorSaves.Size);
+    MapConstBuffer(GameState->Renderer, GameState->MemoryConstBuffer, &MemConstBufferData, sizeof(memory_const_buffer), 1); 
+    Trans = TranslationMat4({(r32)XPos, (r32)YPos, 0.0f});
+    SetWorldMat4(GameState, Trans * Scale);   
+    RenderMesh(GameState->Renderer, GameState->Mesh, GameState->MemBarShader);  
+#endif  
 }

@@ -2,6 +2,8 @@
 #define UTILITY_H
 
 #define BIT(Value) (1 << Value)
+#define SET_BIT(BitField, Bit) (BitField |= BIT(Bit))
+#define UNSET_BIT(BitField, Bit) (BitField &= ~(BIT(Bit)))
 #define GET_BIT(BitField, Bit) ((BitField & BIT(Bit)) >> Bit)
 
 struct button

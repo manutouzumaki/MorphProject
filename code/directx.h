@@ -320,6 +320,19 @@ RENDER_MESH(RenderMesh)
     Renderer->RenderContext->Draw(Mesh->VerticesCount/5, 0);
 }
 
+
+RENDER_MESH_NO_TEX(RenderMesh)
+{
+    u32 Stride =  5 * sizeof(r32);
+    u32 Offset = 0;
+    Renderer->RenderContext->IASetInputLayout(Shader->InputLayout);
+    Renderer->RenderContext->IASetVertexBuffers(0, 1, &Mesh->VertexBuffer, &Stride, &Offset);
+    Renderer->RenderContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+    Renderer->RenderContext->VSSetShader(Shader->VertexShader, 0, 0);
+    Renderer->RenderContext->PSSetShader(Shader->PixelShader,  0, 0);
+    Renderer->RenderContext->Draw(Mesh->VerticesCount/5, 0);
+}
+
 RENDER_FRAME(RenderFrame)
 {
     frame_const_buffer ConstBufferData = {};
