@@ -1,15 +1,19 @@
 void InitEditor(editor *Editor, texture *Texture, u32 TileWidth, u32 TileHeight, arena *Arena, game_state *GameState)
 {
+    // Get the first texture on the list
+    texture *FirstTexture = GameState->TilesheetTextures;
+    FirstTexture -= (GameState->TilesheetTexturesCount - 1);
     // Create tilesheet
     tilesheet TileSheet = {};
-    texture_info TextureInfo = GetTextureInfo(Texture);
-    TileSheet.Texture = Texture;
+    texture_info TextureInfo = GetTextureInfo(FirstTexture);
+    TileSheet.Texture = FirstTexture;
     TileSheet.TexWidth = TextureInfo.Width;
     TileSheet.TexHeight = TextureInfo.Height; 
     TileSheet.TileWidth = TileWidth;
     TileSheet.TileHeight = TileHeight;
     // Load Editor
     Editor->TileSheet = TileSheet;
+    Editor->TileSheetSelected = 0;
     Editor->Tilemap.TileWidth = TileWidth;
     Editor->Tilemap.TileHeight = TileHeight;
     Editor->Tilemap.Rows = TILEMAP_ROWS;
@@ -18,7 +22,6 @@ void InitEditor(editor *Editor, texture *Texture, u32 TileWidth, u32 TileHeight,
     Editor->Tilemap.Layers = PushStruct(Arena, layer);
     ++Editor->Tilemap.LayersCount;
     Editor->ZSelected = BASE;
-
     // Load Textures for editor only
     Editor->UITexture0 = CreateTexture(GameState->Renderer, "../data/TileSelector.bmp", &GameState->EngineArena);
     Editor->UITexture1 = CreateTexture(GameState->Renderer, "../data/addlayer.bmp",&GameState->EngineArena);
@@ -54,6 +57,7 @@ bool SaveTilemapToFile(char *FileName, editor *Editor, arena *Arena)
         SaveLayers->TileWidth = Editor->Tilemap.TileWidth;
         SaveLayers->TileHeight = Editor->Tilemap.TileHeight;
         SaveLayers->LayersCount = Editor->Tilemap.LayersCount;
+        SaveLayers->TexIndex = Editor->TileSheetSelected;
         SaveLayers->TexWidth = Editor->TileSheet.TexWidth;
         SaveLayers->TexHeight = Editor->TileSheet.TexHeight;
         memcpy(SaveLayers->Tiles, ActualLayer->Tiles, TILEMAP_ROWS*TILEMAP_COLS*sizeof(tile));
@@ -69,7 +73,7 @@ void SetBrushValue(input *Input, editor *Editor)
 {
     tilesheet *TileSheet = &Editor->TileSheet;
     if(PointOnQuad(TileSheet->Position.X, TileSheet->Position.Y,
-                   TileSheet->TexWidth, TileSheet->TexHeight,
+                   176.0f, 288.0f,
                    Input->MouseX, Input->MouseY))
     {
         Editor->MouseOnUI = true;
@@ -77,8 +81,8 @@ void SetBrushValue(input *Input, editor *Editor)
         {
             if(Input->MouseButtons->Left.IsDown)
             {
-                i32 XFrame = (i32)((Input->MouseX - TileSheet->Position.X) / TileSheet->TileWidth);
-                i32 YFrame = (i32)((Input->MouseY - TileSheet->Position.Y) / TileSheet->TileHeight);
+                i32 XFrame = (i32)((Input->MouseX - (TileSheet->Position.X*TileSheet->TexWidth)) / TileSheet->TileWidth);
+                i32 YFrame = (i32)((Input->MouseY - (TileSheet->Position.Y*TileSheet->TexHeight)) / TileSheet->TileHeight);
                 i32 NumberOfCols = TileSheet->TexWidth / TileSheet->TileWidth;
                 Editor->BrushValue = YFrame * NumberOfCols + XFrame;
             }
@@ -128,6 +132,60 @@ void PaintTilemap(input *Input, editor *Editor, v3 CamPosition)
     }
 }
 
+i32 UpdateAndRenderEditorUIHorizontal(game_state *GameState, input *Input, ui_state *UIState, texture *Texture, i32 NumOfButtons, i32 ButtonSelected)
+{
+    i32 OutValue = -1;
+    for(i32 Index = 0;
+        Index < NumOfButtons;
+        ++Index)
+    {
+        i32 Offset = 0;
+        r32 ActualX = (UIState->Position.X * (UIState->Size.X + UIState->Offset.X)) + 0.0f; 
+        r32 ActualY = UIState->Position.Y;//(UIState->Position.Y * (UIState->Size.Y + UIState->Offset.Y)) + 5.0f; 
+        // Update
+        if(PointOnQuad(ActualX, ActualY, UIState->Size.X, UIState->Size.Y,
+                       Input->MouseX, Input->MouseY))
+        {
+            GameState->Editor.MouseOnUI = true;
+            if(ButtonSelected != PERSISTANT_BUTTON)
+            {
+                if(Input->MouseButtons->Left.IsDown != Input->MouseButtons->Left.WasDown)
+                {
+                    if(Input->MouseButtons->Left.IsDown)
+                    {
+                        OutValue =  Index;
+                        if(ButtonSelected == SINGLE_BUTTON)
+                        {
+                            Offset = NumOfButtons;
+                        }
+                    }
+                }
+            }
+            else
+            {
+                if(Input->MouseButtons->Left.IsDown)
+                {
+                    OutValue =  Index;
+                }
+            }
+        }
+
+        // Render
+        mat4 Scale = ScaleMat4({UIState->Size.X, UIState->Size.Y, 0.0f});
+        mat4 Trans = TranslationMat4({ActualX - WND_WIDTH*0.5f, ActualY - WND_HEIGHT*0.5f, 0.0f});
+        SetWorldMat4(GameState, Trans * Scale);
+        if(Index == ButtonSelected && ButtonSelected != SINGLE_BUTTON && ButtonSelected != NO_BUTTON_SELECTED)
+        {
+            Offset = NumOfButtons;
+        }
+        RenderFrame(GameState->Renderer, GameState->Mesh, GameState->UIFrameShader, Texture,
+                    GameState->FrameConstBuffer, 16, 16, Index + Offset, 0);
+
+        ++UIState->Position.X;
+    }
+    return OutValue;
+
+}
 i32 UpdateAndRenderEditorUI(game_state *GameState, input *Input, ui_state *UIState, texture *Texture, i32 NumOfButtons, i32 ButtonSelected)
 {
     i32 OutValue = -1;
@@ -225,9 +283,17 @@ void UpdateAndRenderEditor(game_state *GameState, input *Input, r32 DeltaTime)
     SetProjMat4(GameState, OrthogonalProjMat4(WND_WIDTH*GameState->Editor.Zoom,
                                               WND_HEIGHT*GameState->Editor.Zoom,
                                               1.0f, 100.0f));
-    // TODO: Render Tilemaip...
+    // TODO: Render Tilemap...
+    texture *FirstTexture = GameState->TilesheetTextures;
+    FirstTexture -= (GameState->TilesheetTexturesCount - 1);
+
     tilemap *Tilemap = &Editor->Tilemap;
     tilesheet *TileSheet = &Editor->TileSheet;
+
+    TileSheet->Texture = FirstTexture + Editor->TileSheetSelected;
+    texture_info TextureInfo = GetTextureInfo(TileSheet->Texture);
+    TileSheet->TexWidth = TextureInfo.Width;
+    TileSheet->TexHeight = TextureInfo.Height;
 
     for(i32 Index = 0;
         Index < Editor->Tilemap.LayersCount;
@@ -257,14 +323,14 @@ void UpdateAndRenderEditor(game_state *GameState, input *Input, r32 DeltaTime)
                     {
                         u32 XFrame = ActualLayer->Tiles[Index].Base % TileSheetCols;
                         u32 YFrame = ActualLayer->Tiles[Index].Base / TileSheetCols; 
-                        RenderFrame(GameState->Renderer, GameState->Mesh, GameState->FrameShader, GameState->MapTexture,
+                        RenderFrame(GameState->Renderer, GameState->Mesh, GameState->FrameShader, TileSheet->Texture,
                                     GameState->FrameConstBuffer, TileSheet->TileWidth, TileSheet->TileHeight, XFrame, YFrame);
                     }
                     if(ActualLayer->Tiles[Index].Decoration != 0)
                     {
                         u32 XFrame = ActualLayer->Tiles[Index].Decoration % TileSheetCols;
                         u32 YFrame = ActualLayer->Tiles[Index].Decoration / TileSheetCols; 
-                        RenderFrame(GameState->Renderer, GameState->Mesh, GameState->FrameShader, GameState->MapTexture,
+                        RenderFrame(GameState->Renderer, GameState->Mesh, GameState->FrameShader, TileSheet->Texture,
                                     GameState->FrameConstBuffer, TileSheet->TileWidth, TileSheet->TileHeight, XFrame, YFrame);
                     }
                     // TODO(manuto): Only render collition in editor
@@ -272,7 +338,7 @@ void UpdateAndRenderEditor(game_state *GameState, input *Input, r32 DeltaTime)
                     {
                         u32 XFrame = ActualLayer->Tiles[Index].Collision % TileSheetCols;
                         u32 YFrame = ActualLayer->Tiles[Index].Collision / TileSheetCols; 
-                        RenderFrame(GameState->Renderer, GameState->Mesh, GameState->FrameShader, GameState->MapTexture,
+                        RenderFrame(GameState->Renderer, GameState->Mesh, GameState->FrameShader, TileSheet->Texture,
                                     GameState->FrameConstBuffer, TileSheet->TileWidth, TileSheet->TileHeight, XFrame, YFrame);
                     }
                                 
@@ -285,20 +351,88 @@ void UpdateAndRenderEditor(game_state *GameState, input *Input, r32 DeltaTime)
     SetProjMat4(GameState, OrthogonalProjMat4(WND_WIDTH, WND_HEIGHT, 1.0f, 100.0f));
 
     // TODO: Render TileSheet
-    mat4 Scale = ScaleMat4({(r32)TileSheet->TexWidth, (r32)TileSheet->TexHeight, 0.0f});
-    mat4 Trans = TranslationMat4({TileSheet->Position.X - WND_WIDTH*0.5f,
-                                  TileSheet->Position.Y - WND_HEIGHT*0.5f,
-                                  0.0f});
+    tilesheet_ui_const_buffer ConstBufferData = {};
+    ConstBufferData.TexSize.X = TileSheet->TexWidth;
+    ConstBufferData.TexSize.Y = TileSheet->TexHeight;
+    ConstBufferData.Offset.X = TileSheet->Position.X;
+    ConstBufferData.Offset.Y = TileSheet->Position.Y;
+    MapConstBuffer(GameState->Renderer, GameState->UITileSheetConstBuffer, &ConstBufferData, sizeof(tilesheet_ui_const_buffer), 1);
+    mat4 Scale = ScaleMat4({176.0f, 288.0f, 0.0f});
+    mat4 Trans = TranslationMat4({-WND_WIDTH*0.5f, -WND_HEIGHT*0.5f, 0.0f});
     SetWorldMat4(GameState, Trans * Scale);
     RenderMesh(GameState->Renderer, GameState->Mesh, GameState->UIShader, TileSheet->Texture);
 
     // TODO(manuto): Improve this SUPER hacke way to render th UI
     ui_state UIState = {};
+    UIState.Position = {0.0f, 288.0f + 5.0f};
+    UIState.Size = {32.0f, 32.0f};
+    UIState.Offset = {5.0f, 5.0f}; 
+    i32 OutValue = UpdateAndRenderEditorUIHorizontal(GameState, Input, &UIState, Editor->UITexture1, 4, PERSISTANT_BUTTON);
+    if(OutValue == SCROLL_UP)
+    {
+        TileSheet->Position.Y -= 0.5f * DeltaTime;
+        if(TileSheet->Position.Y < -((TileSheet->TexHeight - 288.0f)/TileSheet->TexHeight))
+        {
+            TileSheet->Position.Y = -((TileSheet->TexHeight - 288.0f)/TileSheet->TexHeight);
+        }
+    }
+    if(OutValue == SCROLL_DOWN)
+    {
+        TileSheet->Position.Y += 0.5f * DeltaTime;
+        if(TileSheet->Position.Y > 0.0f)
+        {
+            TileSheet->Position.Y = 0.0f;
+        }
+    }
+    if(OutValue == SCROLL_LEFT)
+    {
+        TileSheet->Position.X += 0.5f * DeltaTime;
+        if(TileSheet->Position.X > 0.0f)
+        {
+            TileSheet->Position.X = 0.0f;
+        }
+    }
+    if(OutValue == SCROLL_RIGHT)
+    {
+        TileSheet->Position.X -= 0.5f * DeltaTime;
+        if(TileSheet->Position.X < -((TileSheet->TexWidth - 176.0f)/TileSheet->TexWidth))
+        {
+            TileSheet->Position.X = -((TileSheet->TexWidth - 176.0f)/TileSheet->TexWidth);
+        }
+    }
+
+    UIState = {};
+    UIState.Position = {176.0f + 5, 0.0f};
+    UIState.Size = {32.0f, 32.0f};
+    UIState.Offset = {5.0f, 5.0f}; 
+    OutValue = UpdateAndRenderEditorUI(GameState, Input, &UIState, Editor->UITexture2, 2, SINGLE_BUTTON);
+    if(OutValue == UP_LAYER)
+    {
+        OutputDebugString("Next Texture \n");
+        TileSheet->Position.Y = 0.0f;
+        TileSheet->Position.X = 0.0f;
+        ++Editor->TileSheetSelected;
+        if(Editor->TileSheetSelected >= GameState->TilesheetTexturesCount)
+        {
+            Editor->TileSheetSelected = GameState->TilesheetTexturesCount - 1;
+        }   
+    }
+    if(OutValue == DOWN_LAYER)
+    {
+        OutputDebugString("Back Texture\n");
+        TileSheet->Position.Y = 0.0f;
+        TileSheet->Position.X = 0.0f;
+        --Editor->TileSheetSelected;
+        if(Editor->TileSheetSelected < 0)
+        {
+            Editor->TileSheetSelected = 0;
+        }
+    }
+
+    UIState = {};
     UIState.Position = {WND_WIDTH - 37.0f, 0.0f};
     UIState.Size = {32.0f, 32.0f};
-    UIState.Offset = {5.0f, 5.0f};
-    
-    i32 OutValue;
+    UIState.Offset = {5.0f, 5.0f}; 
     OutValue = UpdateAndRenderEditorUI(GameState, Input, &UIState, Editor->UITexture0, 3, Editor->ZSelected);
     if(OutValue == BASE)
     {

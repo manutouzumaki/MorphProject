@@ -24,6 +24,12 @@ struct  memory_const_buffer
     r32 MemoryData;
 };
 
+struct tilesheet_ui_const_buffer
+{
+    v2 TexSize;
+    v2 Offset;
+};
+
 enum app_state
 {
     GAME_STATE,
@@ -38,6 +44,7 @@ struct game_state
     app_state AppState; 
 
     arena EngineArena;
+    arena TextureArena;
     arena TileMapArena;
     arena MapEditorArena;
     arena MapEditorSaves;
@@ -46,6 +53,7 @@ struct game_state
     const_buffer *ConstBuffer;
     const_buffer *FrameConstBuffer;
     const_buffer *MemoryConstBuffer;
+    const_buffer *UITileSheetConstBuffer;
     vs_constant_buffer ConstBufferData = {};
     
     shader *MainShader;
@@ -57,6 +65,8 @@ struct game_state
     mesh *Mesh;
     texture *MapTexture;
     texture *MapTexture2;
+    texture *TilesheetTextures;
+    u32 TilesheetTexturesCount;
     texture *HeroTexture;
     texture *FontTexture;
 

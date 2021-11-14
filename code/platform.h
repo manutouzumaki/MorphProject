@@ -40,6 +40,7 @@ struct shader;
 struct const_buffer;
 struct mesh;
 struct texture;
+struct game_state;
 
 // GAME and GENERAL Use
 #define PLAFORM_CREATE_WINDOW(name) window *name(u32 X, u32 Y, u32 Width, u32 Height, char *Name, arena *Arena)
@@ -47,6 +48,7 @@ struct texture;
 #define COMPILE_SHADERS_FROM_FILE(name) shader *name(renderer *Renderer, char *VSFileName, char *PSFileName, arena *Arena)
 #define CREATE_MESH(name) mesh *name(renderer *Renderer, r32 *Vertices, u32 VerticesCount, arena *Arena)
 #define CREATE_TEXTURE(name) texture *name(renderer *Renderer, char *FileName, arena *Arena)
+#define CREATE_TEXTURE_ON_LIST(name) texture *name(game_state *GameState, char *FileName, arena *Arena)
 #define CREATE_CONST_BUFFER(name) const_buffer *name(renderer *Renderer, u32 DataSize, arena *Arena)
 #define MAP_CONST_BUFFER(name) void name(renderer *Renderer, const_buffer *ConstBuffer, void *BufferData, u32 DataSize, u32 Register)
 #define RENDER_MESH(name) void name(renderer *Renderer, mesh *Mesh, shader *Shader, texture *Texture)
@@ -65,5 +67,6 @@ RENDER_MESH(RenderMesh);
 RENDER_MESH_NO_TEX(RenderMesh);
 RENDER_FRAME(RenderFrame);
 GET_TEXTURE_INFO(GetTextureInfo);
+CREATE_TEXTURE_ON_LIST(LoadTextureToList);
 
 #endif

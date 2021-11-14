@@ -1,14 +1,15 @@
 #include <Windows.h>
 #include <Windowsx.h>
 #include "platform.h"
-#include "main.cpp"
 
 struct window
 {
     HWND Window;
 };
 
+#include "main.h"
 #include "directx.h"
+#include "main.cpp"
 
 static bool GlobalRunning;
 static HINSTANCE GlobalInstace;

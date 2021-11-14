@@ -283,6 +283,69 @@ CREATE_TEXTURE(CreateTexture)
     return Texture;
 }
 
+CREATE_TEXTURE_ON_LIST(CreateTextureOnList)
+{
+    renderer *Renderer = GameState->Renderer;
+    texture *Texture = PushStruct(Arena, texture);
+    bitmap Bitmap = LoadBMP(FileName, &GameState->EngineArena);
+    D3D11_SUBRESOURCE_DATA Data = {};
+    Data.pSysMem = (void *)Bitmap.Pixels;
+    Data.SysMemPitch = Bitmap.Width*sizeof(u32);
+    Data.SysMemSlicePitch = 0;
+
+    D3D11_TEXTURE2D_DESC TextureDesc = {}; 
+    TextureDesc.Width = Bitmap.Width;
+    TextureDesc.Height = Bitmap.Height;
+    TextureDesc.MipLevels = 0; // generate a full set of subtextures
+    TextureDesc.ArraySize = 1;
+    TextureDesc.Format = DXGI_FORMAT_B8G8R8A8_UNORM;//DXGI_FORMAT_R8G8B8A8_UNORM;
+    TextureDesc.SampleDesc.Count = 1;
+    TextureDesc.SampleDesc.Quality = 0;
+    TextureDesc.Usage = D3D11_USAGE_DEFAULT;
+    TextureDesc.BindFlags = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE;
+    TextureDesc.CPUAccessFlags = 0;
+    TextureDesc.MiscFlags = D3D11_RESOURCE_MISC_GENERATE_MIPS;
+
+    ID3D11Texture2D *TempTexture;
+    HRESULT Result = Renderer->Device->CreateTexture2D(&TextureDesc, 0, &TempTexture);
+    if(SUCCEEDED(Result))
+    {
+        OutputDebugString("SUCCEEDED Creating texture\n");
+    }
+
+    D3D11_SHADER_RESOURCE_VIEW_DESC ShaderResourceDesc = {};
+    ShaderResourceDesc.Format = DXGI_FORMAT_B8G8R8A8_UNORM;// DXGI_FORMAT_R8G8B8A8_UNORM;
+    ShaderResourceDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
+    ShaderResourceDesc.Texture2D.MipLevels = -1;
+    ShaderResourceDesc.Texture2D.MostDetailedMip = 0;
+    Result = Renderer->Device->CreateShaderResourceView(TempTexture, &ShaderResourceDesc, &Texture->ColorMap);
+    if(SUCCEEDED(Result))
+    {
+        OutputDebugString("SUCCEEDED Creating Shader resource view\n");
+    }
+    Renderer->RenderContext->UpdateSubresource(TempTexture, 0, 0, Data.pSysMem, Data.SysMemPitch, 0);
+    Renderer->RenderContext->GenerateMips(Texture->ColorMap);
+
+    TempTexture->Release();
+
+    D3D11_SAMPLER_DESC ColorMapDesc = {};
+    ColorMapDesc.AddressU = D3D11_TEXTURE_ADDRESS_CLAMP;//D3D11_TEXTURE_ADDRESS_WRAP;
+    ColorMapDesc.AddressV = D3D11_TEXTURE_ADDRESS_CLAMP;//D3D11_TEXTURE_ADDRESS_WRAP;
+    ColorMapDesc.AddressW = D3D11_TEXTURE_ADDRESS_CLAMP;//D3D11_TEXTURE_ADDRESS_WRAP;
+    ColorMapDesc.ComparisonFunc = D3D11_COMPARISON_NEVER;
+    ColorMapDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_POINT; //D3D11_FILTER_MIN_MAG_MIP_LINEAR | D3D11_FILTER_MIN_MAG_MIP_POINT
+    ColorMapDesc.MaxLOD = D3D11_FLOAT32_MAX;
+    Result = Renderer->Device->CreateSamplerState(&ColorMapDesc, &Texture->ColorMapSampler);
+    if(SUCCEEDED(Result))
+    {
+        OutputDebugString("SUCCEEDED Creating sampler state\n");
+    }
+    Texture->Pixels = Bitmap.Pixels;
+    Texture->Width = Bitmap.Width;
+    Texture->Height = Bitmap.Height;
+    return Texture;
+}
+
 CREATE_CONST_BUFFER(CreateConstBuffer)
 {
     const_buffer *ConstBuffer = PushStruct(Arena, const_buffer);
@@ -354,3 +417,4 @@ GET_TEXTURE_INFO(GetTextureInfo)
     Result.Pixels = Texture->Pixels;
     return Result;
 }
+

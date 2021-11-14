@@ -23,6 +23,7 @@ struct tilemap
     u32 TileWidth;
     u32 TileHeight;
     u32 LayersCount;
+    u32 TexIndex;
     u32 TexWidth;
     u32 TexHeight;
     layer *Layers;
@@ -35,9 +36,10 @@ struct save_layers
     u32 TileWidth;
     u32 TileHeight;
     u32 LayersCount;
+    u32 TexIndex;
     u32 TexWidth;
     u32 TexHeight;
-    tile Tiles[TILEMAP_ROWS*TILEMAP_COLS]; // for now our tilemap are going to be 64x64 tiles
+    tile Tiles[TILEMAP_ROWS*TILEMAP_COLS];
 };
 
 #endif

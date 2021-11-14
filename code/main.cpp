@@ -1,5 +1,3 @@
-#include "main.h"
-
 void SetWorldMat4(game_state *GameState, mat4 World)
 {
     GameState->ConstBufferData.World = World;
@@ -94,6 +92,7 @@ void GameSetUp(memory *Memory)
     InitArena(Memory, &GameState->MapEditorArena, Megabytes(1));
     InitArena(Memory, &GameState->MapEditorSaves, Megabytes(2));
     InitArena(Memory, &GameState->IntToCharTempArena, sizeof(u32) * 10);
+    InitArena(Memory, &GameState->TextureArena, Kilobytes(1));
 
     GameState->Window = PlatformCreateWindow(0, 0, WND_WIDTH, WND_HEIGHT, "MorphProject", &GameState->EngineArena);
     GameState->Renderer = PlatformCreateRenderer(GameState->Window, &GameState->EngineArena);
@@ -122,7 +121,8 @@ void GameSetUp(memory *Memory)
     GameState->ConstBuffer = CreateConstBuffer(GameState->Renderer, sizeof(vs_constant_buffer), &GameState->EngineArena);
     GameState->FrameConstBuffer = CreateConstBuffer(GameState->Renderer, sizeof(frame_const_buffer), &GameState->EngineArena);
     GameState->MemoryConstBuffer = CreateConstBuffer(GameState->Renderer, sizeof(memory_const_buffer), &GameState->EngineArena);
-    
+    GameState->UITileSheetConstBuffer = CreateConstBuffer(GameState->Renderer, sizeof(tilesheet_ui_const_buffer), &GameState->EngineArena); 
+
     GameState->CamPosition = {400.0f, 300.0f, -0.1f};
     GameState->CamTarget = {400.0f, 300.0f, 0.0f};
     
@@ -140,7 +140,13 @@ void GameSetUp(memory *Memory)
         0.0f, 1.0f, 0.0f, 0.0f, 1.0f,
         1.0f, 1.0f, 0.0f, 1.0f, 1.0f
     };
-    GameState->Mesh = CreateMesh(GameState->Renderer, Vertices, ArrayCount(Vertices), &GameState->EngineArena);
+    GameState->Mesh = CreateMesh(GameState->Renderer, Vertices, ArrayCount(Vertices), &GameState->EngineArena); 
+    // TODO(manuto): Make a texture array to load the map whit the correct texture
+    GameState->TilesheetTextures = CreateTextureOnList(GameState, "../data/town_tileset.bmp", &GameState->TextureArena);
+    ++GameState->TilesheetTexturesCount; 
+    GameState->TilesheetTextures = CreateTextureOnList(GameState, "../data/tileset_arena.bmp", &GameState->TextureArena);
+    ++GameState->TilesheetTexturesCount;
+    
     GameState->MapTexture = CreateTexture(GameState->Renderer, "../data/town_tileset.bmp", &GameState->EngineArena);
     GameState->MapTexture2 = CreateTexture(GameState->Renderer, "../data/tileset_arena.bmp", &GameState->EngineArena);
     GameState->HeroTexture = CreateTexture(GameState->Renderer, "../data/walk_cycle.bmp", &GameState->EngineArena);
@@ -193,7 +199,13 @@ void GameUpdateAndRender(memory *Memory, input *Input, r32 DeltaTime)
 
         // TODO(manuto): Render...
         // TODO: Render Tilemaip...
+
+        // TODO: Get the texture from the file data
         tilemap *Tilemap = &GameState->Tilemap;
+        texture *FirstTexture = GameState->TilesheetTextures;
+        FirstTexture -= (GameState->TilesheetTexturesCount - 1);
+        texture *ActualTexture = FirstTexture + Tilemap->TexIndex;
+        
         if(Tilemap->LayersCount > 0)
         {
             for(i32 Index = 0;
@@ -221,14 +233,14 @@ void GameUpdateAndRender(memory *Memory, input *Input, r32 DeltaTime)
                         {
                             u32 XFrame = ActualLayer->Tiles[Index].Base % TileSheetCols;
                             u32 YFrame = ActualLayer->Tiles[Index].Base / TileSheetCols; 
-                            RenderFrame(GameState->Renderer, GameState->Mesh, GameState->FrameShader, GameState->MapTexture,
+                            RenderFrame(GameState->Renderer, GameState->Mesh, GameState->FrameShader, ActualTexture,
                                         GameState->FrameConstBuffer, 16, 16, XFrame, YFrame);
                         }
                         if(ActualLayer->Tiles[Index].Decoration != 0)
                         {
                             u32 XFrame = ActualLayer->Tiles[Index].Decoration % TileSheetCols;
                             u32 YFrame = ActualLayer->Tiles[Index].Decoration / TileSheetCols; 
-                            RenderFrame(GameState->Renderer, GameState->Mesh, GameState->FrameShader, GameState->MapTexture,
+                            RenderFrame(GameState->Renderer, GameState->Mesh, GameState->FrameShader, ActualTexture,
                                         GameState->FrameConstBuffer, 16, 16, XFrame, YFrame);
                         }                                    
                     }
@@ -264,10 +276,18 @@ void GameUpdateAndRender(memory *Memory, input *Input, r32 DeltaTime)
     mat4 Scale = ScaleMat4({200.0f, 9.0f, 0.0f});
     memory_const_buffer MemConstBufferData = {};
     // Engine Arena
-    //void RenderString(game_state *GameState, char *String, i32 XPos, i32 YPos)
     RenderString(GameState, "Engine Arena:", XPos, YPos);
     YPos -= 9;
     MemConstBufferData.MemoryData = (r32)((r64)GameState->EngineArena.Used/(r64)GameState->EngineArena.Size);
+    MapConstBuffer(GameState->Renderer, GameState->MemoryConstBuffer, &MemConstBufferData, sizeof(memory_const_buffer), 1); 
+    Trans = TranslationMat4({(r32)XPos, (r32)YPos, 0.0f});
+    SetWorldMat4(GameState, Trans * Scale);
+    RenderMesh(GameState->Renderer, GameState->Mesh, GameState->MemBarShader);
+    YPos -= 9;
+    // Texture Arena
+    RenderString(GameState, "Texture Arena:", XPos, YPos);
+    YPos -= 9;
+    MemConstBufferData.MemoryData = (r32)((r64)GameState->TextureArena.Used/(r64)GameState->TextureArena.Size);
     MapConstBuffer(GameState->Renderer, GameState->MemoryConstBuffer, &MemConstBufferData, sizeof(memory_const_buffer), 1); 
     Trans = TranslationMat4({(r32)XPos, (r32)YPos, 0.0f});
     SetWorldMat4(GameState, Trans * Scale);

@@ -3,6 +3,7 @@
 
 #define SINGLE_BUTTON -1
 #define NO_BUTTON_SELECTED -2
+#define PERSISTANT_BUTTON -3
 
 struct tilesheet
 {
@@ -33,6 +34,14 @@ enum layer_selected
     UP_LAYER,
 };
 
+enum scroll
+{
+    SCROLL_UP,
+    SCROLL_DOWN,
+    SCROLL_LEFT,
+    SCROLL_RIGHT
+};
+
 struct ui_state
 {
     v2 Position;
@@ -56,6 +65,7 @@ struct editor
     z_selected ZSelected;
     i32 LayerSelected;
     u32 LayersShowBitField;
+    i32 TileSheetSelected;    
 };
 
 #endif
