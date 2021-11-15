@@ -146,15 +146,13 @@ void GameSetUp(memory *Memory)
     ++GameState->TilesheetTexturesCount; 
     GameState->TilesheetTextures = CreateTextureOnList(GameState, "../data/tileset_arena.bmp", &GameState->TextureArena);
     ++GameState->TilesheetTexturesCount;
-    
-    GameState->MapTexture = CreateTexture(GameState->Renderer, "../data/town_tileset.bmp", &GameState->EngineArena);
-    GameState->MapTexture2 = CreateTexture(GameState->Renderer, "../data/tileset_arena.bmp", &GameState->EngineArena);
+    GameState->TilesheetTextures = CreateTextureOnList(GameState, "../data/Map.bmp", &GameState->TextureArena);
+    ++GameState->TilesheetTexturesCount; 
     GameState->HeroTexture = CreateTexture(GameState->Renderer, "../data/walk_cycle.bmp", &GameState->EngineArena);
     GameState->FontTexture = CreateTexture(GameState->Renderer, "../data/font.bmp", &GameState->EngineArena);
 
     // TODO(manuto): Try to load Maps
     GameState->Tilemap = LoadMap(GameState, "../data/map.save");
-
 
     SetEntityPosition(&GameState->HeroEntity, 8, 11);
     GameState->HeroEntity.Facing = BIT(DOWN);
@@ -201,11 +199,7 @@ void GameUpdateAndRender(memory *Memory, input *Input, r32 DeltaTime)
         // TODO: Render Tilemaip...
 
         // TODO: Get the texture from the file data
-        tilemap *Tilemap = &GameState->Tilemap;
-        texture *FirstTexture = GameState->TilesheetTextures;
-        FirstTexture -= (GameState->TilesheetTexturesCount - 1);
-        texture *ActualTexture = FirstTexture + Tilemap->TexIndex;
-        
+        tilemap *Tilemap = &GameState->Tilemap;        
         if(Tilemap->LayersCount > 0)
         {
             for(i32 Index = 0;
@@ -224,13 +218,17 @@ void GameUpdateAndRender(memory *Memory, input *Input, r32 DeltaTime)
                         ++X)
                     {
                         i32 Index = Y * Tilemap->Cols + X; 
-                        u32 TileSheetCols = Tilemap->TexWidth / Tilemap->TileWidth;
                         mat4 Scale = ScaleMat4({(r32)Tilemap->TileWidth, (r32)Tilemap->TileHeight, 0.0f});
                         mat4 Trans = TranslationMat4({(r32)Tilemap->TileWidth * X, (r32)Tilemap->TileHeight * Y, 0.0f});
                         SetWorldMat4(GameState, Trans * Scale);
 
                         if(ActualLayer->Tiles[Index].Base != 0)
                         {
+                            texture *FirstTexture = GameState->TilesheetTextures;
+                            FirstTexture -= (GameState->TilesheetTexturesCount - 1);
+                            texture *ActualTexture = FirstTexture + ActualLayer->Tiles[Index].BaseTexIndex;
+                            u32 TileSheetCols = ActualTexture->Width / Tilemap->TileWidth;
+
                             u32 XFrame = ActualLayer->Tiles[Index].Base % TileSheetCols;
                             u32 YFrame = ActualLayer->Tiles[Index].Base / TileSheetCols; 
                             RenderFrame(GameState->Renderer, GameState->Mesh, GameState->FrameShader, ActualTexture,
@@ -238,6 +236,11 @@ void GameUpdateAndRender(memory *Memory, input *Input, r32 DeltaTime)
                         }
                         if(ActualLayer->Tiles[Index].Decoration != 0)
                         {
+                            texture *FirstTexture = GameState->TilesheetTextures;
+                            FirstTexture -= (GameState->TilesheetTexturesCount - 1);
+                            texture *ActualTexture = FirstTexture + ActualLayer->Tiles[Index].DecorationTexIndex;
+                            u32 TileSheetCols = ActualTexture->Width / Tilemap->TileWidth;
+
                             u32 XFrame = ActualLayer->Tiles[Index].Decoration % TileSheetCols;
                             u32 YFrame = ActualLayer->Tiles[Index].Decoration / TileSheetCols; 
                             RenderFrame(GameState->Renderer, GameState->Mesh, GameState->FrameShader, ActualTexture,

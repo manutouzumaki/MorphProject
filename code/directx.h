@@ -161,6 +161,7 @@ COMPILE_SHADERS_FROM_FILE(CompileShadersFromFile)
                         &VertexShaderCompiled, &ErrorVertexShader);
     if(ErrorVertexShader != 0)
     {
+        OutputDebugString((char *)ErrorVertexShader->GetBufferPointer());
         ErrorVertexShader->Release();
     }
     // Create the Vertex Shader.
@@ -193,8 +194,10 @@ COMPILE_SHADERS_FROM_FILE(CompileShadersFromFile)
                         &PixelShaderCompiled, &ErrorPixelShader);
     if(ErrorPixelShader != 0)
     {
+        OutputDebugString((char *)ErrorPixelShader->GetBufferPointer());
         ErrorPixelShader->Release();
     }
+
     // Create Pixel Shader.
     Result = Renderer->Device->CreatePixelShader(PixelShaderCompiled->GetBufferPointer(),
                                        PixelShaderCompiled->GetBufferSize(), 0,

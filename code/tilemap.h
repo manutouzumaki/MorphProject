@@ -7,8 +7,13 @@
 struct tile
 {
     u32 Base;
+    i32 BaseTexIndex;
+
     u32 Decoration;
-    u32 Collision; 
+    i32 DecorationTexIndex;
+
+    u32 Collision;
+    i32 CollisionTexIndex;
 };
 
 struct layer
@@ -23,7 +28,6 @@ struct tilemap
     u32 TileWidth;
     u32 TileHeight;
     u32 LayersCount;
-    u32 TexIndex;
     u32 TexWidth;
     u32 TexHeight;
     layer *Layers;
@@ -36,7 +40,6 @@ struct save_layers
     u32 TileWidth;
     u32 TileHeight;
     u32 LayersCount;
-    u32 TexIndex;
     u32 TexWidth;
     u32 TexHeight;
     tile Tiles[TILEMAP_ROWS*TILEMAP_COLS];

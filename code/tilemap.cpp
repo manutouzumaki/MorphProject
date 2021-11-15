@@ -16,7 +16,6 @@ tilemap LoadMap(game_state *GameState, char *FileName)
     Map.TileWidth = SaveLayer->TileWidth;
     Map.TileHeight = SaveLayer->TileHeight;
     Map.LayersCount = SaveLayer->LayersCount;
-    Map.TexIndex = SaveLayer->TexIndex;
     Map.TexWidth = SaveLayer->TexWidth;
     Map.TexHeight = SaveLayer->TexHeight;
     for(i32 Index = 0;

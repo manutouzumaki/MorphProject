@@ -27,6 +27,7 @@ void InitEditor(editor *Editor, texture *Texture, u32 TileWidth, u32 TileHeight,
     Editor->UITexture1 = CreateTexture(GameState->Renderer, "../data/addlayer.bmp",&GameState->EngineArena);
     Editor->UITexture2 = CreateTexture(GameState->Renderer, "../data/selectlayer.bmp", &GameState->EngineArena);
     Editor->UITexture3 = CreateTexture(GameState->Renderer, "../data/showLayer.bmp", &GameState->EngineArena);
+    Editor->UITexture4 = CreateTexture(GameState->Renderer, "../data/arrows.bmp", &GameState->EngineArena);
 }
 
 bool PointOnQuad(i32 X, i32 Y, i32 Width, i32 Height,
@@ -57,7 +58,6 @@ bool SaveTilemapToFile(char *FileName, editor *Editor, arena *Arena)
         SaveLayers->TileWidth = Editor->Tilemap.TileWidth;
         SaveLayers->TileHeight = Editor->Tilemap.TileHeight;
         SaveLayers->LayersCount = Editor->Tilemap.LayersCount;
-        SaveLayers->TexIndex = Editor->TileSheetSelected;
         SaveLayers->TexWidth = Editor->TileSheet.TexWidth;
         SaveLayers->TexHeight = Editor->TileSheet.TexHeight;
         memcpy(SaveLayers->Tiles, ActualLayer->Tiles, TILEMAP_ROWS*TILEMAP_COLS*sizeof(tile));
@@ -122,11 +122,20 @@ void PaintTilemap(input *Input, editor *Editor, v3 CamPosition)
                 layer *ActualLayer = FirstLayer + Editor->LayerSelected;
 
                 if(Editor->ZSelected == BASE)
+                {
                     ActualLayer->Tiles[Index].Base = Editor->BrushValue; 
+                    ActualLayer->Tiles[Index].BaseTexIndex = Editor->TileSheetSelected;
+                }
                 if(Editor->ZSelected == DECORATION)
+                {
                     ActualLayer->Tiles[Index].Decoration = Editor->BrushValue; 
+                    ActualLayer->Tiles[Index].DecorationTexIndex = Editor->TileSheetSelected;
+                }
                 if(Editor->ZSelected == COLLISION)
+                {
                     ActualLayer->Tiles[Index].Collision = Editor->BrushValue; 
+                    ActualLayer->Tiles[Index].CollisionTexIndex = Editor->TileSheetSelected;
+                }
             }
         }
     }
@@ -313,7 +322,6 @@ void UpdateAndRenderEditor(game_state *GameState, input *Input, r32 DeltaTime)
                     ++X)
                 {
                     i32 Index = Y * Tilemap->Cols + X;
-                    u32 TileSheetCols = TileSheet->TexWidth / TileSheet->TileWidth; 
                     
                     mat4 Scale = ScaleMat4({(r32)Tilemap->TileWidth, (r32)Tilemap->TileHeight, 0.0f});
                     mat4 Trans = TranslationMat4({(r32)Tilemap->TileWidth * X, (r32)Tilemap->TileHeight * Y, 0.0f});
@@ -321,24 +329,39 @@ void UpdateAndRenderEditor(game_state *GameState, input *Input, r32 DeltaTime)
 
                     if(ActualLayer->Tiles[Index].Base != 0)
                     {
+                        texture *FirstTexture = GameState->TilesheetTextures;
+                        FirstTexture -= (GameState->TilesheetTexturesCount - 1);
+                        texture *ActualTexture = FirstTexture + ActualLayer->Tiles[Index].BaseTexIndex;
+                        u32 TileSheetCols = ActualTexture->Width / TileSheet->TileWidth; 
+
                         u32 XFrame = ActualLayer->Tiles[Index].Base % TileSheetCols;
                         u32 YFrame = ActualLayer->Tiles[Index].Base / TileSheetCols; 
-                        RenderFrame(GameState->Renderer, GameState->Mesh, GameState->FrameShader, TileSheet->Texture,
+                        RenderFrame(GameState->Renderer, GameState->Mesh, GameState->FrameShader, ActualTexture,
                                     GameState->FrameConstBuffer, TileSheet->TileWidth, TileSheet->TileHeight, XFrame, YFrame);
                     }
                     if(ActualLayer->Tiles[Index].Decoration != 0)
                     {
+                        texture *FirstTexture = GameState->TilesheetTextures;
+                        FirstTexture -= (GameState->TilesheetTexturesCount - 1);
+                        texture *ActualTexture = FirstTexture + ActualLayer->Tiles[Index].DecorationTexIndex;
+                        u32 TileSheetCols = ActualTexture->Width / TileSheet->TileWidth; 
+
                         u32 XFrame = ActualLayer->Tiles[Index].Decoration % TileSheetCols;
                         u32 YFrame = ActualLayer->Tiles[Index].Decoration / TileSheetCols; 
-                        RenderFrame(GameState->Renderer, GameState->Mesh, GameState->FrameShader, TileSheet->Texture,
+                        RenderFrame(GameState->Renderer, GameState->Mesh, GameState->FrameShader, ActualTexture,
                                     GameState->FrameConstBuffer, TileSheet->TileWidth, TileSheet->TileHeight, XFrame, YFrame);
                     }
                     // TODO(manuto): Only render collition in editor
                     if(ActualLayer->Tiles[Index].Collision != 0)
                     {
+                        texture *FirstTexture = GameState->TilesheetTextures;
+                        FirstTexture -= (GameState->TilesheetTexturesCount - 1);
+                        texture *ActualTexture = FirstTexture + ActualLayer->Tiles[Index].CollisionTexIndex;
+                        u32 TileSheetCols = ActualTexture->Width / TileSheet->TileWidth; 
+
                         u32 XFrame = ActualLayer->Tiles[Index].Collision % TileSheetCols;
                         u32 YFrame = ActualLayer->Tiles[Index].Collision / TileSheetCols; 
-                        RenderFrame(GameState->Renderer, GameState->Mesh, GameState->FrameShader, TileSheet->Texture,
+                        RenderFrame(GameState->Renderer, GameState->Mesh, GameState->FrameShader, ActualTexture,
                                     GameState->FrameConstBuffer, TileSheet->TileWidth, TileSheet->TileHeight, XFrame, YFrame);
                     }
                                 
@@ -367,7 +390,7 @@ void UpdateAndRenderEditor(game_state *GameState, input *Input, r32 DeltaTime)
     UIState.Position = {0.0f, 288.0f + 5.0f};
     UIState.Size = {32.0f, 32.0f};
     UIState.Offset = {5.0f, 5.0f}; 
-    i32 OutValue = UpdateAndRenderEditorUIHorizontal(GameState, Input, &UIState, Editor->UITexture1, 4, PERSISTANT_BUTTON);
+    i32 OutValue = UpdateAndRenderEditorUIHorizontal(GameState, Input, &UIState, Editor->UITexture4, 4, PERSISTANT_BUTTON);
     if(OutValue == SCROLL_UP)
     {
         TileSheet->Position.Y -= 0.5f * DeltaTime;

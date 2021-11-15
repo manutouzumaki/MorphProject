@@ -61,6 +61,7 @@ struct editor
     texture *UITexture1;
     texture *UITexture2;
     texture *UITexture3;
+    texture *UITexture4;
 
     z_selected ZSelected;
     i32 LayerSelected;
