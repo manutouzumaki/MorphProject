@@ -40,12 +40,15 @@ struct shader;
 struct const_buffer;
 struct mesh;
 struct texture;
+struct texture_list;
+struct batch;
 struct game_state;
+struct input_layout_desc;
 
 // GAME and GENERAL Use
 #define PLAFORM_CREATE_WINDOW(name) window *name(u32 X, u32 Y, u32 Width, u32 Height, char *Name, arena *Arena)
 #define PLAFORM_CREATE_RENDERER(name) renderer *name(window *Window, arena *Arena)
-#define COMPILE_SHADERS_FROM_FILE(name) shader *name(renderer *Renderer, char *VSFileName, char *PSFileName, arena *Arena)
+#define COMPILE_SHADERS_FROM_FILE(name) shader *name(renderer *Renderer, input_layout_desc *InputLayoutDesc, u32 ILCount, char *VSFileName, char *PSFileName, arena *Arena)
 #define CREATE_MESH(name) mesh *name(renderer *Renderer, r32 *Vertices, u32 VerticesCount, arena *Arena)
 #define CREATE_TEXTURE(name) texture *name(renderer *Renderer, char *FileName, arena *Arena)
 #define CREATE_TEXTURE_ON_LIST(name) texture *name(game_state *GameState, char *FileName, arena *Arena)
@@ -55,6 +58,12 @@ struct game_state;
 #define RENDER_MESH_NO_TEX(name) void name(renderer *Renderer, mesh *Mesh, shader *Shader)
 #define RENDER_FRAME(name) void name(renderer *Renderer, mesh *Mesh, shader *Shader, texture *Texture, const_buffer *ConstBuffer, u32 TileWidth, u32 TileHeight, u32 FrameX, u32 FrameY)
 #define GET_TEXTURE_INFO(name) texture_info name(texture *Texture)
+#define ADD_TEXTURE_TO_LIST(name) void name(renderer *Renderer, char *FileName, texture_list *TextureList, arena *TexListArena, arena *Arena)
+
+#define CREATE_BATCH(name) batch *name(renderer *Renderer, arena *Arena, u32 BatchSize, arena *StoreArena)
+#define BEGIN_BATCH(name) void name(batch *Batch)
+#define END_BATCH(name) void name(renderer *Renderer, batch *Batch, shader *Shader, texture_list *TextureList)
+#define PUSH_QUAD(name) void name(game_state *GameState, batch *Batch, shader *Shader, mat4 Wolrd, u32 TextureIndex, v2 TileSize, v2 Frame)
 
 PLAFORM_CREATE_WINDOW(PlatformCreateWindow);
 PLAFORM_CREATE_RENDERER(PlatformCreateRenderer);
@@ -67,6 +76,11 @@ RENDER_MESH(RenderMesh);
 RENDER_MESH_NO_TEX(RenderMesh);
 RENDER_FRAME(RenderFrame);
 GET_TEXTURE_INFO(GetTextureInfo);
-CREATE_TEXTURE_ON_LIST(LoadTextureToList);
+CREATE_TEXTURE_ON_LIST(CreateTextureOnList);
+ADD_TEXTURE_TO_LIST(AddTextureToList);
+CREATE_BATCH(CreateBatch);
+BEGIN_BATCH(BeginBatch);
+END_BATCH(EndBatch);
+PUSH_QUAD(PushQuad);
 
 #endif

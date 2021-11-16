@@ -16,6 +16,11 @@ struct v3
     r32 X, Y, Z;    
 };
 
+struct v4
+{
+    r32 X, Y, Z, W;
+};
+
 struct mat4
 {
     r32 m[4][4];
@@ -55,6 +60,22 @@ v2 operator-(v2 A, v2 B)
     v2 Result = {};
     Result.X = A.X - B.X;
     Result.Y = A.Y - B.Y;
+    return Result;
+}
+
+v2 operator*(v2 A, v2 B)
+{
+    v2 Result = {};
+    Result.X = A.X * B.X;
+    Result.Y = A.Y * B.Y;
+    return Result;
+}
+
+v2 operator/(v2 A, v2 B)
+{
+    v2 Result = {};
+    Result.X = A.X / B.X;
+    Result.Y = A.Y / B.Y;
     return Result;
 }
 
@@ -124,6 +145,16 @@ v3 operator*(v3 A, r32 S)
     Result.X = A.X * S;
     Result.Y = A.Y * S;
     Result.Z = A.Z * S;
+    return Result;
+}
+
+v4 operator*(mat4& M, v4& V)
+{
+    v4 Result = {};
+    Result.X = M.m[0][0] * V.X + M.m[0][1] * V.Y + M.m[0][2] * V.Z + M.m[0][3] * V.W;
+    Result.Y = M.m[1][0] * V.X + M.m[1][1] * V.Y + M.m[1][2] * V.Z + M.m[1][3] * V.W;
+    Result.Z = M.m[2][0] * V.X + M.m[2][1] * V.Y + M.m[2][2] * V.Z + M.m[2][3] * V.W;
+    Result.W = M.m[3][0] * V.X + M.m[3][1] * V.Y + M.m[3][2] * V.Z + M.m[3][3] * V.W;
     return Result;
 }
 

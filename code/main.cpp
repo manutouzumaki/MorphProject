@@ -21,7 +21,7 @@ void SetProjMat4(game_state *GameState, mat4 Proj)
 
 void RenderString(game_state *GameState, char *String, i32 XPos, i32 YPos)
 {
-    int Counter = 0;
+    i32 Counter = 0;
     while(*String)
     {
         i32 Letter = (i32)*String++;
@@ -88,35 +88,71 @@ void GameSetUp(memory *Memory)
     Memory->Used = sizeof(game_state);
 
     InitArena(Memory, &GameState->EngineArena, Megabytes(10));
+    InitArena(Memory, &GameState->BatchArena, Megabytes(10));
     InitArena(Memory, &GameState->TileMapArena, Megabytes(1));
     InitArena(Memory, &GameState->MapEditorArena, Megabytes(1));
     InitArena(Memory, &GameState->MapEditorSaves, Megabytes(2));
     InitArena(Memory, &GameState->IntToCharTempArena, sizeof(u32) * 10);
     InitArena(Memory, &GameState->TextureArena, Kilobytes(1));
+    InitArena(Memory, &GameState->TexListArena, Kilobytes(1));
 
     GameState->Window = PlatformCreateWindow(0, 0, WND_WIDTH, WND_HEIGHT, "MorphProject", &GameState->EngineArena);
     GameState->Renderer = PlatformCreateRenderer(GameState->Window, &GameState->EngineArena);
 
+    input_layout_desc InputLayoutDesc[] = 
+    {
+        {"POSITION", 0, FORMAT_R32G32B32_FLOAT,
+         0, 0, INPUT_PER_VERTEX_DATA, 0},
+        {"TEXCOORD", 0, FORMAT_R32G32_FLOAT,
+         0, 12, INPUT_PER_VERTEX_DATA, 0}
+    };
+    u32 InputLayoutElementCount = ArrayCount(InputLayoutDesc);
+    input_layout_desc BatchInputLayoutDesc[] = 
+    {
+        {"POSITION", 0, FORMAT_R32G32B32_FLOAT,
+         0, 0, INPUT_PER_VERTEX_DATA, 0},
+        {"TEXCOORD", 0, FORMAT_R32G32_FLOAT,
+         0, 12, INPUT_PER_VERTEX_DATA, 0},
+        {"BLENDWEIGHT", 0, FORMAT_R32_FLOAT,
+         0, 20, INPUT_PER_VERTEX_DATA, 0}
+    };
+    u32 BatchElementCount = ArrayCount(BatchInputLayoutDesc);
     GameState->MainShader = CompileShadersFromFile(GameState->Renderer,
+                                                   InputLayoutDesc,
+                                                   InputLayoutElementCount, 
                                                    "../code/shaders/main_vert.hlsl",  
                                                    "../code/shaders/main_frag.hlsl",
                                                    &GameState->EngineArena);
     GameState->FrameShader = CompileShadersFromFile(GameState->Renderer,
+                                                    InputLayoutDesc,
+                                                    InputLayoutElementCount,
                                                     "../code/shaders/frame_vert.hlsl",  
                                                     "../code/shaders/frame_frag.hlsl",
                                                     &GameState->EngineArena);
     GameState->UIShader = CompileShadersFromFile(GameState->Renderer,
+                                                 InputLayoutDesc,
+                                                 InputLayoutElementCount,
                                                  "../code/shaders/ui_vert.hlsl",  
                                                  "../code/shaders/ui_frag.hlsl",
                                                  &GameState->EngineArena);
     GameState->UIFrameShader = CompileShadersFromFile(GameState->Renderer,
+                                                      InputLayoutDesc,
+                                                      InputLayoutElementCount,
                                                       "../code/shaders/ui_frame_vert.hlsl",  
                                                       "../code/shaders/ui_frame_frag.hlsl",
                                                       &GameState->EngineArena);
     GameState->MemBarShader = CompileShadersFromFile(GameState->Renderer,
+                                                     InputLayoutDesc,
+                                                     InputLayoutElementCount,
                                                      "../code/shaders/memory_vert.hlsl",  
                                                      "../code/shaders/memory_frag.hlsl",
                                                      &GameState->EngineArena);
+    GameState->BatchShader = CompileShadersFromFile(GameState->Renderer,
+                                                    BatchInputLayoutDesc,
+                                                    BatchElementCount,
+                                                    "../code/shaders/batch_vert.hlsl",  
+                                                    "../code/shaders/batch_frag.hlsl",
+                                                    &GameState->EngineArena);
 
     GameState->ConstBuffer = CreateConstBuffer(GameState->Renderer, sizeof(vs_constant_buffer), &GameState->EngineArena);
     GameState->FrameConstBuffer = CreateConstBuffer(GameState->Renderer, sizeof(frame_const_buffer), &GameState->EngineArena);
@@ -150,6 +186,15 @@ void GameSetUp(memory *Memory)
     ++GameState->TilesheetTexturesCount; 
     GameState->HeroTexture = CreateTexture(GameState->Renderer, "../data/walk_cycle.bmp", &GameState->EngineArena);
     GameState->FontTexture = CreateTexture(GameState->Renderer, "../data/font.bmp", &GameState->EngineArena);
+    
+    AddTextureToList(GameState->Renderer, "../data/town_tileset.bmp",
+                     &GameState->TexList, &GameState->TexListArena, &GameState->EngineArena);
+    AddTextureToList(GameState->Renderer, "../data/tileset_arena.bmp",
+                     &GameState->TexList, &GameState->TexListArena, &GameState->EngineArena);
+    AddTextureToList(GameState->Renderer, "../data/Map.bmp",
+                     &GameState->TexList, &GameState->TexListArena, &GameState->EngineArena);
+
+    GameState->TilemapBatch = CreateBatch(GameState->Renderer, &GameState->BatchArena, 64*64, &GameState->EngineArena);
 
     // TODO(manuto): Try to load Maps
     GameState->Tilemap = LoadMap(GameState, "../data/map.save");
@@ -209,6 +254,8 @@ void GameUpdateAndRender(memory *Memory, input *Input, r32 DeltaTime)
                 layer *FirstLayer = Tilemap->Layers;
                 FirstLayer -= (Tilemap->LayersCount - 1);
                 layer *ActualLayer = FirstLayer + Index;
+                // Batch Rendering
+                BeginBatch(GameState->TilemapBatch);
                 for(i32 Y = 0;
                     Y < Tilemap->Rows;
                     ++Y)
@@ -220,34 +267,43 @@ void GameUpdateAndRender(memory *Memory, input *Input, r32 DeltaTime)
                         i32 Index = Y * Tilemap->Cols + X; 
                         mat4 Scale = ScaleMat4({(r32)Tilemap->TileWidth, (r32)Tilemap->TileHeight, 0.0f});
                         mat4 Trans = TranslationMat4({(r32)Tilemap->TileWidth * X, (r32)Tilemap->TileHeight * Y, 0.0f});
-                        SetWorldMat4(GameState, Trans * Scale);
-
                         if(ActualLayer->Tiles[Index].Base != 0)
                         {
                             texture *FirstTexture = GameState->TilesheetTextures;
                             FirstTexture -= (GameState->TilesheetTexturesCount - 1);
                             texture *ActualTexture = FirstTexture + ActualLayer->Tiles[Index].BaseTexIndex;
                             u32 TileSheetCols = ActualTexture->Width / Tilemap->TileWidth;
-
                             u32 XFrame = ActualLayer->Tiles[Index].Base % TileSheetCols;
-                            u32 YFrame = ActualLayer->Tiles[Index].Base / TileSheetCols; 
-                            RenderFrame(GameState->Renderer, GameState->Mesh, GameState->FrameShader, ActualTexture,
-                                        GameState->FrameConstBuffer, 16, 16, XFrame, YFrame);
-                        }
+                            u32 YFrame = ActualLayer->Tiles[Index].Base / TileSheetCols;
+                            
+                            v2 TileSize = {16.0f, 16.0f};
+                            v2 Frame = {(r32)XFrame, (r32)YFrame};
+                            u32 TexIndex = ActualLayer->Tiles[Index].BaseTexIndex;
+                            mat4 World = Trans * Scale;
+                            PushQuad(GameState, GameState->TilemapBatch, GameState->BatchShader,
+                                     World, TexIndex, TileSize, Frame);
+
+                        } 
                         if(ActualLayer->Tiles[Index].Decoration != 0)
                         {
                             texture *FirstTexture = GameState->TilesheetTextures;
                             FirstTexture -= (GameState->TilesheetTexturesCount - 1);
                             texture *ActualTexture = FirstTexture + ActualLayer->Tiles[Index].DecorationTexIndex;
                             u32 TileSheetCols = ActualTexture->Width / Tilemap->TileWidth;
-
                             u32 XFrame = ActualLayer->Tiles[Index].Decoration % TileSheetCols;
-                            u32 YFrame = ActualLayer->Tiles[Index].Decoration / TileSheetCols; 
-                            RenderFrame(GameState->Renderer, GameState->Mesh, GameState->FrameShader, ActualTexture,
-                                        GameState->FrameConstBuffer, 16, 16, XFrame, YFrame);
-                        }                                    
+                            u32 YFrame = ActualLayer->Tiles[Index].Decoration / TileSheetCols;
+                            
+                            v2 TileSize = {16.0f, 16.0f};
+                            v2 Frame = {(r32)XFrame, (r32)YFrame};
+                            u32 TexIndex = ActualLayer->Tiles[Index].DecorationTexIndex;
+                            mat4 World = Trans * Scale;
+                            PushQuad(GameState, GameState->TilemapBatch, GameState->BatchShader,
+                                     World, TexIndex, TileSize, Frame);
+
+                        }  
                     }
                 }
+                EndBatch(GameState->Renderer, GameState->TilemapBatch, GameState->BatchShader, &GameState->TexList);
                 if(Index == 0)
                 {
                     mat4 Scale = ScaleMat4({16, 24, 0.0f});

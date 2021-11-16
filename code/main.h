@@ -49,6 +49,9 @@ struct game_state
     arena MapEditorArena;
     arena MapEditorSaves;
     arena IntToCharTempArena;
+    // for batch rendering
+    arena TexListArena;
+    arena BatchArena;
 
     const_buffer *ConstBuffer;
     const_buffer *FrameConstBuffer;
@@ -61,6 +64,7 @@ struct game_state
     shader *UIShader;
     shader *UIFrameShader;
     shader *MemBarShader;
+    shader *BatchShader;
 
     mesh *Mesh;
     texture *MapTexture;
@@ -69,12 +73,14 @@ struct game_state
     u32 TilesheetTexturesCount;
     texture *HeroTexture;
     texture *FontTexture;
+    batch *TilemapBatch;
 
     v3 CamPosition;
     v3 CamTarget;
 
     entity HeroEntity;
     tilemap Tilemap;
+    texture_list TexList;
 
     editor Editor;
 };

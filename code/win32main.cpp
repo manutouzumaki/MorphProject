@@ -1,5 +1,6 @@
 #include <Windows.h>
 #include <Windowsx.h>
+
 #include "platform.h"
 
 struct window
@@ -7,9 +8,11 @@ struct window
     HWND Window;
 };
 
-#include "main.h"
 #include "directx.h"
+#include "main.h"
+
 #include "main.cpp"
+#include "directx.cpp"
 
 static bool GlobalRunning;
 static HINSTANCE GlobalInstace;
@@ -253,7 +256,7 @@ i32 WINAPI WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, LPSTR CmdLine, i3
         r32 ClearColor[4] = {0.0f, 0.2f, 0.5f, 1.0f};
         Renderer->RenderContext->ClearRenderTargetView(Renderer->BackBuffer, ClearColor);
         GameUpdateAndRender(&Memory, &Input, DeltaTime);
-        Renderer->SwapChain->Present(1, 0);
+        Renderer->SwapChain->Present(0, 0);
         OldButtons = ActualButtons;
         OldMouseButtons = ActualMouseButtons;
     }
