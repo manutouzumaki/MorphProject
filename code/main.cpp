@@ -19,6 +19,23 @@ void SetProjMat4(game_state *GameState, mat4 Proj)
                    &GameState->ConstBufferData, sizeof(vs_constant_buffer), 0); 
 }
 
+void InsertionSort(entity *Entities, i32 Length)
+{
+    for(i32 J = 1;
+        J < Length;
+        ++J)
+    {
+        entity Key = Entities[J];
+        i32 I = J - 1;
+        while(I > -1 && Entities[I].Position.Y < Key.Position.Y)
+        {
+            Entities[I + 1] = Entities[I];
+            --I;
+        }
+        Entities[I + 1] = Key;
+    }
+}
+
 void RenderString(game_state *GameState, char *String, i32 XPos, i32 YPos)
 {
     i32 Counter = 0;
@@ -90,6 +107,13 @@ void RenderMemoryData(game_state *GameState, arena *Arena, char *Text, int *XPos
     MapConstBuffer(GameState->Renderer, GameState->MemoryConstBuffer, &MemConstBufferData, sizeof(memory_const_buffer), 1); 
     RenderMesh(GameState->Renderer, GameState->Mesh, GameState->MemBarShader);
     *YPos -= 9;
+}
+
+
+void InitCombat(game_state *GameState, entity *Player, entity *Enemy)
+{
+    GameState->Player = Player;
+    GameState->Enemy = Enemy;
 }
 
 #include "tilemap.cpp"
@@ -198,6 +222,7 @@ void GameSetUp(memory *Memory)
     ++GameState->TilesheetTexturesCount;
     GameState->TilesheetTextures = CreateTextureOnList(GameState, "../data/Map.bmp", &GameState->TextureArena);
     ++GameState->TilesheetTexturesCount; 
+
     GameState->HeroTexture = CreateTexture(GameState->Renderer, "../data/walk_cycle.bmp", &GameState->EngineArena);
     GameState->FontTexture = CreateTexture(GameState->Renderer, "../data/font.bmp", &GameState->EngineArena);
     
@@ -210,16 +235,36 @@ void GameSetUp(memory *Memory)
 
     GameState->TilemapBatch = CreateBatch(GameState->Renderer, &GameState->BatchArena, 64*64, &GameState->EngineArena);
 
-    // TODO(manuto): Try to load Maps
     GameState->Tilemap = LoadMap(GameState, "../data/map.save");
 
-    SetEntityPosition(&GameState->HeroEntity, 8, 11);
-    GameState->HeroEntity.Facing = BIT(DOWN);
+    // The first element on the array always has to be the hero
+    SetEntityPosition(&GameState->Entities[0], &GameState->Tilemap, 8, 11);
+    GameState->Entities[0].Name = "Manuto";
+    GameState->Entities[0].ID = 1;
+    GameState->Entities[0].Facing = BIT(DOWN);
+    GameState->Entities[0].Layer = 0;
+    GameState->Entities[0].Skin = 1;
 
-    // TODO(manuto): Initialize Editor...
-    InitEditor(&GameState->Editor, GameState->MapTexture, 16, 16, &GameState->MapEditorArena, GameState);
+    SetEntityPosition(&GameState->Entities[1], &GameState->Tilemap, 15, 11);
+    GameState->Entities[1].Name = "Thomex";
+    GameState->Entities[1].ID = 2;
+    GameState->Entities[1].Facing = BIT(DOWN);
+    GameState->Entities[1].Layer = 0;
+    GameState->Entities[1].Skin = 2;
+    GameState->Entities[1].TimeToWait = 1.0f;
+
+    SetEntityPosition(&GameState->Entities[2], &GameState->Tilemap, 15, 6);
+    GameState->Entities[2].Name = "Big Daddy";
+    GameState->Entities[2].ID = 3;
+    GameState->Entities[2].Facing = BIT(DOWN);
+    GameState->Entities[2].Layer = 0;
+    GameState->Entities[2].Skin = 3;
+    GameState->Entities[2].TimeToWait = 3.0f;
+
+    InitEditor(&GameState->Editor, 16, 16, &GameState->MapEditorArena, GameState);
 
     GameState->AppState = GAME_STATE;
+    GameState->GamePlayState = WORLD;
 }
 
 void GameUpdateAndRender(memory *Memory, input *Input, r32 DeltaTime)
@@ -244,41 +289,77 @@ void GameUpdateAndRender(memory *Memory, input *Input, r32 DeltaTime)
     if(GameState->AppState == GAME_STATE)
     {
         // Update...
-        GetHeroInput(Input ,&GameState->HeroEntity, &GameState->Tilemap);
-        MoveEntity(&GameState->HeroEntity, DeltaTime);
-
-        GameState->CamPosition.X = GameState->HeroEntity.Position.X;
-        GameState->CamPosition.Y = GameState->HeroEntity.Position.Y;
-        GameState->CamTarget.X = GameState->CamPosition.X;
-        GameState->CamTarget.Y = GameState->CamPosition.Y;
-        SetViewMat4(GameState, ViewMat4(GameState->CamPosition, GameState->CamTarget, {0.0f, 1.0f, 0.0f}));
-        SetProjMat4(GameState, OrthogonalProjMat4(WND_WIDTH*0.5f, WND_HEIGHT*0.5f, 1.0f, 100.0f));
-
-        // Render...
-        tilemap *Tilemap = &GameState->Tilemap;        
-        if(Tilemap->LayersCount > 0)
+        if(GameState->GamePlayState == WORLD)
         {
+            GetHeroInput(Input ,&GameState->Entities[0], &GameState->Tilemap);
             for(i32 Index = 0;
-                Index < Tilemap->LayersCount;
+                Index < ArrayCount(GameState->Entities);
                 ++Index)
             {
-                layer *FirstLayer = Tilemap->Layers;
-                FirstLayer -= (Tilemap->LayersCount - 1);
-                layer *ActualLayer = FirstLayer + Index;
-
-                RenderLayer(GameState, Tilemap, ActualLayer, false);
-
-                if(Index == 0)
+                if(Index != 0)
                 {
-                    mat4 Scale = ScaleMat4({16, 24, 0.0f});
-                    mat4 Trans = TranslationMat4({GameState->HeroEntity.Position.X, GameState->HeroEntity.Position.Y, 0.0f});
-                    SetWorldMat4(GameState, Trans * Scale);
-                    RenderFrame(GameState->Renderer, GameState->Mesh, GameState->FrameShader, GameState->HeroTexture,
-                                GameState->FrameConstBuffer, 16, 24, GameState->HeroEntity.Frame, 0);
+                    SetEntityInRandomDirection(&GameState->Entities[Index], &GameState->Tilemap);
+                }
+                MoveEntity(&GameState->Entities[Index], &GameState->Tilemap, DeltaTime);
+            } 
+            GameState->CamPosition.X = GameState->Entities[0].Position.X;
+            GameState->CamPosition.Y = GameState->Entities[0].Position.Y;
+            GameState->CamTarget.X = GameState->CamPosition.X;
+            GameState->CamTarget.Y = GameState->CamPosition.Y;
+            SetViewMat4(GameState, ViewMat4(GameState->CamPosition, GameState->CamTarget, {0.0f, 1.0f, 0.0f}));
+            SetProjMat4(GameState, OrthogonalProjMat4(WND_WIDTH*0.5f, WND_HEIGHT*0.5f, 1.0f, 100.0f));
 
+            i32 EntityID = GameState->Entities[0].Action;
+            if(EntityID > 0)
+            {
+                // TODO(manuto): make some COMBAT
+                GameState->GamePlayState = COMBAT;
+                InitCombat(GameState, &GameState->Entities[0], &GameState->Entities[EntityID]);
+            }
+
+            // Render...
+            tilemap *Tilemap = &GameState->Tilemap;        
+            if(Tilemap->LayersCount > 0)
+            {
+                for(i32 Index = 0;
+                    Index < Tilemap->LayersCount;
+                    ++Index)
+                {
+                    layer *FirstLayer = Tilemap->Layers;
+                    FirstLayer -= (Tilemap->LayersCount - 1);
+                    layer *ActualLayer = FirstLayer + Index;
+
+                    RenderLayer(GameState, Tilemap, ActualLayer, false);
+                    entity Entities[3];
+                    memcpy(Entities, GameState->Entities, 3*sizeof(entity));
+                    InsertionSort(Entities, 3); 
+                    for(i32 I = 0;
+                        I < ArrayCount(Entities);
+                        ++I)
+                    {
+                        if(Index == Entities[I].Layer)
+                        {
+                            mat4 Scale = ScaleMat4({16, 24, 0.0f});
+                            mat4 Trans = TranslationMat4({Entities[I].Position.X, Entities[I].Position.Y, 0.0f});
+                            SetWorldMat4(GameState, Trans * Scale);
+                            RenderFrame(GameState->Renderer, GameState->Mesh, GameState->FrameShader, GameState->HeroTexture,
+                                        GameState->FrameConstBuffer, 16, 24, Entities[I].Frame, Entities[I].Skin); 
+                        }
+                    }
                 }
             }
         }
+    }
+    
+    if(GameState->GamePlayState == COMBAT)
+    {
+        // TODO(manuto): ...
+        entity *Player = GameState->Player;
+        entity *Enemy = GameState->Enemy;
+
+        SetProjMat4(GameState, OrthogonalProjMat4(WND_WIDTH, WND_HEIGHT, 1.0f, 100.0f));
+        RenderString(GameState, Player->Name, 0.0f, 0.0f);
+        RenderString(GameState, Enemy->Name, 0.0f, 9.0f);
     }
     
     if(GameState->AppState == EDITOR_STATE)

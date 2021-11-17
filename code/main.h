@@ -36,12 +36,19 @@ enum app_state
     EDITOR_STATE
 };
 
+enum gameplay_state
+{
+    WORLD,
+    COMBAT,
+};
+
 struct game_state
 {
     window *Window;
     renderer *Renderer;
 
-    app_state AppState; 
+    app_state AppState;
+    gameplay_state GamePlayState; 
 
     arena EngineArena;
     arena TextureArena;
@@ -49,7 +56,6 @@ struct game_state
     arena MapEditorArena;
     arena MapEditorSaves;
     arena IntToCharTempArena;
-    // for batch rendering
     arena TexListArena;
     arena BatchArena;
 
@@ -66,23 +72,26 @@ struct game_state
     shader *MemBarShader;
     shader *BatchShader;
 
-    mesh *Mesh;
-    texture *MapTexture;
-    texture *MapTexture2;
-    texture *TilesheetTextures;
-    u32 TilesheetTexturesCount;
     texture *HeroTexture;
     texture *FontTexture;
+    texture *TilesheetTextures;
+    u32 TilesheetTexturesCount;
+    texture_list TexList;
+
+    mesh *Mesh;
     batch *TilemapBatch;
 
     v3 CamPosition;
     v3 CamOffset;
     v3 CamTarget;
 
-    entity HeroEntity;
-    tilemap Tilemap;
-    texture_list TexList;
+    tilemap Tilemap; 
+    entity Entities[3];
 
+    // for combat only
+    entity *Player;
+    entity *Enemy;
+    
     editor Editor;
 };
 

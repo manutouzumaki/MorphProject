@@ -115,3 +115,46 @@ bool IsCollision(v2 Position, u32 Layer, tilemap *Tilemap)
     }
     return true;
 }
+
+i32 GetTilemapValue(tilemap *Tilemap, v2 Position, u32 Layer)
+{
+    i32 TileX = Position.X / 16;
+    i32 TileY = Position.Y / 16;
+    if(TileX >= 0 && TileX < Tilemap->Cols && TileY >= 0 && TileY < Tilemap->Cols)
+    {
+        layer *FirstLayer = Tilemap->Layers;
+        FirstLayer -= (Tilemap->LayersCount - 1);
+        layer *ActualLayer = FirstLayer + Layer;
+
+        return ActualLayer->Tiles[TileY * Tilemap->Cols + TileX].Collision;
+    }
+    return -1;
+
+}
+
+void SetCollition(tilemap *Tilemap, v2 Position, u32 Layer, u32 EntityID)
+{
+    i32 TileX = Position.X / 16;
+    i32 TileY = Position.Y / 16;
+    if(TileX >= 0 && TileX < Tilemap->Cols && TileY >= 0 && TileY < Tilemap->Cols)
+    {
+        layer *FirstLayer = Tilemap->Layers;
+        FirstLayer -= (Tilemap->LayersCount - 1);
+        layer *ActualLayer = FirstLayer + Layer;
+        ActualLayer->Tiles[TileY * Tilemap->Cols + TileX].Collision = EntityID;
+    }
+}
+
+void UnsetCollision(tilemap *Tilemap, v2 Position, u32 Layer)
+{
+    i32 TileX = Position.X / 16;
+    i32 TileY = Position.Y / 16;
+    if(TileX >= 0 && TileX < Tilemap->Cols && TileY >= 0 && TileY < Tilemap->Cols)
+    {
+        layer *FirstLayer = Tilemap->Layers;
+        FirstLayer -= (Tilemap->LayersCount - 1);
+        layer *ActualLayer = FirstLayer + Layer;
+        ActualLayer->Tiles[TileY * Tilemap->Cols + TileX].Collision = 0;
+    }
+
+}

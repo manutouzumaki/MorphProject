@@ -7,15 +7,40 @@
 #define LEFT 2
 #define RIGHT 3
 
+#define MAX_NUM_OF_ENTITIES 20;
+
+struct entity_stats
+{
+    u32 HP_Now; // Healt Points
+    u32 HP_Max;
+    u32 MP_Now; // Magic Points
+    u32 MP_Max;
+    u32 Strength;
+    u32 Speed;
+    u32 Intelligence; 
+};
+
 struct entity
 {
+    // game play stuff
     u32 ID;
+    char *Name;
+    entity_stats Stats;
+    i32 Action;
+
+    // renderer stuff
+    u32 Skin;
     u32 Frame;
     u32 Facing;
-    bool IsWalking;
+    u32 Layer;
     v2 Position;
     v2 OldPosiotion;
     v2 NextPosition;
+    r32 WalkDistance;
+    r32 AnimTimer;
+    r32 TimeToWait;
+    r32 WaitTime;
+    bool IsWalking;
 };
 
 #endif

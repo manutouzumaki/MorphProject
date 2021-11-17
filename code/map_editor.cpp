@@ -1,4 +1,4 @@
-void InitEditor(editor *Editor, texture *Texture, u32 TileWidth, u32 TileHeight, arena *Arena, game_state *GameState)
+void InitEditor(editor *Editor, u32 TileWidth, u32 TileHeight, arena *Arena, game_state *GameState)
 {
     // Get the first texture on the list
     texture *FirstTexture = GameState->TilesheetTextures;
