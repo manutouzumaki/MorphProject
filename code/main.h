@@ -76,6 +76,7 @@ struct game_state
     batch *TilemapBatch;
 
     v3 CamPosition;
+    v3 CamOffset;
     v3 CamTarget;
 
     entity HeroEntity;

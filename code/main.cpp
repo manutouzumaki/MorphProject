@@ -78,6 +78,20 @@ void RenderUInt(game_state *GameState, u32 Number, i32 XPos, i32 YPos)
     GameState->IntToCharTempArena.Used = 0;
 }
 
+void RenderMemoryData(game_state *GameState, arena *Arena, char *Text, int *XPos, int *YPos)
+{
+    memory_const_buffer MemConstBufferData = {};
+    RenderString(GameState, Text, *XPos, *YPos);
+    *YPos -= 9;
+    mat4 Trans = TranslationMat4({(r32)*XPos, (r32)*YPos, 0.0f});;
+    mat4 Scale = ScaleMat4({200.0f, 9.0f, 0.0f});
+    SetWorldMat4(GameState, Trans * Scale);   
+    MemConstBufferData.MemoryData = (r32)((r64)Arena->Used/(r64)Arena->Size);
+    MapConstBuffer(GameState->Renderer, GameState->MemoryConstBuffer, &MemConstBufferData, sizeof(memory_const_buffer), 1); 
+    RenderMesh(GameState->Renderer, GameState->Mesh, GameState->MemBarShader);
+    *YPos -= 9;
+}
+
 #include "tilemap.cpp"
 #include "map_editor.cpp"
 #include "hero.cpp"
@@ -88,7 +102,7 @@ void GameSetUp(memory *Memory)
     Memory->Used = sizeof(game_state);
 
     InitArena(Memory, &GameState->EngineArena, Megabytes(10));
-    InitArena(Memory, &GameState->BatchArena, Megabytes(10));
+    InitArena(Memory, &GameState->BatchArena, (64*64)*(24*6));  // (64*64) * (24*6)
     InitArena(Memory, &GameState->TileMapArena, Megabytes(1));
     InitArena(Memory, &GameState->MapEditorArena, Megabytes(1));
     InitArena(Memory, &GameState->MapEditorSaves, Megabytes(2));
@@ -202,7 +216,6 @@ void GameSetUp(memory *Memory)
     SetEntityPosition(&GameState->HeroEntity, 8, 11);
     GameState->HeroEntity.Facing = BIT(DOWN);
 
-
     // TODO(manuto): Initialize Editor...
     InitEditor(&GameState->Editor, GameState->MapTexture, 16, 16, &GameState->MapEditorArena, GameState);
 
@@ -230,6 +243,7 @@ void GameUpdateAndRender(memory *Memory, input *Input, r32 DeltaTime)
     
     if(GameState->AppState == GAME_STATE)
     {
+        // Update...
         GetHeroInput(Input ,&GameState->HeroEntity, &GameState->Tilemap);
         MoveEntity(&GameState->HeroEntity, DeltaTime);
 
@@ -240,10 +254,7 @@ void GameUpdateAndRender(memory *Memory, input *Input, r32 DeltaTime)
         SetViewMat4(GameState, ViewMat4(GameState->CamPosition, GameState->CamTarget, {0.0f, 1.0f, 0.0f}));
         SetProjMat4(GameState, OrthogonalProjMat4(WND_WIDTH*0.5f, WND_HEIGHT*0.5f, 1.0f, 100.0f));
 
-        // TODO(manuto): Render...
-        // TODO: Render Tilemaip...
-
-        // TODO: Get the texture from the file data
+        // Render...
         tilemap *Tilemap = &GameState->Tilemap;        
         if(Tilemap->LayersCount > 0)
         {
@@ -254,56 +265,9 @@ void GameUpdateAndRender(memory *Memory, input *Input, r32 DeltaTime)
                 layer *FirstLayer = Tilemap->Layers;
                 FirstLayer -= (Tilemap->LayersCount - 1);
                 layer *ActualLayer = FirstLayer + Index;
-                // Batch Rendering
-                BeginBatch(GameState->TilemapBatch);
-                for(i32 Y = 0;
-                    Y < Tilemap->Rows;
-                    ++Y)
-                {
-                    for(i32 X = 0;
-                        X < Tilemap->Cols;
-                        ++X)
-                    {
-                        i32 Index = Y * Tilemap->Cols + X; 
-                        mat4 Scale = ScaleMat4({(r32)Tilemap->TileWidth, (r32)Tilemap->TileHeight, 0.0f});
-                        mat4 Trans = TranslationMat4({(r32)Tilemap->TileWidth * X, (r32)Tilemap->TileHeight * Y, 0.0f});
-                        if(ActualLayer->Tiles[Index].Base != 0)
-                        {
-                            texture *FirstTexture = GameState->TilesheetTextures;
-                            FirstTexture -= (GameState->TilesheetTexturesCount - 1);
-                            texture *ActualTexture = FirstTexture + ActualLayer->Tiles[Index].BaseTexIndex;
-                            u32 TileSheetCols = ActualTexture->Width / Tilemap->TileWidth;
-                            u32 XFrame = ActualLayer->Tiles[Index].Base % TileSheetCols;
-                            u32 YFrame = ActualLayer->Tiles[Index].Base / TileSheetCols;
-                            
-                            v2 TileSize = {16.0f, 16.0f};
-                            v2 Frame = {(r32)XFrame, (r32)YFrame};
-                            u32 TexIndex = ActualLayer->Tiles[Index].BaseTexIndex;
-                            mat4 World = Trans * Scale;
-                            PushQuad(GameState, GameState->TilemapBatch, GameState->BatchShader,
-                                     World, TexIndex, TileSize, Frame);
 
-                        } 
-                        if(ActualLayer->Tiles[Index].Decoration != 0)
-                        {
-                            texture *FirstTexture = GameState->TilesheetTextures;
-                            FirstTexture -= (GameState->TilesheetTexturesCount - 1);
-                            texture *ActualTexture = FirstTexture + ActualLayer->Tiles[Index].DecorationTexIndex;
-                            u32 TileSheetCols = ActualTexture->Width / Tilemap->TileWidth;
-                            u32 XFrame = ActualLayer->Tiles[Index].Decoration % TileSheetCols;
-                            u32 YFrame = ActualLayer->Tiles[Index].Decoration / TileSheetCols;
-                            
-                            v2 TileSize = {16.0f, 16.0f};
-                            v2 Frame = {(r32)XFrame, (r32)YFrame};
-                            u32 TexIndex = ActualLayer->Tiles[Index].DecorationTexIndex;
-                            mat4 World = Trans * Scale;
-                            PushQuad(GameState, GameState->TilemapBatch, GameState->BatchShader,
-                                     World, TexIndex, TileSize, Frame);
+                RenderLayer(GameState, Tilemap, ActualLayer, false);
 
-                        }  
-                    }
-                }
-                EndBatch(GameState->Renderer, GameState->TilemapBatch, GameState->BatchShader, &GameState->TexList);
                 if(Index == 0)
                 {
                     mat4 Scale = ScaleMat4({16, 24, 0.0f});
@@ -325,58 +289,16 @@ void GameUpdateAndRender(memory *Memory, input *Input, r32 DeltaTime)
 #if 1
     // Show information about the memory of the system and debug info
     SetProjMat4(GameState, OrthogonalProjMat4(WND_WIDTH, WND_HEIGHT, 1.0f, 100.0f));
-
     RenderString(GameState, "FPS: ", -WND_WIDTH*0.5f, (WND_HEIGHT*0.5f - 9));
     RenderUInt(GameState, (u32)Input->FPS, -WND_WIDTH*0.5f + 5*7, (WND_HEIGHT*0.5f - 9));
-    
     i32 XPos = WND_WIDTH*0.5f - 205;
-    i32 YPos = WND_HEIGHT*0.5f - (9+5);
-    mat4 Trans = {};
-    mat4 Scale = ScaleMat4({200.0f, 9.0f, 0.0f});
-    memory_const_buffer MemConstBufferData = {};
-    // Engine Arena
-    RenderString(GameState, "Engine Arena:", XPos, YPos);
-    YPos -= 9;
-    MemConstBufferData.MemoryData = (r32)((r64)GameState->EngineArena.Used/(r64)GameState->EngineArena.Size);
-    MapConstBuffer(GameState->Renderer, GameState->MemoryConstBuffer, &MemConstBufferData, sizeof(memory_const_buffer), 1); 
-    Trans = TranslationMat4({(r32)XPos, (r32)YPos, 0.0f});
-    SetWorldMat4(GameState, Trans * Scale);
-    RenderMesh(GameState->Renderer, GameState->Mesh, GameState->MemBarShader);
-    YPos -= 9;
-    // Texture Arena
-    RenderString(GameState, "Texture Arena:", XPos, YPos);
-    YPos -= 9;
-    MemConstBufferData.MemoryData = (r32)((r64)GameState->TextureArena.Used/(r64)GameState->TextureArena.Size);
-    MapConstBuffer(GameState->Renderer, GameState->MemoryConstBuffer, &MemConstBufferData, sizeof(memory_const_buffer), 1); 
-    Trans = TranslationMat4({(r32)XPos, (r32)YPos, 0.0f});
-    SetWorldMat4(GameState, Trans * Scale);
-    RenderMesh(GameState->Renderer, GameState->Mesh, GameState->MemBarShader);
-    YPos -= 9;
-    // TileMap Arena
-    RenderString(GameState, "Tilemap Arena:", XPos, YPos);
-    YPos -= 9;
-    MemConstBufferData.MemoryData = (r32)((r64)GameState->TileMapArena.Used/(r64)GameState->TileMapArena.Size);
-    MapConstBuffer(GameState->Renderer, GameState->MemoryConstBuffer, &MemConstBufferData, sizeof(memory_const_buffer), 1); 
-    Trans = TranslationMat4({(r32)XPos, (r32)YPos, 0.0f});
-    SetWorldMat4(GameState, Trans * Scale);
-    RenderMesh(GameState->Renderer, GameState->Mesh, GameState->MemBarShader);
-    YPos -= 9;
-    // MapEditor Arena
-    RenderString(GameState, "Map Editor Arena:", XPos, YPos);
-    YPos -= 9;
-    MemConstBufferData.MemoryData = (r32)((r64)GameState->MapEditorArena.Used/(r64)GameState->MapEditorArena.Size);
-    MapConstBuffer(GameState->Renderer, GameState->MemoryConstBuffer, &MemConstBufferData, sizeof(memory_const_buffer), 1); 
-    Trans = TranslationMat4({(r32)XPos, (r32)YPos, 0.0f});
-    SetWorldMat4(GameState, Trans * Scale);   
-    RenderMesh(GameState->Renderer, GameState->Mesh, GameState->MemBarShader);
-    YPos -= 9;
-    // MapEditorSaves Arena
-    RenderString(GameState, "Map Editor Saves Arena:", XPos, YPos);
-    YPos -= 9;
-    MemConstBufferData.MemoryData = (r32)((r64)GameState->MapEditorSaves.Used/(r64)GameState->MapEditorSaves.Size);
-    MapConstBuffer(GameState->Renderer, GameState->MemoryConstBuffer, &MemConstBufferData, sizeof(memory_const_buffer), 1); 
-    Trans = TranslationMat4({(r32)XPos, (r32)YPos, 0.0f});
-    SetWorldMat4(GameState, Trans * Scale);   
-    RenderMesh(GameState->Renderer, GameState->Mesh, GameState->MemBarShader);  
+    i32 YPos = WND_HEIGHT*0.5f - (9);
+    RenderMemoryData(GameState, &GameState->EngineArena, "Engine Arena", &XPos, &YPos);
+    RenderMemoryData(GameState, &GameState->TextureArena, "Texture Arena", &XPos, &YPos);
+    RenderMemoryData(GameState, &GameState->TileMapArena, "Tilemap Arena", &XPos, &YPos);
+    RenderMemoryData(GameState, &GameState->MapEditorArena, "Map Editor Arena", &XPos, &YPos);
+    RenderMemoryData(GameState, &GameState->MapEditorSaves, "Map Editor Saves Arena", &XPos, &YPos);
+    RenderMemoryData(GameState, &GameState->TexListArena, "TexList Arena", &XPos, &YPos);
+    RenderMemoryData(GameState, &GameState->BatchArena, "Batch Renderer Arena", &XPos, &YPos);
 #endif  
 }

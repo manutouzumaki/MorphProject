@@ -44,7 +44,6 @@ struct texture_list
     u32 Count;
 };
 
-
 struct input_layout_desc
 {
     char *SemanticName;

@@ -31,6 +31,76 @@ tilemap LoadMap(game_state *GameState, char *FileName)
     return Map;
 }
 
+void RenderLayer(game_state *GameState, tilemap *Tilemap, layer *Layer, bool Collision)
+{
+    // Batch Rendering
+    BeginBatch(GameState->TilemapBatch);
+    for(i32 Y = 0;
+        Y < Tilemap->Rows;
+        ++Y)
+    {
+        for(i32 X = 0;
+            X < Tilemap->Cols;
+            ++X)
+        {
+            i32 Index = Y * Tilemap->Cols + X; 
+            mat4 Scale = ScaleMat4({(r32)Tilemap->TileWidth, (r32)Tilemap->TileHeight, 0.0f});
+            mat4 Trans = TranslationMat4({(r32)Tilemap->TileWidth * X, (r32)Tilemap->TileHeight * Y, 0.0f});
+            if(Layer->Tiles[Index].Base != 0)
+            {
+                texture *FirstTexture = GameState->TilesheetTextures;
+                FirstTexture -= (GameState->TilesheetTexturesCount - 1);
+                texture *ActualTexture = FirstTexture + Layer->Tiles[Index].BaseTexIndex;
+                u32 TileSheetCols = ActualTexture->Width / Tilemap->TileWidth;
+                u32 XFrame = Layer->Tiles[Index].Base % TileSheetCols;
+                u32 YFrame = Layer->Tiles[Index].Base / TileSheetCols;
+                
+                v2 TileSize = {16.0f, 16.0f};
+                v2 Frame = {(r32)XFrame, (r32)YFrame};
+                u32 TexIndex = Layer->Tiles[Index].BaseTexIndex;
+                mat4 World = Trans * Scale;
+                PushQuad(GameState, GameState->TilemapBatch, GameState->BatchShader,
+                         World, TexIndex, TileSize, Frame);
+
+            } 
+            if(Layer->Tiles[Index].Decoration != 0)
+            {
+                texture *FirstTexture = GameState->TilesheetTextures;
+                FirstTexture -= (GameState->TilesheetTexturesCount - 1);
+                texture *ActualTexture = FirstTexture + Layer->Tiles[Index].DecorationTexIndex;
+                u32 TileSheetCols = ActualTexture->Width / Tilemap->TileWidth;
+                u32 XFrame = Layer->Tiles[Index].Decoration % TileSheetCols;
+                u32 YFrame = Layer->Tiles[Index].Decoration / TileSheetCols;
+                
+                v2 TileSize = {16.0f, 16.0f};
+                v2 Frame = {(r32)XFrame, (r32)YFrame};
+                u32 TexIndex = Layer->Tiles[Index].DecorationTexIndex;
+                mat4 World = Trans * Scale;
+                PushQuad(GameState, GameState->TilemapBatch, GameState->BatchShader,
+                         World, TexIndex, TileSize, Frame);
+
+            }
+            if(Collision && Layer->Tiles[Index].Collision != 0)
+            {
+                texture *FirstTexture = GameState->TilesheetTextures;
+                FirstTexture -= (GameState->TilesheetTexturesCount - 1);
+                texture *ActualTexture = FirstTexture + Layer->Tiles[Index].CollisionTexIndex;
+                u32 TileSheetCols = ActualTexture->Width / Tilemap->TileWidth; 
+                u32 XFrame = Layer->Tiles[Index].Collision % TileSheetCols;
+                u32 YFrame = Layer->Tiles[Index].Collision / TileSheetCols;
+
+                v2 TileSize = {16.0f, 16.0f};
+                v2 Frame = {(r32)XFrame, (r32)YFrame};
+                u32 TexIndex = Layer->Tiles[Index].CollisionTexIndex;
+                mat4 World = Trans * Scale;
+                PushQuad(GameState, GameState->TilemapBatch, GameState->BatchShader,
+                         World, TexIndex, TileSize, Frame);    
+            } 
+        }
+    }
+    EndBatch(GameState->Renderer, GameState->TilemapBatch, GameState->BatchShader, &GameState->TexList);
+}
+
 bool IsCollision(v2 Position, u32 Layer, tilemap *Tilemap)
 {
     i32 TileX = Position.X / 16;

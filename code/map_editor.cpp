@@ -195,7 +195,7 @@ i32 UpdateAndRenderEditorUIHorizontal(game_state *GameState, input *Input, ui_st
     return OutValue;
 
 }
-i32 UpdateAndRenderEditorUI(game_state *GameState, input *Input, ui_state *UIState, texture *Texture, i32 NumOfButtons, i32 ButtonSelected)
+i32 UpdateAndRenderEditorUIVertical(game_state *GameState, input *Input, ui_state *UIState, texture *Texture, i32 NumOfButtons, i32 ButtonSelected)
 {
     i32 OutValue = -1;
     for(i32 Index = 0;
@@ -243,21 +243,22 @@ void UpdateAndRenderEditor(game_state *GameState, input *Input, r32 DeltaTime)
 {
     editor *Editor = &GameState->Editor;
     float CameraSpeed = 200.0f;
+
     if(Input->Buttons->Up.IsDown)
     {
-        GameState->CamPosition.Y += CameraSpeed * DeltaTime; 
+        GameState->CamOffset.Y += CameraSpeed * DeltaTime; 
     }
     if(Input->Buttons->Down.IsDown)
     {
-        GameState->CamPosition.Y -= CameraSpeed * DeltaTime; 
+        GameState->CamOffset.Y -= CameraSpeed * DeltaTime; 
     }
     if(Input->Buttons->Left.IsDown)
     { 
-        GameState->CamPosition.X -= CameraSpeed * DeltaTime; 
+        GameState->CamOffset.X -= CameraSpeed * DeltaTime; 
     }
     if(Input->Buttons->Right.IsDown)
     { 
-        GameState->CamPosition.X += CameraSpeed * DeltaTime; 
+        GameState->CamOffset.X += CameraSpeed * DeltaTime; 
     }
     if(Input->Buttons->Start.IsDown != Input->Buttons->Start.WasDown)
     {
@@ -280,8 +281,8 @@ void UpdateAndRenderEditor(game_state *GameState, input *Input, r32 DeltaTime)
         }
     }
 
-    GameState->CamPosition.X = floorf(GameState->CamPosition.X);
-    GameState->CamPosition.Y = floorf(GameState->CamPosition.Y);
+    GameState->CamPosition.X = floorf(GameState->CamOffset.X);
+    GameState->CamPosition.Y = floorf(GameState->CamOffset.Y);
     GameState->CamTarget.X = GameState->CamPosition.X;
     GameState->CamTarget.Y = GameState->CamPosition.Y;
     SetViewMat4(GameState, ViewMat4(GameState->CamPosition, GameState->CamTarget, {0.0f, 1.0f, 0.0f}));
@@ -313,60 +314,7 @@ void UpdateAndRenderEditor(game_state *GameState, input *Input, r32 DeltaTime)
             layer *FirstLayer = Editor->Tilemap.Layers;
             FirstLayer -= (Editor->Tilemap.LayersCount - 1);
             layer *ActualLayer = FirstLayer + Index;
-            for(i32 Y = 0;
-                Y < Tilemap->Rows;
-                ++Y)
-            {
-                for(i32 X = 0;
-                    X < Tilemap->Cols;
-                    ++X)
-                {
-                    i32 Index = Y * Tilemap->Cols + X;
-                    
-                    mat4 Scale = ScaleMat4({(r32)Tilemap->TileWidth, (r32)Tilemap->TileHeight, 0.0f});
-                    mat4 Trans = TranslationMat4({(r32)Tilemap->TileWidth * X, (r32)Tilemap->TileHeight * Y, 0.0f});
-                    SetWorldMat4(GameState, Trans * Scale);
-
-                    if(ActualLayer->Tiles[Index].Base != 0)
-                    {
-                        texture *FirstTexture = GameState->TilesheetTextures;
-                        FirstTexture -= (GameState->TilesheetTexturesCount - 1);
-                        texture *ActualTexture = FirstTexture + ActualLayer->Tiles[Index].BaseTexIndex;
-                        u32 TileSheetCols = ActualTexture->Width / TileSheet->TileWidth; 
-
-                        u32 XFrame = ActualLayer->Tiles[Index].Base % TileSheetCols;
-                        u32 YFrame = ActualLayer->Tiles[Index].Base / TileSheetCols; 
-                        RenderFrame(GameState->Renderer, GameState->Mesh, GameState->FrameShader, ActualTexture,
-                                    GameState->FrameConstBuffer, TileSheet->TileWidth, TileSheet->TileHeight, XFrame, YFrame);
-                    }
-                    if(ActualLayer->Tiles[Index].Decoration != 0)
-                    {
-                        texture *FirstTexture = GameState->TilesheetTextures;
-                        FirstTexture -= (GameState->TilesheetTexturesCount - 1);
-                        texture *ActualTexture = FirstTexture + ActualLayer->Tiles[Index].DecorationTexIndex;
-                        u32 TileSheetCols = ActualTexture->Width / TileSheet->TileWidth; 
-
-                        u32 XFrame = ActualLayer->Tiles[Index].Decoration % TileSheetCols;
-                        u32 YFrame = ActualLayer->Tiles[Index].Decoration / TileSheetCols; 
-                        RenderFrame(GameState->Renderer, GameState->Mesh, GameState->FrameShader, ActualTexture,
-                                    GameState->FrameConstBuffer, TileSheet->TileWidth, TileSheet->TileHeight, XFrame, YFrame);
-                    }
-                    // TODO(manuto): Only render collition in editor
-                    if(ActualLayer->Tiles[Index].Collision != 0)
-                    {
-                        texture *FirstTexture = GameState->TilesheetTextures;
-                        FirstTexture -= (GameState->TilesheetTexturesCount - 1);
-                        texture *ActualTexture = FirstTexture + ActualLayer->Tiles[Index].CollisionTexIndex;
-                        u32 TileSheetCols = ActualTexture->Width / TileSheet->TileWidth; 
-
-                        u32 XFrame = ActualLayer->Tiles[Index].Collision % TileSheetCols;
-                        u32 YFrame = ActualLayer->Tiles[Index].Collision / TileSheetCols; 
-                        RenderFrame(GameState->Renderer, GameState->Mesh, GameState->FrameShader, ActualTexture,
-                                    GameState->FrameConstBuffer, TileSheet->TileWidth, TileSheet->TileHeight, XFrame, YFrame);
-                    }
-                                
-                }
-            }
+            RenderLayer(GameState, &Editor->Tilemap, ActualLayer, true);
         }
     } 
 
@@ -393,10 +341,13 @@ void UpdateAndRenderEditor(game_state *GameState, input *Input, r32 DeltaTime)
     i32 OutValue = UpdateAndRenderEditorUIHorizontal(GameState, Input, &UIState, Editor->UITexture4, 4, PERSISTANT_BUTTON);
     if(OutValue == SCROLL_UP)
     {
-        TileSheet->Position.Y -= 0.5f * DeltaTime;
-        if(TileSheet->Position.Y < -((TileSheet->TexHeight - 288.0f)/TileSheet->TexHeight))
+        if(TileSheet->TexHeight > 288.0f)
         {
-            TileSheet->Position.Y = -((TileSheet->TexHeight - 288.0f)/TileSheet->TexHeight);
+            TileSheet->Position.Y -= 0.5f * DeltaTime;
+            if(TileSheet->Position.Y < -((TileSheet->TexHeight - 288.0f)/TileSheet->TexHeight))
+            {
+                TileSheet->Position.Y = -((TileSheet->TexHeight - 288.0f)/TileSheet->TexHeight);
+            }
         }
     }
     if(OutValue == SCROLL_DOWN)
@@ -417,10 +368,14 @@ void UpdateAndRenderEditor(game_state *GameState, input *Input, r32 DeltaTime)
     }
     if(OutValue == SCROLL_RIGHT)
     {
-        TileSheet->Position.X -= 0.5f * DeltaTime;
-        if(TileSheet->Position.X < -((TileSheet->TexWidth - 176.0f)/TileSheet->TexWidth))
+
+        if(TileSheet->TexWidth > 176.0f)
         {
-            TileSheet->Position.X = -((TileSheet->TexWidth - 176.0f)/TileSheet->TexWidth);
+            TileSheet->Position.X -= 0.5f * DeltaTime;
+            if(TileSheet->Position.X < -((TileSheet->TexWidth - 176.0f)/TileSheet->TexWidth))
+            {
+                TileSheet->Position.X = -((TileSheet->TexWidth - 176.0f)/TileSheet->TexWidth);
+            }
         }
     }
 
@@ -428,7 +383,7 @@ void UpdateAndRenderEditor(game_state *GameState, input *Input, r32 DeltaTime)
     UIState.Position = {176.0f + 5, 0.0f};
     UIState.Size = {32.0f, 32.0f};
     UIState.Offset = {5.0f, 5.0f}; 
-    OutValue = UpdateAndRenderEditorUI(GameState, Input, &UIState, Editor->UITexture2, 2, SINGLE_BUTTON);
+    OutValue = UpdateAndRenderEditorUIVertical(GameState, Input, &UIState, Editor->UITexture2, 2, SINGLE_BUTTON);
     if(OutValue == UP_LAYER)
     {
         OutputDebugString("Next Texture \n");
@@ -456,7 +411,7 @@ void UpdateAndRenderEditor(game_state *GameState, input *Input, r32 DeltaTime)
     UIState.Position = {WND_WIDTH - 37.0f, 0.0f};
     UIState.Size = {32.0f, 32.0f};
     UIState.Offset = {5.0f, 5.0f}; 
-    OutValue = UpdateAndRenderEditorUI(GameState, Input, &UIState, Editor->UITexture0, 3, Editor->ZSelected);
+    OutValue = UpdateAndRenderEditorUIVertical(GameState, Input, &UIState, Editor->UITexture0, 3, Editor->ZSelected);
     if(OutValue == BASE)
     {
         Editor->ZSelected = BASE;
@@ -469,7 +424,7 @@ void UpdateAndRenderEditor(game_state *GameState, input *Input, r32 DeltaTime)
     {
         Editor->ZSelected = COLLISION;
     }
-    OutValue = UpdateAndRenderEditorUI(GameState, Input, &UIState, Editor->UITexture1, 2, SINGLE_BUTTON);
+    OutValue = UpdateAndRenderEditorUIVertical(GameState, Input, &UIState, Editor->UITexture1, 2, SINGLE_BUTTON);
     if(OutValue == ADD_LAYER)
     {
         OutputDebugString("Add LAYER\n");
@@ -499,7 +454,7 @@ void UpdateAndRenderEditor(game_state *GameState, input *Input, r32 DeltaTime)
             }
         }
     }
-    OutValue = UpdateAndRenderEditorUI(GameState, Input, &UIState, Editor->UITexture2, 2, SINGLE_BUTTON);
+    OutValue = UpdateAndRenderEditorUIVertical(GameState, Input, &UIState, Editor->UITexture2, 2, SINGLE_BUTTON);
     if(OutValue == UP_LAYER)
     {
         OutputDebugString("Up LAYER\n");
@@ -532,7 +487,7 @@ void UpdateAndRenderEditor(game_state *GameState, input *Input, r32 DeltaTime)
         {
             ButtonSelected = NO_BUTTON_SELECTED; 
         }
-        OutValue = UpdateAndRenderEditorUI(GameState, Input, &UIState, Editor->UITexture3, 1, ButtonSelected);
+        OutValue = UpdateAndRenderEditorUIVertical(GameState, Input, &UIState, Editor->UITexture3, 1, ButtonSelected);
         if(OutValue != -1)
         {
             if(GET_BIT(Editor->LayersShowBitField, Index))
