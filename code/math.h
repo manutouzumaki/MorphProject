@@ -316,10 +316,22 @@ mat4 OrthogonalProjMat4(i32 Width, i32 Height, r32 ZNear, r32 ZFar)
     return Result;
 }
 
+r32 Lerp(r32 A, r32 B, r32 T)
+{
+    r32 Result = (A + (B - A) * T);
+    return Result;
+}
+
 v2 Lerp(v2 A, v2 B, r32 T)
 {
     v2 Result = {};
     Result = A + ((B - A) * T);
+    return Result;
+}
+
+r32 InvLerp(r32 A, r32 B, r32 T)
+{
+    r32 Result = (T - A)/(B - A);
     return Result;
 }
 

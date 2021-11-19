@@ -101,7 +101,8 @@ struct game_state
     // for combat only
     entity *Player;
     entity *Enemy;
-    
+    i32 CombatOptionSelected; 
+
     editor Editor;
 };
 

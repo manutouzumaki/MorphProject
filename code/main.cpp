@@ -19,6 +19,15 @@ void SetProjMat4(game_state *GameState, mat4 Proj)
                    &GameState->ConstBufferData, sizeof(vs_constant_buffer), 0); 
 }
 
+v3 Color(r32 R, r32 G, r32 B)
+{
+    v3 Color = {};
+    Color.X = InvLerp(0.0f, 255.0f, R);
+    Color.Y = InvLerp(0.0f, 255.0f, G);
+    Color.Z = InvLerp(0.0f, 255.0f, B);
+    return Color;
+}
+
 void InsertionSort(entity *Entities, i32 Length)
 {
     for(i32 J = 1;
@@ -36,7 +45,7 @@ void InsertionSort(entity *Entities, i32 Length)
     }
 }
 
-void RenderString(game_state *GameState, char *String, i32 XPos, i32 YPos)
+i32 RenderString(game_state *GameState, char *String, i32 XPos, i32 YPos)
 {
     i32 Counter = 0;
     while(*String)
@@ -57,9 +66,10 @@ void RenderString(game_state *GameState, char *String, i32 XPos, i32 YPos)
             ++Counter;
         }
     }
+    return Counter;
 }
 
-void RenderString(game_state *GameState, char *String, i32 XPos, i32 YPos, r32 Width, r32 Height)
+i32 RenderString(game_state *GameState, char *String, i32 XPos, i32 YPos, r32 Width, r32 Height)
 {
     i32 Counter = 0;
     while(*String)
@@ -80,11 +90,12 @@ void RenderString(game_state *GameState, char *String, i32 XPos, i32 YPos, r32 W
             ++Counter;
         }
     }
+    return Counter;
 }
 
 
 
-void RenderUInt(game_state *GameState, u32 Number, i32 XPos, i32 YPos)
+u32 RenderUInt(game_state *GameState, u32 Number, i32 XPos, i32 YPos)
 {
     u32 *Digits;
     u32 UnitToGet = 10;
@@ -118,6 +129,44 @@ void RenderUInt(game_state *GameState, u32 Number, i32 XPos, i32 YPos)
     }
     // Restart the Arena
     GameState->IntToCharTempArena.Used = 0;
+    return Counter;
+}
+
+u32 RenderUInt(game_state *GameState, u32 Number, i32 XPos, i32 YPos, r32 Width, r32 Height)
+{
+    u32 *Digits;
+    u32 UnitToGet = 10;
+    u32 Divisor = 1;
+    u32 Counter = 0;
+    while((Number / Divisor) >= 10)
+    {
+        u32 Result = Number % UnitToGet;
+        Result /= Divisor;
+        UnitToGet *= 10;
+        Divisor *= 10;
+        Digits = PushStruct(&GameState->IntToCharTempArena, u32);
+        *Digits = Result;
+        ++Counter;
+    }
+    Digits = PushStruct(&GameState->IntToCharTempArena, u32);
+    *Digits = Number / Divisor;
+    ++Counter;
+    
+    u32 *FirstDigit = Digits;
+    FirstDigit -= (Counter - 1);
+
+    for(i32 Index = (Counter - 1);
+        Index >= 0;
+        --Index)
+    {
+        u32 *ActualDigit = FirstDigit + Index; 
+        char IntToChar = (char)(*ActualDigit + 48);
+
+        RenderString(GameState, &IntToChar, (r32)XPos + (Width*((Counter - 1) - Index)), (r32)YPos, Width, Height);
+    }
+    // Restart the Arena
+    GameState->IntToCharTempArena.Used = 0;
+    return Counter;
 }
 
 void RenderMemoryData(game_state *GameState, arena *Arena, char *Text, int *XPos, int *YPos)
@@ -134,9 +183,9 @@ void RenderMemoryData(game_state *GameState, arena *Arena, char *Text, int *XPos
     *YPos -= 9;
 }
 
-
 void InitCombat(game_state *GameState, entity *Player, entity *Enemy)
 {
+    GameState->CombatOptionSelected = 0;
     GameState->Player = Player;
     GameState->Enemy = Enemy;
 }
@@ -409,46 +458,137 @@ void GameUpdateAndRender(memory *Memory, input *Input, r32 DeltaTime)
                 }
             }
         }
+        if(GameState->GamePlayState == COMBAT)
+        {
+            // TODO(manuto): ...
+            entity *Player = GameState->Player;
+            entity *Enemy = GameState->Enemy;
+            
+            if(Input->Buttons->Up.IsDown != Input->Buttons->Up.WasDown)
+            {
+                if(Input->Buttons->Up.IsDown)
+                {
+                    --GameState->CombatOptionSelected;
+                    if(GameState->CombatOptionSelected < 0)
+                    {
+                        GameState->CombatOptionSelected = 0;    
+                    } 
+                }
+            }
+            if(Input->Buttons->Down.IsDown != Input->Buttons->Down.WasDown)
+            {
+                if(Input->Buttons->Down.IsDown)
+                {
+                    ++GameState->CombatOptionSelected;
+                    if(GameState->CombatOptionSelected > 3)
+                    {
+                        GameState->CombatOptionSelected = 3;
+                    }
+                }
+            }
+            
+            SetProjMat4(GameState, OrthogonalProjMat4(WND_WIDTH, WND_HEIGHT, 1.0f, 100.0f));
+            
+            r32 XPos = -WND_WIDTH*0.5f;
+            r32 YPos = -WND_HEIGHT*0.5f;
+
+            v2 BackPannel = {(r32)WND_WIDTH, 192.0f};
+            mat4 Trans = TranslationMat4({XPos, YPos, 0.0f});
+            mat4 Scale = ScaleMat4({BackPannel.X, BackPannel.Y, 0.0f});
+            SetWorldMat4(GameState, Trans * Scale);
+            color_const_buffer ColorBuffer = {};
+            ColorBuffer.Color = Color(22.0f, 25.0f, 37.0f);
+            MapConstBuffer(GameState->Renderer, GameState->ColorConstBuffer, (void *)&ColorBuffer, sizeof(color_const_buffer), 1);
+            RenderMesh(GameState->Renderer, GameState->Mesh, GameState->UIColorShader);
+            
+            XPos += 32.0f;
+            YPos += (BackPannel.Y*0.5f) - 64.0f;
+            ColorBuffer.Color = Color(35.0f, 57.0f, 91.0f);
+            MapConstBuffer(GameState->Renderer, GameState->ColorConstBuffer, (void *)&ColorBuffer, sizeof(color_const_buffer), 1);
+            Trans = TranslationMat4({XPos, YPos, 0.0f});
+            Scale = ScaleMat4({100.0f, 64*2.0f, 0.0f});
+            SetWorldMat4(GameState, Trans * Scale);
+            RenderMesh(GameState->Renderer, GameState->Mesh, GameState->UIColorShader);
+            RenderString(GameState, Player->Name, XPos, YPos + 64.0f*2.0f, 7.0f*2.0f, 9.0f*2.0f);
+            Trans = TranslationMat4({XPos + 50.0f - (81.0f*0.5f), YPos + 64.0f - (76.0f*0.5f), 0.0f});
+            Scale = ScaleMat4({81.0f, 76.0f, 0.0f});
+            SetWorldMat4(GameState, Trans * Scale);
+            RenderMesh(GameState->Renderer, GameState->Mesh, GameState->UISimpleShader, GameState->HeroPortraitTexture);       
+
+            XPos += 100.0f;
+            XPos += 32.0f;
+            ColorBuffer.Color = Color(35.0f, 57.0f, 91.0f);
+            MapConstBuffer(GameState->Renderer, GameState->ColorConstBuffer, (void *)&ColorBuffer, sizeof(color_const_buffer), 1);
+            Trans = TranslationMat4({XPos, YPos, 0.0f});
+            Scale = ScaleMat4({400.0f, 64*2.0f, 0.0f});
+            SetWorldMat4(GameState, Trans * Scale);
+            RenderMesh(GameState->Renderer, GameState->Mesh, GameState->UIColorShader);
+
+            YPos -= 9.0f*2.0f;
+            YPos += 64.0f*2.0f - (GameState->CombatOptionSelected * (9.0f*2.0f));
+            ColorBuffer.Color = Color(134.0f, 165.0f, 217.0f);
+            MapConstBuffer(GameState->Renderer, GameState->ColorConstBuffer, (void *)&ColorBuffer, sizeof(color_const_buffer), 1);
+            Trans = TranslationMat4({XPos, YPos, 0.0f});
+            Scale = ScaleMat4({400.0f, 9.0f*2.0f, 0.0f});
+            SetWorldMat4(GameState, Trans * Scale);
+            RenderMesh(GameState->Renderer, GameState->Mesh, GameState->UIColorShader);
+
+            YPos = -WND_HEIGHT*0.5f;
+            YPos += (BackPannel.Y*0.5f) - 64.0f;
+            YPos += 64.0f*2.0f;
+            RenderString(GameState, "Actions:", XPos, YPos, 7.0f*2.0f, 9.0f*2.0f);
+            YPos -= 9.0f*2.0f;
+            RenderString(GameState, "-Atack", XPos, YPos, 7.0f*2.0f, 9.0f*2.0f);
+            YPos -= 9.0f*2.0f;
+            RenderString(GameState, "-Spells", XPos, YPos, 7.0f*2.0f, 9.0f*2.0f);
+            YPos -= 9.0f*2.0f;
+            RenderString(GameState, "-Item", XPos, YPos, 7.0f*2.0f, 9.0f*2.0f);
+            YPos -= 9.0f*2.0f;
+            RenderString(GameState, "-Run", XPos, YPos, 7.0f*2.0f, 9.0f*2.0f);
+           
+            YPos = -WND_HEIGHT*0.5f;
+            YPos += (BackPannel.Y*0.5f) - 64.0f;
+            XPos += 400.0f;
+            XPos += 32.0f;
+            ColorBuffer.Color = Color(35.0f, 57.0f, 91.0f);
+            MapConstBuffer(GameState->Renderer, GameState->ColorConstBuffer, (void *)&ColorBuffer, sizeof(color_const_buffer), 1);
+            Trans = TranslationMat4({XPos, YPos, 0.0f});
+            Scale = ScaleMat4({BackPannel.X - (XPos + WND_WIDTH*0.5f) - 32.0f, 64*2.0f, 0.0f});
+            SetWorldMat4(GameState, Trans * Scale);
+            RenderMesh(GameState->Renderer, GameState->Mesh, GameState->UIColorShader);
+            YPos += 64.0f*2.0f;
+            RenderString(GameState, "Stats:", XPos, YPos, 7.0f*2.0f, 9.0f*2.0f); 
+            YPos -= 9.0f*2.0f;
+            i32 XOffset = RenderString(GameState, "-HP:", XPos, YPos, 7.0f*2.0f, 9.0f*2.0f);
+            i32 InnerXPos = XPos + (XOffset*(7.0f*2.0f));
+            XOffset = RenderUInt(GameState, Player->Stats.HP_Now, InnerXPos, YPos, 7.0f*2.0f, 9.0f*2.0f);
+            InnerXPos += (XOffset*(7.0f*2.0f));
+            XOffset = RenderString(GameState, "/", InnerXPos, YPos, 7.0f*2.0f, 9.0f*2.0f);
+            InnerXPos += (XOffset*(7.0f*2.0f));
+            RenderUInt(GameState, Player->Stats.HP_Max, InnerXPos, YPos, 7.0f*2.0f, 9.0f*2.0f);
+            YPos -= 9.0f*2.0f;
+            XOffset = RenderString(GameState, "-MP:", XPos, YPos, 7.0f*2.0f, 9.0f*2.0f);
+            InnerXPos = XPos + (XOffset*(7.0f*2.0f));
+            XOffset = RenderUInt(GameState, Player->Stats.MP_Now, InnerXPos, YPos, 7.0f*2.0f, 9.0f*2.0f);
+            InnerXPos += (XOffset*(7.0f*2.0f));
+            XOffset = RenderString(GameState, "/", InnerXPos, YPos, 7.0f*2.0f, 9.0f*2.0f);
+            InnerXPos += (XOffset*(7.0f*2.0f));
+            RenderUInt(GameState, Player->Stats.MP_Max, InnerXPos, YPos, 7.0f*2.0f, 9.0f*2.0f);
+            YPos -= 9.0f*2.0f;
+            XOffset = RenderString(GameState, "-ST:", XPos, YPos, 7.0f*2.0f, 9.0f*2.0f);
+            InnerXPos = XPos + (XOffset*(7.0f*2.0f));
+            RenderUInt(GameState, Player->Stats.Strength, InnerXPos, YPos, 7.0f*2.0f, 9.0f*2.0f);
+            YPos -= 9.0f*2.0f;
+            XOffset = RenderString(GameState, "-SP:", XPos, YPos, 7.0f*2.0f, 9.0f*2.0f);
+            InnerXPos = XPos + (XOffset*(7.0f*2.0f));
+            RenderUInt(GameState, Player->Stats.Speed, InnerXPos, YPos, 7.0f*2.0f, 9.0f*2.0f);
+            YPos -= 9.0f*2.0f;
+            XOffset = RenderString(GameState, "-IN:", XPos, YPos, 7.0f*2.0f, 9.0f*2.0f);
+            InnerXPos = XPos + (XOffset*(7.0f*2.0f));
+            RenderUInt(GameState, Player->Stats.Intelligence, InnerXPos, YPos, 7.0f*2.0f, 9.0f*2.0f);
+        }
     }
-    
-    if(GameState->GamePlayState == COMBAT)
-    {
-        // TODO(manuto): ...
-        entity *Player = GameState->Player;
-        entity *Enemy = GameState->Enemy;
-
-        SetProjMat4(GameState, OrthogonalProjMat4(WND_WIDTH, WND_HEIGHT, 1.0f, 100.0f));
-        RenderString(GameState, Enemy->Name, 0.0f, 9.0f);
         
-        // Back Pannel
-        v2 BackPannel = {(r32)WND_WIDTH, 192.0f};
-        mat4 Trans = TranslationMat4({-WND_WIDTH*0.5f, -WND_HEIGHT*0.5f, 0.0f});
-        mat4 Scale = ScaleMat4({BackPannel.X, BackPannel.Y, 0.0f});
-        SetWorldMat4(GameState, Trans * Scale);
-        color_const_buffer ColorBuffer = {};
-        ColorBuffer.Color = {0.5f, 0.5f, 0.7f};
-        MapConstBuffer(GameState->Renderer, GameState->ColorConstBuffer, (void *)&ColorBuffer, sizeof(color_const_buffer), 1);
-        RenderMesh(GameState->Renderer, GameState->Mesh, GameState->UIColorShader);
-         
-        RenderString(GameState, Player->Name, -WND_WIDTH*0.5f + 32.0f, -WND_HEIGHT*0.5f + (BackPannel.Y*0.5f) - 38.0f + 76.0f, 7.0f*2.0f, 9.0f*2.0f);
-        Trans = TranslationMat4({-WND_WIDTH*0.5f + 32.0f, -WND_HEIGHT*0.5f + 96.0f - 38.0f, 0.0f});
-        Scale = ScaleMat4({81.0f, 76.0f, 0.0f});
-        SetWorldMat4(GameState, Trans * Scale);
-        RenderMesh(GameState->Renderer, GameState->Mesh, GameState->UISimpleShader, GameState->HeroPortraitTexture);
-
-        //
-        
-
-        
-        //static r32 Timer = 0.0f;
-        //if(Timer > 10.0f)
-        //{
-        //    Timer = 0.0f;
-        //    GameState->GamePlayState = WORLD;
-        //}
-        //Timer += DeltaTime;
-    }
-    
     if(GameState->AppState == EDITOR_STATE)
     {
         UpdateAndRenderEditor(GameState, Input, DeltaTime);
