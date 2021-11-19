@@ -9,6 +9,14 @@
 
 #define MAX_NUM_OF_ENTITIES 20;
 
+struct weapon_stats
+{
+    u32 AttackType;
+    u32 AttackPower;
+    u32 DefensePower;
+    u32 AttackRate;
+};
+
 struct entity_stats
 {
     u32 HP_Now; // Healt Points
@@ -21,12 +29,17 @@ struct entity_stats
 };
 
 struct entity
-{
-    // game play stuff
+{   
+    // Sate stuff
     u32 ID;
+    i32 Action;
+    // game play stuff
     char *Name;
     entity_stats Stats;
-    i32 Action;
+    u32 Weapon;
+    u32 Ability0;
+    u32 Ability1;
+    u32 Ability2;
 
     // renderer stuff
     u32 Skin;

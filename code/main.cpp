@@ -59,6 +59,31 @@ void RenderString(game_state *GameState, char *String, i32 XPos, i32 YPos)
     }
 }
 
+void RenderString(game_state *GameState, char *String, i32 XPos, i32 YPos, r32 Width, r32 Height)
+{
+    i32 Counter = 0;
+    while(*String)
+    {
+        i32 Letter = (i32)*String++;
+        if(Letter >= 32 && Letter <= 126)
+        {
+            Letter -= 32;
+            texture_info TextureInfo = GetTextureInfo(GameState->FontTexture);
+            i32 TextureNumOfCols = (TextureInfo.Width / 7);
+            i32 FrameX = Letter % TextureNumOfCols;
+            i32 FrameY = Letter / TextureNumOfCols;
+            mat4 Scale = ScaleMat4({Width, Height});
+            mat4 Trans = TranslationMat4({(r32)XPos + (Width*Counter), (r32)YPos, 0.0f});
+            SetWorldMat4(GameState, Trans * Scale);
+            RenderFrame(GameState->Renderer, GameState->Mesh, GameState->UIFrameShader, GameState->FontTexture,
+                        GameState->FrameConstBuffer, 7, 9, FrameX, FrameY);
+            ++Counter;
+        }
+    }
+}
+
+
+
 void RenderUInt(game_state *GameState, u32 Number, i32 XPos, i32 YPos)
 {
     u32 *Digits;
@@ -179,6 +204,18 @@ void GameSetUp(memory *Memory)
                                                       "../code/shaders/ui_frame_vert.hlsl",  
                                                       "../code/shaders/ui_frame_frag.hlsl",
                                                       &GameState->EngineArena);
+    GameState->UISimpleShader = CompileShadersFromFile(GameState->Renderer,
+                                                       InputLayoutDesc,
+                                                       InputLayoutElementCount,
+                                                       "../code/shaders/ui_simple_vert.hlsl",  
+                                                       "../code/shaders/ui_simple_frag.hlsl",
+                                                       &GameState->EngineArena);
+    GameState->UIColorShader = CompileShadersFromFile(GameState->Renderer,
+                                                      InputLayoutDesc,
+                                                      InputLayoutElementCount,
+                                                      "../code/shaders/ui_color_vert.hlsl",  
+                                                      "../code/shaders/ui_color_frag.hlsl",
+                                                      &GameState->EngineArena);
     GameState->MemBarShader = CompileShadersFromFile(GameState->Renderer,
                                                      InputLayoutDesc,
                                                      InputLayoutElementCount,
@@ -193,6 +230,7 @@ void GameSetUp(memory *Memory)
                                                     &GameState->EngineArena);
 
     GameState->ConstBuffer = CreateConstBuffer(GameState->Renderer, sizeof(vs_constant_buffer), &GameState->EngineArena);
+    GameState->ColorConstBuffer = CreateConstBuffer(GameState->Renderer, sizeof(color_const_buffer), &GameState->EngineArena);
     GameState->FrameConstBuffer = CreateConstBuffer(GameState->Renderer, sizeof(frame_const_buffer), &GameState->EngineArena);
     GameState->MemoryConstBuffer = CreateConstBuffer(GameState->Renderer, sizeof(memory_const_buffer), &GameState->EngineArena);
     GameState->UITileSheetConstBuffer = CreateConstBuffer(GameState->Renderer, sizeof(tilesheet_ui_const_buffer), &GameState->EngineArena); 
@@ -225,6 +263,7 @@ void GameSetUp(memory *Memory)
 
     GameState->HeroTexture = CreateTexture(GameState->Renderer, "../data/walk_cycle.bmp", &GameState->EngineArena);
     GameState->FontTexture = CreateTexture(GameState->Renderer, "../data/font.bmp", &GameState->EngineArena);
+    GameState->HeroPortraitTexture = CreateTexture(GameState->Renderer, "../data/hero_portrait.bmp", &GameState->EngineArena);
     
     AddTextureToList(GameState->Renderer, "../data/town_tileset.bmp",
                      &GameState->TexList, &GameState->TexListArena, &GameState->EngineArena);
@@ -244,6 +283,13 @@ void GameSetUp(memory *Memory)
     GameState->Entities[0].Facing = BIT(DOWN);
     GameState->Entities[0].Layer = 0;
     GameState->Entities[0].Skin = 1;
+    GameState->Entities[0].Stats.HP_Max = 100;
+    GameState->Entities[0].Stats.HP_Now = 100;
+    GameState->Entities[0].Stats.MP_Max = 25;
+    GameState->Entities[0].Stats.MP_Now = 25;
+    GameState->Entities[0].Stats.Strength = 12;
+    GameState->Entities[0].Stats.Speed = 5;
+    GameState->Entities[0].Stats.Intelligence = 5;
 
     SetEntityPosition(&GameState->Entities[1], &GameState->Tilemap, 15, 11);
     GameState->Entities[1].Name = "Thomex";
@@ -252,6 +298,13 @@ void GameSetUp(memory *Memory)
     GameState->Entities[1].Layer = 0;
     GameState->Entities[1].Skin = 2;
     GameState->Entities[1].TimeToWait = 1.0f;
+    GameState->Entities[1].Stats.HP_Max = 100;
+    GameState->Entities[1].Stats.HP_Now = 100;
+    GameState->Entities[1].Stats.MP_Max = 25;
+    GameState->Entities[1].Stats.MP_Now = 25;
+    GameState->Entities[1].Stats.Strength = 12;
+    GameState->Entities[1].Stats.Speed = 5;
+    GameState->Entities[1].Stats.Intelligence = 5;
 
     SetEntityPosition(&GameState->Entities[2], &GameState->Tilemap, 15, 6);
     GameState->Entities[2].Name = "Big Daddy";
@@ -260,6 +313,13 @@ void GameSetUp(memory *Memory)
     GameState->Entities[2].Layer = 0;
     GameState->Entities[2].Skin = 3;
     GameState->Entities[2].TimeToWait = 3.0f;
+    GameState->Entities[2].Stats.HP_Max = 100;
+    GameState->Entities[2].Stats.HP_Now = 100;
+    GameState->Entities[2].Stats.MP_Max = 25;
+    GameState->Entities[2].Stats.MP_Now = 25;
+    GameState->Entities[2].Stats.Strength = 12;
+    GameState->Entities[2].Stats.Speed = 5;
+    GameState->Entities[2].Stats.Intelligence = 5;
 
     InitEditor(&GameState->Editor, 16, 16, &GameState->MapEditorArena, GameState);
 
@@ -301,7 +361,7 @@ void GameUpdateAndRender(memory *Memory, input *Input, r32 DeltaTime)
                     SetEntityInRandomDirection(&GameState->Entities[Index], &GameState->Tilemap);
                 }
                 MoveEntity(&GameState->Entities[Index], &GameState->Tilemap, DeltaTime);
-            } 
+            }
             GameState->CamPosition.X = GameState->Entities[0].Position.X;
             GameState->CamPosition.Y = GameState->Entities[0].Position.Y;
             GameState->CamTarget.X = GameState->CamPosition.X;
@@ -358,8 +418,35 @@ void GameUpdateAndRender(memory *Memory, input *Input, r32 DeltaTime)
         entity *Enemy = GameState->Enemy;
 
         SetProjMat4(GameState, OrthogonalProjMat4(WND_WIDTH, WND_HEIGHT, 1.0f, 100.0f));
-        RenderString(GameState, Player->Name, 0.0f, 0.0f);
         RenderString(GameState, Enemy->Name, 0.0f, 9.0f);
+        
+        // Back Pannel
+        v2 BackPannel = {(r32)WND_WIDTH, 192.0f};
+        mat4 Trans = TranslationMat4({-WND_WIDTH*0.5f, -WND_HEIGHT*0.5f, 0.0f});
+        mat4 Scale = ScaleMat4({BackPannel.X, BackPannel.Y, 0.0f});
+        SetWorldMat4(GameState, Trans * Scale);
+        color_const_buffer ColorBuffer = {};
+        ColorBuffer.Color = {0.5f, 0.5f, 0.7f};
+        MapConstBuffer(GameState->Renderer, GameState->ColorConstBuffer, (void *)&ColorBuffer, sizeof(color_const_buffer), 1);
+        RenderMesh(GameState->Renderer, GameState->Mesh, GameState->UIColorShader);
+         
+        RenderString(GameState, Player->Name, -WND_WIDTH*0.5f + 32.0f, -WND_HEIGHT*0.5f + (BackPannel.Y*0.5f) - 38.0f + 76.0f, 7.0f*2.0f, 9.0f*2.0f);
+        Trans = TranslationMat4({-WND_WIDTH*0.5f + 32.0f, -WND_HEIGHT*0.5f + 96.0f - 38.0f, 0.0f});
+        Scale = ScaleMat4({81.0f, 76.0f, 0.0f});
+        SetWorldMat4(GameState, Trans * Scale);
+        RenderMesh(GameState->Renderer, GameState->Mesh, GameState->UISimpleShader, GameState->HeroPortraitTexture);
+
+        //
+        
+
+        
+        //static r32 Timer = 0.0f;
+        //if(Timer > 10.0f)
+        //{
+        //    Timer = 0.0f;
+        //    GameState->GamePlayState = WORLD;
+        //}
+        //Timer += DeltaTime;
     }
     
     if(GameState->AppState == EDITOR_STATE)

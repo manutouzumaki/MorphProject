@@ -12,6 +12,11 @@ struct vs_constant_buffer
     mat4 View;
 };
 
+struct color_const_buffer
+{
+    v3 Color;
+};
+
 struct frame_const_buffer
 {
     v2 TexSize;
@@ -60,6 +65,7 @@ struct game_state
     arena BatchArena;
 
     const_buffer *ConstBuffer;
+    const_buffer *ColorConstBuffer;
     const_buffer *FrameConstBuffer;
     const_buffer *MemoryConstBuffer;
     const_buffer *UITileSheetConstBuffer;
@@ -68,11 +74,14 @@ struct game_state
     shader *MainShader;
     shader *FrameShader;
     shader *UIShader;
+    shader *UISimpleShader;
+    shader *UIColorShader;
     shader *UIFrameShader;
     shader *MemBarShader;
     shader *BatchShader;
 
     texture *HeroTexture;
+    texture *HeroPortraitTexture;
     texture *FontTexture;
     texture *TilesheetTextures;
     u32 TilesheetTexturesCount;
@@ -87,6 +96,7 @@ struct game_state
 
     tilemap Tilemap; 
     entity Entities[3];
+    weapon_stats Weapons[2];
 
     // for combat only
     entity *Player;

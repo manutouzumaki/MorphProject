@@ -340,7 +340,6 @@ RENDER_MESH(RenderMesh)
     Renderer->RenderContext->Draw(Mesh->VerticesCount/5, 0);
 }
 
-
 RENDER_MESH_NO_TEX(RenderMesh)
 {
     u32 Stride =  5 * sizeof(r32);
