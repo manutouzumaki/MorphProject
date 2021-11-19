@@ -84,6 +84,7 @@ struct game_state
     texture *HeroPortraitTexture;
     texture *FontTexture;
     texture *TilesheetTextures;
+    texture *CombatBgTexture;
     u32 TilesheetTexturesCount;
     texture_list TexList;
 
@@ -101,7 +102,9 @@ struct game_state
     // for combat only
     entity *Player;
     entity *Enemy;
-    i32 CombatOptionSelected; 
+    i32 CombatState;
+    i32 CombatOptionSelected;
+    i32 CombatOptionLevel;
 
     editor Editor;
 };

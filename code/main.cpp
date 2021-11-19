@@ -186,6 +186,7 @@ void RenderMemoryData(game_state *GameState, arena *Arena, char *Text, int *XPos
 void InitCombat(game_state *GameState, entity *Player, entity *Enemy)
 {
     GameState->CombatOptionSelected = 0;
+    GameState->CombatOptionLevel = 0;
     GameState->Player = Player;
     GameState->Enemy = Enemy;
 }
@@ -313,6 +314,7 @@ void GameSetUp(memory *Memory)
     GameState->HeroTexture = CreateTexture(GameState->Renderer, "../data/walk_cycle.bmp", &GameState->EngineArena);
     GameState->FontTexture = CreateTexture(GameState->Renderer, "../data/font.bmp", &GameState->EngineArena);
     GameState->HeroPortraitTexture = CreateTexture(GameState->Renderer, "../data/hero_portrait.bmp", &GameState->EngineArena);
+    GameState->CombatBgTexture = CreateTexture(GameState->Renderer, "../data/combat_bg_field.bmp", &GameState->EngineArena);
     
     AddTextureToList(GameState->Renderer, "../data/town_tileset.bmp",
                      &GameState->TexList, &GameState->TexListArena, &GameState->EngineArena);
@@ -486,17 +488,63 @@ void GameUpdateAndRender(memory *Memory, input *Input, r32 DeltaTime)
                     }
                 }
             }
+            if(Input->Buttons->Start.IsDown != Input->Buttons->Start.WasDown)
+            {
+                if(Input->Buttons->Start.IsDown)
+                {
+                    if(GameState->CombatOptionSelected == 0)
+                    {
+                        // TODO(manuto): Attack...     
+                    }
+                    if(GameState->CombatOptionSelected == 1)
+                    {
+                        ++GameState->CombatOptionLevel;
+                        if(GameState->CombatOptionLevel > 1)
+                        {
+                            GameState->CombatOptionLevel = 1;
+                        }
+                    }
+                    if(GameState->CombatOptionSelected == 2)
+                    {
+                        ++GameState->CombatOptionLevel;
+                        if(GameState->CombatOptionLevel > 1)
+                        {
+                            GameState->CombatOptionLevel = 1;
+                        } 
+                    }
+                    if(GameState->CombatOptionSelected == 3)
+                    {
+                        GameState->GamePlayState = WORLD;
+                    }
+                }
+            }
+            if(Input->Buttons->Back.IsDown != Input->Buttons->Back.WasDown)
+            {
+                if(Input->Buttons->Back.IsDown)
+                {
+                    --GameState->CombatOptionLevel;
+                    if(GameState->CombatOptionLevel < 0)
+                    {
+                        GameState->CombatOptionLevel = 0;
+                    }
+                }
+            }
             
             SetProjMat4(GameState, OrthogonalProjMat4(WND_WIDTH, WND_HEIGHT, 1.0f, 100.0f));
             
             r32 XPos = -WND_WIDTH*0.5f;
             r32 YPos = -WND_HEIGHT*0.5f;
-
-            v2 BackPannel = {(r32)WND_WIDTH, 192.0f};
-            mat4 Trans = TranslationMat4({XPos, YPos, 0.0f});
-            mat4 Scale = ScaleMat4({BackPannel.X, BackPannel.Y, 0.0f});
-            SetWorldMat4(GameState, Trans * Scale);
             color_const_buffer ColorBuffer = {};
+                       
+            mat4 Trans = TranslationMat4({XPos, YPos + 192.0f, 0.0f});
+            mat4 Scale = ScaleMat4({(r32)WND_WIDTH, WND_HEIGHT- 192.0f, 0.0f});
+            SetWorldMat4(GameState, Trans * Scale);
+            RenderMesh(GameState->Renderer, GameState->Mesh, GameState->UISimpleShader, GameState->CombatBgTexture);       
+            
+            v2 BackPannel = {(r32)WND_WIDTH, 192.0f};
+            Trans = TranslationMat4({XPos, YPos, 0.0f});
+            Scale = ScaleMat4({BackPannel.X, BackPannel.Y, 0.0f});
+            SetWorldMat4(GameState, Trans * Scale);
             ColorBuffer.Color = Color(22.0f, 25.0f, 37.0f);
             MapConstBuffer(GameState->Renderer, GameState->ColorConstBuffer, (void *)&ColorBuffer, sizeof(color_const_buffer), 1);
             RenderMesh(GameState->Renderer, GameState->Mesh, GameState->UIColorShader);
@@ -586,6 +634,17 @@ void GameUpdateAndRender(memory *Memory, input *Input, r32 DeltaTime)
             XOffset = RenderString(GameState, "-IN:", XPos, YPos, 7.0f*2.0f, 9.0f*2.0f);
             InnerXPos = XPos + (XOffset*(7.0f*2.0f));
             RenderUInt(GameState, Player->Stats.Intelligence, InnerXPos, YPos, 7.0f*2.0f, 9.0f*2.0f);
+
+
+            Scale = ScaleMat4({16, 24, 0.0f});
+            Trans = TranslationMat4({-100.0f, 0.0f, 0.0f});
+            SetWorldMat4(GameState, Trans * Scale);
+            RenderFrame(GameState->Renderer, GameState->Mesh, GameState->UIFrameShader, GameState->HeroTexture,
+                        GameState->FrameConstBuffer, 16, 24, Player->Frame, Player->Skin);
+            Trans = TranslationMat4({100.0f, 0.0f, 0.0f});
+            SetWorldMat4(GameState, Trans * Scale);
+            RenderFrame(GameState->Renderer, GameState->Mesh, GameState->UIFrameShader, GameState->HeroTexture,
+                        GameState->FrameConstBuffer, 16, 24, Enemy->Frame, Enemy->Skin);
         }
     }
         
