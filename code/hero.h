@@ -40,6 +40,7 @@ struct entity
     u32 Ability0;
     u32 Ability1;
     u32 Ability2;
+    u32 Stage;
 
     // renderer stuff
     u32 Skin;

@@ -100,11 +100,14 @@ struct game_state
     weapon_stats Weapons[2];
 
     // for combat only
-    entity *Player;
-    entity *Enemy;
+    entity CombatEntities[8];
+    u64 CombatEntitiesEventQueue;
+    u64 CombatActionsEventQueue;
     i32 CombatState;
     i32 CombatOptionSelected;
     i32 CombatOptionLevel;
+    u32 CombatEventData;
+    bool CombatProcessingEvent;
 
     editor Editor;
 };

@@ -196,3 +196,46 @@ void MoveEntity(entity *Entity, tilemap *Tilemap, r32 DeltaTime)
         Entity->Frame += 4; 
     }
 }
+
+bool MoveEntityInCombat(entity *Entity, r32 DeltaTime)
+{
+    if(Entity->IsWalking)
+    {   
+        v2 ActualPosition = Lerp(Entity->OldPosiotion, Entity->NextPosition, Entity->WalkDistance);
+        Entity->Position.X = floorf(ActualPosition.X);
+        Entity->Position.Y = floorf(ActualPosition.Y);
+        if(Entity->WalkDistance > 1.0f)
+        {
+            Entity->IsWalking = false;
+            Entity->WalkDistance = 0.0f;
+            return false;
+        }
+        Entity->WalkDistance += 2.0f*DeltaTime;
+
+        // TODO(manuto): Update Player Animation
+        Entity->Frame = (u32)Entity->AnimTimer % 4;
+        Entity->AnimTimer += 8.0f*DeltaTime;
+    }
+    else
+    { 
+        Entity->Frame = 0;
+    }
+
+    if(GET_BIT(Entity->Facing, UP))
+    {
+        Entity->Frame += 0; 
+    }
+    if(GET_BIT(Entity->Facing, DOWN))
+    {
+        Entity->Frame += 8; 
+    }
+    if(GET_BIT(Entity->Facing, LEFT))
+    {
+        Entity->Frame += 12; 
+    }
+    if(GET_BIT(Entity->Facing, RIGHT))
+    {
+        Entity->Frame += 4; 
+    }
+    return true;
+}

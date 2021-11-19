@@ -183,17 +183,120 @@ void RenderMemoryData(game_state *GameState, arena *Arena, char *Text, int *XPos
     *YPos -= 9;
 }
 
+#include "tilemap.cpp"
+#include "map_editor.cpp"
+#include "hero.cpp"
+
 void InitCombat(game_state *GameState, entity *Player, entity *Enemy)
 {
     GameState->CombatOptionSelected = 0;
     GameState->CombatOptionLevel = 0;
-    GameState->Player = Player;
-    GameState->Enemy = Enemy;
+    GameState->CombatEntities[0] = *Player;
+    GameState->CombatEntities[1] = *Enemy;
+    GameState->CombatEntities[0].Position = {-100.0f, 0.0f};
+    GameState->CombatEntities[1].Position = {100.0f, 0.0f};
 }
 
-#include "tilemap.cpp"
-#include "map_editor.cpp"
-#include "hero.cpp"
+
+void AddEvent(u64 *EventQueue, u8 Event)
+{
+    i32 Counter = 0;
+    u64 Iterator = *EventQueue;
+    u64 Result = (u64)Event;
+    while((Iterator & 0xF) != 0 && Counter < 16)
+    {
+        Iterator = Iterator >> 4;
+        Result = Result << 4;
+        ++Counter;
+    }
+    *EventQueue |= Result;
+}
+
+void SetCombatEventQueue(u64 *Entities, u64 *Actions,
+                         u8 Entity, u8 Target,
+                         u8 Action, u8 Option)
+{
+    AddEvent(Entities, Entity);
+    AddEvent(Entities, Target);
+    AddEvent(Actions, Action);
+    AddEvent(Actions, Option); 
+}
+
+void UpdateCombatEventQueue(game_state *GameState, u64 *Entities, u64 *Actions, r32 DeltaTime)
+{
+    if(!GameState->CombatProcessingEvent)
+    {
+        if((*Entities & 0xFF) != 0)
+        {
+            GameState->CombatProcessingEvent = true;
+            GameState->CombatEventData |= (*Entities & 0xF);
+            GameState->CombatEventData |= ((*Entities & 0xF0) >> 4) << 8;
+            *Entities = *Entities >> 8;
+            GameState->CombatEventData |= (*Actions & 0xF) << 16;
+            GameState->CombatEventData |= ((*Actions & 0xF0) >> 4) << 24;
+            *Actions = *Actions >> 8;
+        }
+    }
+    else
+    {
+        u8 EntityIndex = (GameState->CombatEventData & 0x000000FF) >> 0;
+        u8 TargetIndex = (GameState->CombatEventData & 0x0000FF00) >> 8;
+        u8 ActionIndex = (GameState->CombatEventData & 0x00FF0000) >> 16;
+        u8 OptionIndex = (GameState->CombatEventData & 0xFF000000) >> 24;
+        // TODO(manuto): Process the Event...
+        if(ActionIndex == 1)
+        {
+            // TODO: Attack
+            entity *Entity = &GameState->CombatEntities[ActionIndex - 1];
+            entity *Target = &GameState->CombatEntities[TargetIndex - 1];
+            if(Entity->Stage == 0)
+            {
+                Entity->OldPosiotion = Entity->Position;
+                Entity->NextPosition = Target->Position;
+                Entity->NextPosition.X -= 16.0f;
+                Entity->IsWalking = true;
+                ++Entity->Stage;
+            }
+            else if(Entity->Stage == 1)
+            {
+                if(!MoveEntityInCombat(Entity, DeltaTime))
+                {
+                    ++Entity->Stage;
+                }
+            }else if(Entity->Stage == 2)
+            { 
+                Entity->NextPosition = Entity->OldPosiotion;
+                Entity->OldPosiotion = Entity->Position;
+                Entity->IsWalking = true;
+                ++Entity->Stage;
+            }
+            else if(Entity->Stage == 3)
+            {
+                if(!MoveEntityInCombat(Entity, DeltaTime))
+                {
+                    ++Entity->Stage;
+                }
+            }
+            else if(Entity->Stage == 4)
+            {
+                Entity->Position = Entity->NextPosition;
+                Entity->IsWalking = false;
+                Entity->Stage = 0;
+                GameState->CombatProcessingEvent = false;
+                
+            }
+                 
+        }
+        if(ActionIndex == 2)
+        {
+            // TODO: Spell
+        }
+        if(ActionIndex == 3)
+        {
+            // TODO: Item;
+        }
+    }
+}
 
 void GameSetUp(memory *Memory)
 {
@@ -376,6 +479,10 @@ void GameSetUp(memory *Memory)
 
     GameState->AppState = GAME_STATE;
     GameState->GamePlayState = WORLD;
+
+    GameState->CombatEntitiesEventQueue = 0;
+    GameState->CombatActionsEventQueue = 0;
+    GameState->CombatProcessingEvent = false;
 }
 
 void GameUpdateAndRender(memory *Memory, input *Input, r32 DeltaTime)
@@ -460,11 +567,11 @@ void GameUpdateAndRender(memory *Memory, input *Input, r32 DeltaTime)
                 }
             }
         }
-        if(GameState->GamePlayState == COMBAT)
+        else if(GameState->GamePlayState == COMBAT)
         {
             // TODO(manuto): ...
-            entity *Player = GameState->Player;
-            entity *Enemy = GameState->Enemy;
+            entity *Player = &GameState->CombatEntities[0];
+            entity *Enemy = &GameState->CombatEntities[1];
             
             if(Input->Buttons->Up.IsDown != Input->Buttons->Up.WasDown)
             {
@@ -494,7 +601,8 @@ void GameUpdateAndRender(memory *Memory, input *Input, r32 DeltaTime)
                 {
                     if(GameState->CombatOptionSelected == 0)
                     {
-                        // TODO(manuto): Attack...     
+                        // TODO(manuto): Attack...
+                        SetCombatEventQueue(&GameState->CombatEntitiesEventQueue, &GameState->CombatActionsEventQueue, 1, 2, 1, 1);
                     }
                     if(GameState->CombatOptionSelected == 1)
                     {
@@ -529,6 +637,8 @@ void GameUpdateAndRender(memory *Memory, input *Input, r32 DeltaTime)
                     }
                 }
             }
+
+            UpdateCombatEventQueue(GameState, &GameState->CombatEntitiesEventQueue, &GameState->CombatActionsEventQueue, DeltaTime);
             
             SetProjMat4(GameState, OrthogonalProjMat4(WND_WIDTH, WND_HEIGHT, 1.0f, 100.0f));
             
@@ -634,17 +744,19 @@ void GameUpdateAndRender(memory *Memory, input *Input, r32 DeltaTime)
             XOffset = RenderString(GameState, "-IN:", XPos, YPos, 7.0f*2.0f, 9.0f*2.0f);
             InnerXPos = XPos + (XOffset*(7.0f*2.0f));
             RenderUInt(GameState, Player->Stats.Intelligence, InnerXPos, YPos, 7.0f*2.0f, 9.0f*2.0f);
-
-
+            
+            SetProjMat4(GameState, OrthogonalProjMat4(WND_WIDTH*0.5f, WND_HEIGHT*0.5f, 1.0f, 100.0f));
+            
             Scale = ScaleMat4({16, 24, 0.0f});
-            Trans = TranslationMat4({-100.0f, 0.0f, 0.0f});
+            Trans = TranslationMat4({Player->Position.X, Player->Position.Y, 0.0f});
             SetWorldMat4(GameState, Trans * Scale);
             RenderFrame(GameState->Renderer, GameState->Mesh, GameState->UIFrameShader, GameState->HeroTexture,
-                        GameState->FrameConstBuffer, 16, 24, Player->Frame, Player->Skin);
-            Trans = TranslationMat4({100.0f, 0.0f, 0.0f});
+                        GameState->FrameConstBuffer, 16, 24, 4, Player->Skin);
+            Trans = TranslationMat4({Enemy->Position.X, Enemy->Position.Y, 0.0f});
             SetWorldMat4(GameState, Trans * Scale);
             RenderFrame(GameState->Renderer, GameState->Mesh, GameState->UIFrameShader, GameState->HeroTexture,
-                        GameState->FrameConstBuffer, 16, 24, Enemy->Frame, Enemy->Skin);
+                        GameState->FrameConstBuffer, 16, 24, 12, Enemy->Skin);
+
         }
     }
         
