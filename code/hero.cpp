@@ -15,28 +15,28 @@ void GetHeroInput(input *Input, entity *Entity, tilemap *Tilemap)
             if(GET_BIT(Entity->Facing, UP))
             {
                 PositionToCheck.Y += 16.0f;
-                Entity->Action = GetTilemapValue(Tilemap, PositionToCheck, Entity->Layer) - 1;
+                Entity->Action = GetTilemapValue(Tilemap, PositionToCheck, Entity->Layer) - 2;
             }
             else if(GET_BIT(Entity->Facing, DOWN))
             {
                 PositionToCheck.Y -= 16.0f;
-                Entity->Action = GetTilemapValue(Tilemap, PositionToCheck, Entity->Layer) - 1;
+                Entity->Action = GetTilemapValue(Tilemap, PositionToCheck, Entity->Layer) - 2;
             }
             else if(GET_BIT(Entity->Facing, LEFT))
             {
                 PositionToCheck.X -= 16.0f;
-                Entity->Action = GetTilemapValue(Tilemap, PositionToCheck, Entity->Layer) - 1;
+                Entity->Action = GetTilemapValue(Tilemap, PositionToCheck, Entity->Layer) - 2;
             }
             else if(GET_BIT(Entity->Facing, RIGHT))
             {
                 PositionToCheck.X += 16.0f;
-                Entity->Action = GetTilemapValue(Tilemap, PositionToCheck, Entity->Layer) - 1;
+                Entity->Action = GetTilemapValue(Tilemap, PositionToCheck, Entity->Layer) - 2;
             }
         }
     }
     else
     {
-        Entity->Action = 0;
+        Entity->Action = -1;
     }
 
     if(!Entity->IsWalking)

@@ -204,7 +204,7 @@ void EndCombat(game_state *GameState)
         Index < 2;
         ++Index)
     {
-        GameState->Entities[GameState->CombatEntities[Index].ID - 1].Stats = GameState->CombatEntities[Index].Stats;
+        GameState->Entities[GameState->CombatEntities[Index].ID - 2].Stats = GameState->CombatEntities[Index].Stats;
     } 
 }
 
@@ -473,7 +473,7 @@ void GameSetUp(memory *Memory)
     // The first element on the array always has to be the hero
     SetEntityPosition(&GameState->Entities[0], &GameState->Tilemap, 8, 11);
     GameState->Entities[0].Name = "Manuto";
-    GameState->Entities[0].ID = 1;
+    GameState->Entities[0].ID = 2;
     GameState->Entities[0].Facing = BIT(DOWN);
     GameState->Entities[0].Layer = 0;
     GameState->Entities[0].Skin = 1;
@@ -488,7 +488,7 @@ void GameSetUp(memory *Memory)
 
     SetEntityPosition(&GameState->Entities[1], &GameState->Tilemap, 15, 11);
     GameState->Entities[1].Name = "Thomex";
-    GameState->Entities[1].ID = 2;
+    GameState->Entities[1].ID = 3;
     GameState->Entities[1].Facing = BIT(DOWN);
     GameState->Entities[1].Layer = 0;
     GameState->Entities[1].Skin = 2;
@@ -502,9 +502,9 @@ void GameSetUp(memory *Memory)
     GameState->Entities[1].Stats.Intelligence = 5;
     GameState->Entities[1].Weapon = 2;
 
-    SetEntityPosition(&GameState->Entities[2], &GameState->Tilemap, 15, 6);
+    SetEntityPosition(&GameState->Entities[2], &GameState->Tilemap, 3, 3);
     GameState->Entities[2].Name = "Big Daddy";
-    GameState->Entities[2].ID = 3;
+    GameState->Entities[2].ID = 4;
     GameState->Entities[2].Facing = BIT(DOWN);
     GameState->Entities[2].Layer = 0;
     GameState->Entities[2].Skin = 3;
@@ -536,6 +536,26 @@ void GameSetUp(memory *Memory)
     GameState->Weapons[2].AttackPower = 0;
     GameState->Weapons[2].DefensePower = 4;
     GameState->Weapons[2].Weight = 3;
+
+    // TODO(manuto): Initialize Camera Position
+    GameState->CamPosition.X = GameState->Entities[2].Position.X;
+    GameState->CamPosition.Y = GameState->Entities[2].Position.Y;
+    if(GameState->CamPosition.X - (WND_WIDTH*0.5f*0.5f) < 0)
+    {
+        GameState->CamPosition.X -= GameState->CamPosition.X - (WND_WIDTH*0.5f*0.5f);
+    } 
+    if(GameState->CamPosition.X + (WND_WIDTH*0.5f*0.5f) > 64*16)
+    {
+        GameState->CamPosition.X -= (GameState->CamPosition.X + (WND_WIDTH*0.5f*0.5f) - (64*16));
+    }
+    if(GameState->CamPosition.Y - (WND_HEIGHT*0.5f*0.5f) < 0)
+    {
+        GameState->CamPosition.Y -= GameState->CamPosition.Y - (WND_HEIGHT*0.5f*0.5f); 
+    }
+    if(GameState->CamPosition.Y + (WND_HEIGHT*0.5f*0.5f) > 64*16)
+    { 
+        GameState->CamPosition.Y -= (GameState->CamPosition.Y + (WND_HEIGHT*0.5f*0.5f) - (64*16));
+    }
 
     InitEditor(&GameState->Editor, 16, 16, &GameState->MapEditorArena, GameState);
 
@@ -571,30 +591,45 @@ void GameUpdateAndRender(memory *Memory, input *Input, r32 DeltaTime)
         // Update...
         if(GameState->GamePlayState == WORLD)
         {
-            GetHeroInput(Input ,&GameState->Entities[0], &GameState->Tilemap);
+            GetHeroInput(Input ,&GameState->Entities[2], &GameState->Tilemap);
             for(i32 Index = 0;
                 Index < ArrayCount(GameState->Entities);
                 ++Index)
             {
-                if(Index != 0)
+                if(Index != 2)
                 {
                     SetEntityInRandomDirection(&GameState->Entities[Index], &GameState->Tilemap);
                 }
                 MoveEntity(&GameState->Entities[Index], &GameState->Tilemap, DeltaTime);
             }
-            GameState->CamPosition.X = GameState->Entities[0].Position.X;
-            GameState->CamPosition.Y = GameState->Entities[0].Position.Y;
+
+            
+            v2 NewCamPos = GameState->Entities[2].Position;
+
+            if(NewCamPos.X - (WND_WIDTH*0.5f*0.5f) < 0 ||
+               NewCamPos.X + (WND_WIDTH*0.5f*0.5f) > 64*16)
+            {
+                NewCamPos.X = GameState->CamPosition.X;
+            }
+            if(NewCamPos.Y - (WND_HEIGHT*0.5f*0.5f) < 0 ||
+               NewCamPos.Y + (WND_HEIGHT*0.5f*0.5f) > 64*16)
+            { 
+                NewCamPos.Y = GameState->CamPosition.Y;
+            }
+            GameState->CamPosition.X = NewCamPos.X;
+            GameState->CamPosition.Y = NewCamPos.Y;
             GameState->CamTarget.X = GameState->CamPosition.X;
             GameState->CamTarget.Y = GameState->CamPosition.Y;
             SetViewMat4(GameState, ViewMat4(GameState->CamPosition, GameState->CamTarget, {0.0f, 1.0f, 0.0f}));
+            
             SetProjMat4(GameState, OrthogonalProjMat4(WND_WIDTH*0.5f, WND_HEIGHT*0.5f, 1.0f, 100.0f));
 
-            i32 EntityID = GameState->Entities[0].Action;
-            if(EntityID > 0)
+            i32 EntityID = GameState->Entities[2].Action;
+            if(EntityID >= 0 && EntityID != (GameState->Entities[2].ID - 2))
             {
                 // TODO(manuto): make some COMBAT
                 GameState->GamePlayState = COMBAT;
-                InitCombat(GameState, &GameState->Entities[0], &GameState->Entities[EntityID]);
+                InitCombat(GameState, &GameState->Entities[2], &GameState->Entities[EntityID]);
             }
 
             // Render...
