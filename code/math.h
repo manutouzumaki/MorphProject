@@ -185,9 +185,23 @@ r32 DotV3(v3 A, v3 B)
     return Result;
 }
 
+r32 LengthV2(v2 V)
+{
+    return sqrtf(V.X*V.X + V.Y*V.Y);
+}
+
 r32 LengthV3(v3 V)
 {
     return sqrtf(DotV3(V, V));
+}
+
+v2 NormalizeV2(v2 V)
+{
+    v2 Result = {};
+    r32 Length = LengthV2(V);
+    Result.X = V.X / Length;
+    Result.Y = V.Y / Length;
+    return Result;
 }
 
 v3 NormalizeV3(v3 V)

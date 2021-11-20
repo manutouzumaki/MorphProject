@@ -197,6 +197,17 @@ void InitCombat(game_state *GameState, entity *Player, entity *Enemy)
     GameState->CombatEntities[1].Position = {100.0f, 0.0f};
 }
 
+void EndCombat(game_state *GameState)
+{
+    // TODO(manuto): make this function
+    for(i32 Index = 0;
+        Index < 2;
+        ++Index)
+    {
+        GameState->Entities[GameState->CombatEntities[Index].ID - 1].Stats = GameState->CombatEntities[Index].Stats;
+    } 
+}
+
 
 void AddEvent(u64 *EventQueue, u8 Event)
 {
@@ -235,6 +246,7 @@ void UpdateCombatEventQueue(game_state *GameState, u64 *Entities, u64 *Actions, 
             GameState->CombatEventData |= (*Actions & 0xF) << 16;
             GameState->CombatEventData |= ((*Actions & 0xF0) >> 4) << 24;
             *Actions = *Actions >> 8;
+            GameState->CombatTimer = 0.0f;
         }
     }
     else
@@ -247,13 +259,15 @@ void UpdateCombatEventQueue(game_state *GameState, u64 *Entities, u64 *Actions, 
         if(ActionIndex == 1)
         {
             // TODO: Attack
-            entity *Entity = &GameState->CombatEntities[ActionIndex - 1];
+            entity *Entity = &GameState->CombatEntities[EntityIndex - 1];
             entity *Target = &GameState->CombatEntities[TargetIndex - 1];
+            
             if(Entity->Stage == 0)
             {
                 Entity->OldPosiotion = Entity->Position;
+                v2 Direction = NormalizeV2(Target->Position - Entity->Position);
                 Entity->NextPosition = Target->Position;
-                Entity->NextPosition.X -= 16.0f;
+                Entity->NextPosition.X -= (Direction.X * 16.0f);
                 Entity->IsWalking = true;
                 ++Entity->Stage;
             }
@@ -263,27 +277,52 @@ void UpdateCombatEventQueue(game_state *GameState, u64 *Entities, u64 *Actions, 
                 {
                     ++Entity->Stage;
                 }
-            }else if(Entity->Stage == 2)
+            }
+            else if(Entity->Stage == 2)
+            {
+                // TODO(manuto): Attack...
+                if(GameState->CombatTimer < 6.0f)
+                {
+                    i32 Frame = (i32)floorf(GameState->CombatTimer) % 3;
+                    mat4 Scale = ScaleMat4({32, 32, 0.0f});
+                    mat4 Trans = TranslationMat4({Target->Position.X - 8.0f, Target->Position.Y - 8.0f, 0.0f});
+                    SetWorldMat4(GameState, Trans * Scale);
+                    RenderFrame(GameState->Renderer, GameState->Mesh, GameState->UIFrameShader, GameState->CombatSlashTexture,
+                                GameState->FrameConstBuffer, 64, 64, Frame, 0);
+                    GameState->CombatTimer += 20.0f*DeltaTime; 
+                }
+                else
+                {
+                    // TODO: Calculate the attack
+                    weapon_stats EntityWeapon = GameState->Weapons[Entity->Weapon];
+                    weapon_stats TargetWeapon = GameState->Weapons[Target->Weapon];
+                    u32 Damage = Entity->Stats.Strength + EntityWeapon.AttackPower - TargetWeapon.DefensePower;
+                    Target->Stats.HP_Now -= Damage;
+                    GameState->CombatTimer = 0.0f;
+                    ++Entity->Stage; 
+                }
+
+            }
+            else if(Entity->Stage == 3)
             { 
                 Entity->NextPosition = Entity->OldPosiotion;
                 Entity->OldPosiotion = Entity->Position;
                 Entity->IsWalking = true;
                 ++Entity->Stage;
             }
-            else if(Entity->Stage == 3)
+            else if(Entity->Stage == 4)
             {
                 if(!MoveEntityInCombat(Entity, DeltaTime))
                 {
                     ++Entity->Stage;
                 }
             }
-            else if(Entity->Stage == 4)
+            else if(Entity->Stage == 5)
             {
                 Entity->Position = Entity->NextPosition;
                 Entity->IsWalking = false;
                 Entity->Stage = 0;
-                GameState->CombatProcessingEvent = false;
-                
+                GameState->CombatProcessingEvent = false; 
             }
                  
         }
@@ -418,6 +457,7 @@ void GameSetUp(memory *Memory)
     GameState->FontTexture = CreateTexture(GameState->Renderer, "../data/font.bmp", &GameState->EngineArena);
     GameState->HeroPortraitTexture = CreateTexture(GameState->Renderer, "../data/hero_portrait.bmp", &GameState->EngineArena);
     GameState->CombatBgTexture = CreateTexture(GameState->Renderer, "../data/combat_bg_field.bmp", &GameState->EngineArena);
+    GameState->CombatSlashTexture = CreateTexture(GameState->Renderer, "../data/combat_slash.bmp", &GameState->EngineArena);
     
     AddTextureToList(GameState->Renderer, "../data/town_tileset.bmp",
                      &GameState->TexList, &GameState->TexListArena, &GameState->EngineArena);
@@ -444,6 +484,7 @@ void GameSetUp(memory *Memory)
     GameState->Entities[0].Stats.Strength = 12;
     GameState->Entities[0].Stats.Speed = 5;
     GameState->Entities[0].Stats.Intelligence = 5;
+    GameState->Entities[0].Weapon = 1;
 
     SetEntityPosition(&GameState->Entities[1], &GameState->Tilemap, 15, 11);
     GameState->Entities[1].Name = "Thomex";
@@ -459,6 +500,7 @@ void GameSetUp(memory *Memory)
     GameState->Entities[1].Stats.Strength = 12;
     GameState->Entities[1].Stats.Speed = 5;
     GameState->Entities[1].Stats.Intelligence = 5;
+    GameState->Entities[1].Weapon = 2;
 
     SetEntityPosition(&GameState->Entities[2], &GameState->Tilemap, 15, 6);
     GameState->Entities[2].Name = "Big Daddy";
@@ -474,6 +516,26 @@ void GameSetUp(memory *Memory)
     GameState->Entities[2].Stats.Strength = 12;
     GameState->Entities[2].Stats.Speed = 5;
     GameState->Entities[2].Stats.Intelligence = 5;
+    GameState->Entities[2].Weapon = 0;
+
+    // TODO(manuto): Weapons
+    GameState->Weapons[0].Name = "NoWeapon";
+    GameState->Weapons[0].AttackType = MELE;
+    GameState->Weapons[0].AttackPower = 0;
+    GameState->Weapons[0].DefensePower = 0;
+    GameState->Weapons[0].Weight = 0;
+
+    GameState->Weapons[1].Name = "Dagger";
+    GameState->Weapons[1].AttackType = MELE;
+    GameState->Weapons[1].AttackPower = 2;
+    GameState->Weapons[1].DefensePower = 0;
+    GameState->Weapons[1].Weight = 1;
+
+    GameState->Weapons[2].Name = "Shield";
+    GameState->Weapons[2].AttackType = DEFENSIVE;
+    GameState->Weapons[2].AttackPower = 0;
+    GameState->Weapons[2].DefensePower = 4;
+    GameState->Weapons[2].Weight = 3;
 
     InitEditor(&GameState->Editor, 16, 16, &GameState->MapEditorArena, GameState);
 
@@ -572,6 +634,16 @@ void GameUpdateAndRender(memory *Memory, input *Input, r32 DeltaTime)
             // TODO(manuto): ...
             entity *Player = &GameState->CombatEntities[0];
             entity *Enemy = &GameState->CombatEntities[1];
+
+            if(Enemy->Stats.HP_Now <= 0)
+            {
+                Enemy->Stats.HP_Now = 0;
+                GameState->CombatEntitiesEventQueue = 0;
+                GameState->CombatActionsEventQueue = 0;
+                GameState->CombatProcessingEvent = false;
+                GameState->GamePlayState = WORLD;
+                EndCombat(GameState);
+            }
             
             if(Input->Buttons->Up.IsDown != Input->Buttons->Up.WasDown)
             {
@@ -622,6 +694,9 @@ void GameUpdateAndRender(memory *Memory, input *Input, r32 DeltaTime)
                     }
                     if(GameState->CombatOptionSelected == 3)
                     {
+                        GameState->CombatEntitiesEventQueue = 0;
+                        GameState->CombatActionsEventQueue = 0;
+                        GameState->CombatProcessingEvent = false;
                         GameState->GamePlayState = WORLD;
                     }
                 }
@@ -637,9 +712,7 @@ void GameUpdateAndRender(memory *Memory, input *Input, r32 DeltaTime)
                     }
                 }
             }
-
-            UpdateCombatEventQueue(GameState, &GameState->CombatEntitiesEventQueue, &GameState->CombatActionsEventQueue, DeltaTime);
-            
+ 
             SetProjMat4(GameState, OrthogonalProjMat4(WND_WIDTH, WND_HEIGHT, 1.0f, 100.0f));
             
             r32 XPos = -WND_WIDTH*0.5f;
@@ -756,6 +829,8 @@ void GameUpdateAndRender(memory *Memory, input *Input, r32 DeltaTime)
             SetWorldMat4(GameState, Trans * Scale);
             RenderFrame(GameState->Renderer, GameState->Mesh, GameState->UIFrameShader, GameState->HeroTexture,
                         GameState->FrameConstBuffer, 16, 24, 12, Enemy->Skin);
+
+            UpdateCombatEventQueue(GameState, &GameState->CombatEntitiesEventQueue, &GameState->CombatActionsEventQueue, DeltaTime);
 
         }
     }

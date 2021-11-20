@@ -9,23 +9,31 @@
 
 #define MAX_NUM_OF_ENTITIES 20;
 
+enum attack_type
+{
+    MELE,
+    RANGE,
+    DEFENSIVE
+};
+
 struct weapon_stats
 {
+    char *Name;
     u32 AttackType;
     u32 AttackPower;
     u32 DefensePower;
-    u32 AttackRate;
+    u32 Weight;
 };
 
 struct entity_stats
 {
-    u32 HP_Now; // Healt Points
-    u32 HP_Max;
-    u32 MP_Now; // Magic Points
-    u32 MP_Max;
-    u32 Strength;
-    u32 Speed;
-    u32 Intelligence; 
+    i32 HP_Now; // Healt Points
+    i32 HP_Max;
+    i32 MP_Now; // Magic Points
+    i32 MP_Max;
+    i32 Strength;
+    i32 Speed;
+    i32 Intelligence; 
 };
 
 struct entity
