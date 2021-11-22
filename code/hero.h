@@ -16,6 +16,22 @@ enum attack_type
     DEFENSIVE
 };
 
+struct item_stats
+{
+    char *Name;
+    i32 HP_Modifire;
+    i32 MP_Modifire;
+};
+
+struct spells_stats
+{
+    char *Name;
+    i32 MP_Cost;
+    i32 Power;
+    i32 Defense;
+    u32 TextureIndex;
+};
+
 struct weapon_stats
 {
     char *Name;
@@ -45,9 +61,10 @@ struct entity
     char *Name;
     entity_stats Stats;
     u32 Weapon;
-    u32 Ability0;
-    u32 Ability1;
-    u32 Ability2;
+    u32 Spells[3];
+    u32 SpellsCount;
+    u32 Items[2];
+    u32 ItemsCount;
     u32 Stage;
 
     // renderer stuff

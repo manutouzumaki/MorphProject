@@ -86,6 +86,7 @@ struct game_state
     texture *TilesheetTextures;
     texture *CombatBgTexture;
     texture *CombatSlashTexture;
+    texture *FireTexture;
     u32 TilesheetTexturesCount;
     texture_list TexList;
 
@@ -99,16 +100,20 @@ struct game_state
     tilemap Tilemap; 
     entity Entities[3];
     weapon_stats Weapons[3];
+    spells_stats Spells[3];
+    item_stats Items[2];
 
     // for combat only
     entity CombatEntities[8];
     u64 CombatEntitiesEventQueue;
     u64 CombatActionsEventQueue;
-    i32 CombatState;
+    i32 CombatActualOption;
     i32 CombatOptionSelected;
     i32 CombatOptionLevel;
+    i32 CombatNumberOfOptions;
     u32 CombatEventData;
     r32 CombatTimer;
+    r32 CombatAnimTimer;
     bool CombatProcessingEvent;
 
     editor Editor;

@@ -210,11 +210,11 @@ bool MoveEntityInCombat(entity *Entity, r32 DeltaTime)
             Entity->WalkDistance = 0.0f;
             return false;
         }
-        Entity->WalkDistance += 2.0f*DeltaTime;
+        Entity->WalkDistance += 1.0f*DeltaTime;
 
         // TODO(manuto): Update Player Animation
         Entity->Frame = (u32)Entity->AnimTimer % 4;
-        Entity->AnimTimer += 8.0f*DeltaTime;
+        Entity->AnimTimer += 12.0f*DeltaTime;
     }
     else
     { 
