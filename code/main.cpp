@@ -735,20 +735,19 @@ void GameUpdateAndRender(memory *Memory, input *Input, r32 DeltaTime)
         // Update...
         if(GameState->GamePlayState == WORLD)
         {
-            GetHeroInput(Input ,&GameState->Entities[2], &GameState->Tilemap);
+            GetHeroInput(Input ,&GameState->Entities[0], &GameState->Tilemap);
             for(i32 Index = 0;
                 Index < ArrayCount(GameState->Entities);
                 ++Index)
             {
-                if(Index != 2)
+                if(Index != 0)
                 {
                     SetEntityInRandomDirection(&GameState->Entities[Index], &GameState->Tilemap);
                 }
                 MoveEntity(&GameState->Entities[Index], &GameState->Tilemap, DeltaTime);
             }
-
             
-            v2 NewCamPos = GameState->Entities[2].Position;
+            v2 NewCamPos = GameState->Entities[0].Position;
 
             if(NewCamPos.X - (WND_WIDTH*0.5f*0.5f) < 0 ||
                NewCamPos.X + (WND_WIDTH*0.5f*0.5f) > 64*16)
@@ -768,12 +767,12 @@ void GameUpdateAndRender(memory *Memory, input *Input, r32 DeltaTime)
             
             SetProjMat4(GameState, OrthogonalProjMat4(WND_WIDTH*0.5f, WND_HEIGHT*0.5f, 1.0f, 100.0f));
 
-            i32 EntityID = GameState->Entities[2].Action;
-            if(EntityID >= 0 && EntityID != (GameState->Entities[2].ID - 2))
+            i32 EntityID = GameState->Entities[0].Action;
+            if(EntityID >= 0 && EntityID != (GameState->Entities[0].ID - 2))
             {
                 // TODO(manuto): make some COMBAT
                 GameState->GamePlayState = COMBAT;
-                InitCombat(GameState, &GameState->Entities[2], &GameState->Entities[EntityID]);
+                InitCombat(GameState, &GameState->Entities[0], &GameState->Entities[EntityID]);
             }
 
             // Render...
