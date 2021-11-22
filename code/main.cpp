@@ -189,6 +189,7 @@ void RenderMemoryData(game_state *GameState, arena *Arena, char *Text, int *XPos
 
 void InitCombat(game_state *GameState, entity *Player, entity *Enemy)
 {
+    GameState->CombatNumberOfOptions = 4;
     GameState->CombatOptionSelected = 0;
     GameState->CombatOptionLevel = 0;
     GameState->CombatEntities[0] = *Player;
@@ -349,8 +350,7 @@ void UpdateCombatEventQueue(game_state *GameState, u64 *Entities, u64 *Actions, 
                 Entity->IsWalking = false;
                 Entity->Stage = 0;
                 GameState->CombatProcessingEvent = false; 
-            }
-                 
+            } 
         }
         if(ActionIndex == 2)
         {
@@ -378,13 +378,11 @@ void UpdateCombatEventQueue(game_state *GameState, u64 *Entities, u64 *Actions, 
                     // TODO: Draw Fireball
                     color_const_buffer ColorBuffer = {};
                     mat4 Trans = TranslationMat4({FireballPosition.X, FireballPosition.Y, 0.0f});
-                    mat4 Scale = ScaleMat4({48.0f, 32.0f, 0.0f});
+                    mat4 Scale = ScaleMat4({64.0f, 32.0f, 0.0f});
                     SetWorldMat4(GameState, Trans * Scale);
-                    i32 Frame = (i32)floorf(GameState->CombatAnimTimer) % 3;
+                    i32 Frame = (i32)floorf(GameState->CombatAnimTimer) % 4;
                     RenderFrame(GameState->Renderer, GameState->Mesh, GameState->UIFrameShader, GameState->FireTexture,
-                                GameState->FrameConstBuffer, 48, 32, Frame, 0);
-                    RenderFrame(GameState->Renderer, GameState->Mesh, GameState->UIFrameShader, GameState->FireTexture,
-                                GameState->FrameConstBuffer, 48, 32, 0, 0);
+                                GameState->FrameConstBuffer, 32, 16, Frame, 0);
 
                     if(GameState->CombatTimer > 1.0f)
                     {
@@ -422,9 +420,66 @@ void UpdateCombatEventQueue(game_state *GameState, u64 *Entities, u64 *Actions, 
         if(ActionIndex == 3)
         {
             // TODO: Item;
-            OutputDebugString(GameState->Items[OptionIndex - 1].Name);
-            OutputDebugString("\n");
-            GameState->CombatProcessingEvent = false;
+            entity *Entity = &GameState->CombatEntities[EntityIndex - 1];
+            entity *Target = &GameState->CombatEntities[TargetIndex - 1];
+            if(OptionIndex - 1 == 0) // Life Potion
+            {           
+                if(Entity->Stage == 0)
+                {
+                    if(GameState->CombatAnimTimer < 3.0f)
+                    {
+                        i32 Frame = (i32)floorf(GameState->CombatAnimTimer) % 5;
+                        mat4 Scale = ScaleMat4({32, 32, 0.0f});
+                        mat4 Trans = TranslationMat4({Entity->Position.X - 8.0f, Entity->Position.Y - 8.0f, 0.0f});  // then we should be able to choos our target
+                        SetWorldMat4(GameState, Trans * Scale);
+                        RenderFrame(GameState->Renderer, GameState->Mesh, GameState->UIFrameShader, GameState->RestHPTexture,
+                                    GameState->FrameConstBuffer, 16, 16, Frame, 0);
+                        GameState->CombatAnimTimer += 8.0f*DeltaTime; 
+                    }
+                    else
+                    {
+                        ++Entity->Stage;
+                        GameState->CombatAnimTimer = 0.0f;
+                    }
+                }
+                else if(Entity->Stage == 1)
+                {
+                    item_stats Item = GameState->Items[OptionIndex - 1];
+                    Entity->Stats.HP_Now += Item.HP_Modifire;
+                    Entity->Stats.MP_Now += Item.MP_Modifire;
+                    Entity->Stage = 0;
+                    GameState->CombatProcessingEvent = false;
+                }
+            }
+            else if(OptionIndex - 1 == 1) // Ether
+            {
+                if(Entity->Stage == 0)
+                {
+                    if(GameState->CombatAnimTimer < 3.0f)
+                    {
+                        i32 Frame = (i32)floorf(GameState->CombatAnimTimer) % 5;
+                        mat4 Scale = ScaleMat4({32, 32, 0.0f});
+                        mat4 Trans = TranslationMat4({Entity->Position.X - 8.0f, Entity->Position.Y - 8.0f, 0.0f});  // then we should be able to choos our target
+                        SetWorldMat4(GameState, Trans * Scale);
+                        RenderFrame(GameState->Renderer, GameState->Mesh, GameState->UIFrameShader, GameState->RestMPTexture,
+                                    GameState->FrameConstBuffer, 16, 16, Frame, 0);
+                        GameState->CombatAnimTimer += 8.0f*DeltaTime; 
+                    }
+                    else
+                    {
+                        ++Entity->Stage;
+                        GameState->CombatAnimTimer = 0.0f;
+                    }
+                }
+                else if(Entity->Stage == 1)
+                {
+                    item_stats Item = GameState->Items[OptionIndex - 1];
+                    Entity->Stats.HP_Now += Item.HP_Modifire;
+                    Entity->Stats.MP_Now += Item.MP_Modifire;
+                    Entity->Stage = 0;
+                    GameState->CombatProcessingEvent = false;
+                }
+            }
         }
     }
 }
@@ -550,7 +605,11 @@ void GameSetUp(memory *Memory)
     GameState->HeroPortraitTexture = CreateTexture(GameState->Renderer, "../data/hero_portrait.bmp", &GameState->EngineArena);
     GameState->CombatBgTexture = CreateTexture(GameState->Renderer, "../data/combat_bg_field.bmp", &GameState->EngineArena);
     GameState->CombatSlashTexture = CreateTexture(GameState->Renderer, "../data/combat_slash.bmp", &GameState->EngineArena);
-    GameState->FireTexture = CreateTexture(GameState->Renderer, "../data/fire.bmp", &GameState->EngineArena);
+    GameState->FireTexture = CreateTexture(GameState->Renderer, "../data/fireball.bmp", &GameState->EngineArena);
+    GameState->RestHPTexture = CreateTexture(GameState->Renderer, "../data/fx_restore_hp.bmp", &GameState->EngineArena);
+    GameState->RestMPTexture = CreateTexture(GameState->Renderer, "../data/fx_restore_mp.bmp", &GameState->EngineArena);
+    GameState->ReviveTexture = CreateTexture(GameState->Renderer, "../data/fx_revive.bmp", &GameState->EngineArena);
+    GameState->UseItemTexture = CreateTexture(GameState->Renderer, "../data/fx_use_item.bmp", &GameState->EngineArena);
     
     AddTextureToList(GameState->Renderer, "../data/town_tileset.bmp",
                      &GameState->TexList, &GameState->TexListArena, &GameState->EngineArena);

@@ -87,6 +87,12 @@ struct game_state
     texture *CombatBgTexture;
     texture *CombatSlashTexture;
     texture *FireTexture;
+
+    texture *RestHPTexture;
+    texture *RestMPTexture;
+    texture *ReviveTexture;
+    texture *UseItemTexture;
+
     u32 TilesheetTexturesCount;
     texture_list TexList;
 

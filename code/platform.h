@@ -14,7 +14,7 @@
 #define Gigabytes(Value) (Megabytes(Value)*1024LL)
 #define Terabytes(Value) (Gigabytes(Value)*1024LL)
 
-#define WND_WIDTH 800
+#define WND_WIDTH  800
 #define WND_HEIGHT 600
 
 typedef uint64_t u64;
