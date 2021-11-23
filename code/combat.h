@@ -8,11 +8,20 @@
 struct combat
 {
     entity Entities[8];
+    i32 NumberOfEntities;
+    i32 NumberOfEnemiesKill;
+    i32 NumberOfHerosKill;
     
     u64 EntitiesEventQueue;
     u64 ActionsEventQueue;
-    u32 EventData;
-    
+    u32 EventData; 
+
+    // TEMP:
+    i32 Target;
+    bool SelectingTarget;
+    bool TargetSelected;
+
+
     i32 ActualOption;
     i32 OptionSelected;
     i32 OptionLevel;

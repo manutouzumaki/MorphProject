@@ -111,7 +111,6 @@ void InitTextures(game_state *GameState)
 void InitEntities(game_state *GameState)
 {
     // The first element on the array always has to be the hero
-    SetEntityPosition(&GameState->Entities[0], &GameState->Tilemap, 8, 11);
     GameState->Entities[0].Name = "Manuto";
     GameState->Entities[0].ID = 2;
     GameState->Entities[0].Facing = BIT(DOWN);
@@ -123,7 +122,7 @@ void InitEntities(game_state *GameState)
     GameState->Entities[0].Stats.MP_Max = 25;
     GameState->Entities[0].Stats.MP_Now = 25;
     GameState->Entities[0].Stats.Strength = 12;
-    GameState->Entities[0].Stats.Speed = 7;
+    GameState->Entities[0].Stats.Speed = 20;
     GameState->Entities[0].Stats.Intelligence = 5;
     GameState->Entities[0].Weapon = 1;
     GameState->Entities[0].Spells[0] = 0;
@@ -133,8 +132,9 @@ void InitEntities(game_state *GameState)
     GameState->Entities[0].Items[0] = 0;
     GameState->Entities[0].Items[1] = 1;
     GameState->Entities[0].ItemsCount = 2;
+    GameState->Entities[0].Alive = true;
+    SetEntityPosition(&GameState->Entities[0], &GameState->Tilemap, 8, 11);
 
-    SetEntityPosition(&GameState->Entities[1], &GameState->Tilemap, 15, 11);
     GameState->Entities[1].Name = "Thomex";
     GameState->Entities[1].ID = 3;
     GameState->Entities[1].Facing = BIT(DOWN);
@@ -156,8 +156,9 @@ void InitEntities(game_state *GameState)
     GameState->Entities[1].Items[0] = 0;
     GameState->Entities[1].Items[1] = 1;
     GameState->Entities[1].ItemsCount = 2;
+    GameState->Entities[1].Alive = true;
+    SetEntityPosition(&GameState->Entities[1], &GameState->Tilemap, 15, 11);
 
-    SetEntityPosition(&GameState->Entities[2], &GameState->Tilemap, 3, 3);
     GameState->Entities[2].Name = "Big Daddy";
     GameState->Entities[2].ID = 4;
     GameState->Entities[2].Facing = BIT(DOWN);
@@ -179,6 +180,56 @@ void InitEntities(game_state *GameState)
     GameState->Entities[2].Items[0] = 0;
     GameState->Entities[2].Items[1] = 1;
     GameState->Entities[2].ItemsCount = 2;
+    GameState->Entities[2].Alive = true;
+    SetEntityPosition(&GameState->Entities[2], &GameState->Tilemap, 3, 3);
+
+    GameState->Entities[3].Name = "Gonzitron";
+    GameState->Entities[3].ID = 5;
+    GameState->Entities[3].Facing = BIT(RIGHT);
+    GameState->Entities[3].Layer = 0;
+    GameState->Entities[3].Skin = 6;
+    GameState->Entities[3].TimeToWait = -1.0f;
+    GameState->Entities[3].Stats.HP_Max = 50;
+    GameState->Entities[3].Stats.HP_Now = 50;
+    GameState->Entities[3].Stats.MP_Max = 10;
+    GameState->Entities[3].Stats.MP_Now = 10;
+    GameState->Entities[3].Stats.Strength = 8;
+    GameState->Entities[3].Stats.Speed = 4;
+    GameState->Entities[3].Stats.Intelligence = 12;
+    GameState->Entities[3].Weapon = 0;
+    GameState->Entities[3].Spells[0] = 0;
+    GameState->Entities[3].Spells[1] = -1;
+    GameState->Entities[3].Spells[2] = -1;
+    GameState->Entities[3].SpellsCount = 0;
+    GameState->Entities[3].Items[0] = 0;
+    GameState->Entities[3].Items[1] = 1;
+    GameState->Entities[3].ItemsCount = 2;
+    GameState->Entities[3].Alive = true;
+    SetEntityPosition(&GameState->Entities[3], &GameState->Tilemap, 3, 4);
+
+    GameState->Entities[4].Name = "Jhosep";
+    GameState->Entities[4].ID = 6;
+    GameState->Entities[4].Facing = BIT(RIGHT);
+    GameState->Entities[4].Layer = 0;
+    GameState->Entities[4].Skin = 5;
+    GameState->Entities[4].TimeToWait = -1.0f;
+    GameState->Entities[4].Stats.HP_Max = 50;
+    GameState->Entities[4].Stats.HP_Now = 50;
+    GameState->Entities[4].Stats.MP_Max = 15;
+    GameState->Entities[4].Stats.MP_Now = 15;
+    GameState->Entities[4].Stats.Strength = 6;
+    GameState->Entities[4].Stats.Speed = 21;
+    GameState->Entities[4].Stats.Intelligence = 8;
+    GameState->Entities[4].Weapon = 0;
+    GameState->Entities[4].Spells[0] = 0;
+    GameState->Entities[4].Spells[1] = -1;
+    GameState->Entities[4].Spells[2] = -1;
+    GameState->Entities[4].SpellsCount = 0;
+    GameState->Entities[4].Items[0] = 0;
+    GameState->Entities[4].Items[1] = 1;
+    GameState->Entities[4].ItemsCount = 2;
+    GameState->Entities[4].Alive = true;
+    SetEntityPosition(&GameState->Entities[4], &GameState->Tilemap, 3, 5);
 }
 
 void InitWeapons(game_state *GameState)

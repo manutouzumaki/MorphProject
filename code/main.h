@@ -88,7 +88,6 @@ struct game_state
     texture *CombatBgTexture;
     texture *CombatSlashTexture;
     texture *FireTexture;
-
     texture *RestHPTexture;
     texture *RestMPTexture;
     texture *ReviveTexture;
@@ -104,12 +103,11 @@ struct game_state
     v3 CamOffset;
     v3 CamTarget;
 
-    tilemap Tilemap; 
-    entity Entities[3];
+    entity Entities[5];
     weapon_stats Weapons[3];
     spells_stats Spells[3];
-    item_stats Items[2];
-    
+    item_stats Items[2]; 
+    tilemap Tilemap; 
     combat Combat;
 
     editor Editor;

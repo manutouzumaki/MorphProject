@@ -56,7 +56,8 @@ struct entity
 {   
     // Sate stuff
     u32 ID;
-    i32 Action;
+    i32 Action[4];
+    i32 NumbOfActions;
     // game play stuff
     char *Name;
     entity_stats Stats;
@@ -80,6 +81,7 @@ struct entity
     r32 TimeToWait;
     r32 WaitTime;
     bool IsWalking;
+    bool Alive;
 };
 
 #endif
