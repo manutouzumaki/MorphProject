@@ -31,16 +31,21 @@ tilemap LoadMap(game_state *GameState, char *FileName)
     return Map;
 }
 
-void RenderLayer(game_state *GameState, tilemap *Tilemap, layer *Layer, bool Collision)
+void RenderLayer(game_state *GameState, tilemap *Tilemap, layer *Layer, bool Collision, r32 Ratio)
 {
     // Batch Rendering
+    i32 XMin = (GameState->CamPosition.X - (WND_WIDTH*0.5f*Ratio)) / 16;
+    i32 XMax = (GameState->CamPosition.X + (WND_WIDTH*0.5f*Ratio)) / 16;
+    i32 YMin = (GameState->CamPosition.Y - (WND_HEIGHT*0.5f*Ratio)) / 16;
+    i32 YMax = (GameState->CamPosition.Y + (WND_HEIGHT*0.5f*Ratio)) / 16;
+
     BeginBatch(GameState->TilemapBatch);
-    for(i32 Y = 0;
-        Y < Tilemap->Rows;
+    for(i32 Y = YMin;
+        Y <= YMax;
         ++Y)
     {
-        for(i32 X = 0;
-            X < Tilemap->Cols;
+        for(i32 X = XMin;
+            X <= XMax;
             ++X)
         {
             i32 Index = Y * Tilemap->Cols + X; 

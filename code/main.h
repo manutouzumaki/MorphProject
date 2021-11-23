@@ -4,6 +4,7 @@
 #include "tilemap.h"
 #include "map_editor.h"
 #include "hero.h"
+#include "combat.h"
 
 struct vs_constant_buffer
 {
@@ -108,19 +109,8 @@ struct game_state
     weapon_stats Weapons[3];
     spells_stats Spells[3];
     item_stats Items[2];
-
-    // for combat only
-    entity CombatEntities[8];
-    u64 CombatEntitiesEventQueue;
-    u64 CombatActionsEventQueue;
-    i32 CombatActualOption;
-    i32 CombatOptionSelected;
-    i32 CombatOptionLevel;
-    i32 CombatNumberOfOptions;
-    u32 CombatEventData;
-    r32 CombatTimer;
-    r32 CombatAnimTimer;
-    bool CombatProcessingEvent;
+    
+    combat Combat;
 
     editor Editor;
 };

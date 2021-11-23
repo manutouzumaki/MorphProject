@@ -314,7 +314,7 @@ void UpdateAndRenderEditor(game_state *GameState, input *Input, r32 DeltaTime)
             layer *FirstLayer = Editor->Tilemap.Layers;
             FirstLayer -= (Editor->Tilemap.LayersCount - 1);
             layer *ActualLayer = FirstLayer + Index;
-            RenderLayer(GameState, &Editor->Tilemap, ActualLayer, true);
+            RenderLayer(GameState, &Editor->Tilemap, ActualLayer, true, Editor->Zoom);
         }
     } 
 
