@@ -5,7 +5,7 @@ void SetEntityPosition(entity *Entity, tilemap *Tilemap, i32 TileX, i32 TileY)
     SetCollition(Tilemap, Entity->Position, Entity->Layer, Entity->ID);
 }
 
-void GetHeroInput(input *Input, entity *Entity, tilemap *Tilemap)
+void GetHeroInput(input *Input, entity *Entity, tilemap *Tilemap, entity *Entities)
 {
     if(Input->Buttons->Start.IsDown != Input->Buttons->Start.WasDown)
     {
@@ -32,57 +32,58 @@ void GetHeroInput(input *Input, entity *Entity, tilemap *Tilemap)
                 PositionToCheck.X += 16.0f;
                 Entity->Action[0] = GetTilemapValue(Tilemap, PositionToCheck, Entity->Layer) - 2;
             }
-
-            // TODO(manuto): Search for more entities near by
-            if(Entity->Action[0] >= 0 && Entity->Action[0] != (Entity->ID - 2))
+            if(!Entities[Entity->Action[0]].IsWalking)
             {
-                // fisrt search on the positive x axis
-                v2 ShearchPosition = PositionToCheck;
-                ShearchPosition.X += 16.0f;
-                i32 NewTileValue = (GetTilemapValue(Tilemap, ShearchPosition, Entity->Layer) - 2);
-                i32 Counter = 1;
-                while(NewTileValue >= 0 && NewTileValue != (Entity->ID - 2))
+                // TODO(manuto): Search for more entities near by
+                if(Entity->Action[0] >= 0 && Entity->Action[0] != (Entity->ID - 2))
                 {
-                    Entity->Action[Counter++] = NewTileValue;
+                    // fisrt search on the positive x axis
+                    v2 ShearchPosition = PositionToCheck;
                     ShearchPosition.X += 16.0f;
-                    NewTileValue = (GetTilemapValue(Tilemap, ShearchPosition, Entity->Layer) - 2);
-                    if(Counter >= 4) break; 
-                }
-                // search the negative x axis
-                ShearchPosition = PositionToCheck;
-                ShearchPosition.X -= 16.0f;
-                NewTileValue = (GetTilemapValue(Tilemap, ShearchPosition, Entity->Layer) - 2);
-                while(NewTileValue >= 0 && NewTileValue != (Entity->ID - 2))
-                {
-                    Entity->Action[Counter++] = NewTileValue;
+                    i32 NewTileValue = (GetTilemapValue(Tilemap, ShearchPosition, Entity->Layer) - 2);
+                    i32 Counter = 1;
+                    while(NewTileValue >= 0 && NewTileValue != (Entity->ID - 2))
+                    {
+                        Entity->Action[Counter++] = NewTileValue;
+                        ShearchPosition.X += 16.0f;
+                        NewTileValue = (GetTilemapValue(Tilemap, ShearchPosition, Entity->Layer) - 2);
+                        if(Counter >= 4) break; 
+                    }
+                    // search the negative x axis
+                    ShearchPosition = PositionToCheck;
                     ShearchPosition.X -= 16.0f;
                     NewTileValue = (GetTilemapValue(Tilemap, ShearchPosition, Entity->Layer) - 2);
-                    if(Counter >= 4) break; 
-                }
-
-                // search on the positive y axis
-                ShearchPosition = PositionToCheck;
-                ShearchPosition.Y += 16.0f;
-                NewTileValue = (GetTilemapValue(Tilemap, ShearchPosition, Entity->Layer) - 2);
-                while(NewTileValue >= 0 && NewTileValue != (Entity->ID - 2))
-                {
-                    Entity->Action[Counter++] = NewTileValue;
+                    while(NewTileValue >= 0 && NewTileValue != (Entity->ID - 2))
+                    {
+                        Entity->Action[Counter++] = NewTileValue;
+                        ShearchPosition.X -= 16.0f;
+                        NewTileValue = (GetTilemapValue(Tilemap, ShearchPosition, Entity->Layer) - 2);
+                        if(Counter >= 4) break; 
+                    }
+                    // search on the positive y axis
+                    ShearchPosition = PositionToCheck;
                     ShearchPosition.Y += 16.0f;
                     NewTileValue = (GetTilemapValue(Tilemap, ShearchPosition, Entity->Layer) - 2);
-                    if(Counter >= 4) break; 
-                }
-                // search the negative y axis
-                ShearchPosition = PositionToCheck;
-                ShearchPosition.Y -= 16.0f;
-                NewTileValue = (GetTilemapValue(Tilemap, ShearchPosition, Entity->Layer) - 2);
-                while(NewTileValue >= 0 && NewTileValue != (Entity->ID - 2))
-                {
-                    Entity->Action[Counter++] = NewTileValue;
+                    while(NewTileValue >= 0 && NewTileValue != (Entity->ID - 2))
+                    {
+                        Entity->Action[Counter++] = NewTileValue;
+                        ShearchPosition.Y += 16.0f;
+                        NewTileValue = (GetTilemapValue(Tilemap, ShearchPosition, Entity->Layer) - 2);
+                        if(Counter >= 4) break; 
+                    }
+                    // search the negative y axis
+                    ShearchPosition = PositionToCheck;
                     ShearchPosition.Y -= 16.0f;
                     NewTileValue = (GetTilemapValue(Tilemap, ShearchPosition, Entity->Layer) - 2);
-                    if(Counter >= 4) break; 
+                    while(NewTileValue >= 0 && NewTileValue != (Entity->ID - 2))
+                    {
+                        Entity->Action[Counter++] = NewTileValue;
+                        ShearchPosition.Y -= 16.0f;
+                        NewTileValue = (GetTilemapValue(Tilemap, ShearchPosition, Entity->Layer) - 2);
+                        if(Counter >= 4) break; 
+                    }
+                    Entity->NumbOfActions = Counter;
                 }
-                Entity->NumbOfActions = Counter;
             }
         }
     }

@@ -109,7 +109,7 @@ void GameUpdateAndRender(memory *Memory, input *Input, r32 DeltaTime)
         // Update...
         if(GameState->GamePlayState == WORLD)
         {
-            GetHeroInput(Input ,&GameState->Entities[0], &GameState->Tilemap);
+            GetHeroInput(Input ,&GameState->Entities[0], &GameState->Tilemap, GameState->Entities);
             for(i32 Index = 0;
                 Index < ArrayCount(GameState->Entities);
                 ++Index)
