@@ -5,6 +5,47 @@ void SetEntityPosition(entity *Entity, tilemap *Tilemap, i32 TileX, i32 TileY)
     SetCollition(Tilemap, Entity->Position, Entity->Layer, Entity->ID);
 }
 
+u32 GetFacing(v2 NextPosition, v2 OldPosition, u32 Facing)
+{
+    u32 Result = Facing;
+    v2 Direction = NormalizeV2(NextPosition - OldPosition);
+    if(Direction.X > 0.0f)
+    {
+        Result = BIT(RIGHT);
+    }
+    if(Direction.X < 0.0f)
+    {
+        Result = BIT(LEFT); 
+    }
+    if(Direction.Y > 0.0f)
+    {
+        Result = BIT(UP);
+    }
+    if(Direction.Y < 0.0f)
+    {
+        Result = BIT(DOWN); 
+    }
+    return Result;
+}
+
+void MoveHeroParty(entity *Entities, v2 OldPosition)
+{
+    Entities[1].OldPosiotion = Entities[1].Position;
+    Entities[1].NextPosition = OldPosition;
+    Entities[1].IsWalking = true;
+    Entities[1].Facing = GetFacing(Entities[1].NextPosition, Entities[1].OldPosiotion, Entities[1].Facing);
+
+    Entities[2].OldPosiotion = Entities[2].Position;
+    Entities[2].NextPosition = Entities[1].OldPosiotion;
+    Entities[2].IsWalking = true;
+    Entities[2].Facing = GetFacing(Entities[2].NextPosition, Entities[2].OldPosiotion, Entities[2].Facing);
+
+    Entities[3].OldPosiotion = Entities[3].Position;
+    Entities[3].NextPosition = Entities[2].OldPosiotion;
+    Entities[3].IsWalking = true;
+    Entities[3].Facing = GetFacing(Entities[3].NextPosition, Entities[3].OldPosiotion, Entities[3].Facing);
+}
+
 void GetHeroInput(input *Input, entity *Entity, tilemap *Tilemap, entity *Entities)
 {
     if(Input->Buttons->Start.IsDown != Input->Buttons->Start.WasDown)
@@ -108,6 +149,7 @@ void GetHeroInput(input *Input, entity *Entity, tilemap *Tilemap, entity *Entiti
                 SetCollition(Tilemap, NextPosition, Entity->Layer, Entity->ID);
                 Entity->NextPosition = NextPosition;
                 Entity->IsWalking = true;
+                MoveHeroParty(Entities, Entity->OldPosiotion);
             }
         }
         else if(Input->Buttons->Down.IsDown)
@@ -121,6 +163,7 @@ void GetHeroInput(input *Input, entity *Entity, tilemap *Tilemap, entity *Entiti
                 SetCollition(Tilemap, NextPosition, Entity->Layer, Entity->ID);
                 Entity->NextPosition = NextPosition;
                 Entity->IsWalking = true;
+                MoveHeroParty(Entities, Entity->OldPosiotion);
             }
         }    
         else if(Input->Buttons->Left.IsDown)
@@ -134,6 +177,7 @@ void GetHeroInput(input *Input, entity *Entity, tilemap *Tilemap, entity *Entiti
                 SetCollition(Tilemap, NextPosition, Entity->Layer, Entity->ID);
                 Entity->NextPosition = NextPosition;
                 Entity->IsWalking = true;
+                MoveHeroParty(Entities, Entity->OldPosiotion);
             }
         }
         else if(Input->Buttons->Right.IsDown)
@@ -147,6 +191,7 @@ void GetHeroInput(input *Input, entity *Entity, tilemap *Tilemap, entity *Entiti
                 SetCollition(Tilemap, NextPosition, Entity->Layer, Entity->ID);
                 Entity->NextPosition = NextPosition;
                 Entity->IsWalking = true;
+                MoveHeroParty(Entities, Entity->OldPosiotion);
             }
         }
     }

@@ -102,13 +102,18 @@ struct game_state
     v3 CamPosition;
     v3 CamOffset;
     v3 CamTarget;
-
-    entity Entities[5];
+    
+    entity Entities[8];
     weapon_stats Weapons[3];
     spells_stats Spells[3];
     item_stats Items[2]; 
     tilemap Tilemap; 
     combat Combat;
+
+
+    // TODO(manuto):
+    // Party Test...
+
 
     editor Editor;
 };

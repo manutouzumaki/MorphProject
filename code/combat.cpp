@@ -8,15 +8,17 @@ void InitCombat(game_state *GameState, entity *Player)
     GameState->Combat.Entities[0].Frame = 4;
     ++GameState->Combat.NumberOfEntities;
     
-    for(i32 Index = 1;
-        Index < Player->NumbOfActions + 1;
-        ++Index)
+    i32 Y = 1; 
+    for(i32 Index = Player->NumbOfActions;
+        Index > 0;
+        --Index)
     {
         GameState->Combat.Entities[Index] = GameState->Entities[Player->Action[Index - 1]];
-        GameState->Combat.Entities[Index].Position = {100.0f, (Index*32.0f) - 64.0f};
+        GameState->Combat.Entities[Index].Position = {100.0f, (Y*32.0f) - 64.0f};
         GameState->Combat.Entities[Index].Facing = BIT(LEFT);
         GameState->Combat.Entities[Index].Frame = 12;
         ++GameState->Combat.NumberOfEntities;
+        ++Y;
     }
 
     GameState->Combat.SelectedOptions[0] = -1;
@@ -454,6 +456,15 @@ void GetCombatImput(game_state *GameState, input *Input)
         GameState->Combat.SelectedOptions[1] = -1;
         GameState->Combat.SelectedOptions[2] = -1;
     }
+
+    if(GameState->Combat.OptionSelected < 0)
+    {
+        GameState->Combat.OptionSelected = 0;    
+    }
+    if(GameState->Combat.OptionSelected > GameState->Combat.NumberOfOptions - 1)
+    {
+        GameState->Combat.OptionSelected = GameState->Combat.NumberOfOptions - 1;
+    }
 }
 
 void FinishHeroTurn(game_state *GameState)
@@ -476,15 +487,6 @@ void UpdateAndRenderCombat(game_state *GameState, input *Input, r32 DeltaTime)
     UpdateEnemies(GameState, Enemy);
 
     GetCombatImput(GameState, Input);
-    if(GameState->Combat.OptionSelected < 0)
-    {
-        GameState->Combat.OptionSelected = 0;    
-    }
-    if(GameState->Combat.OptionSelected > GameState->Combat.NumberOfOptions - 1)
-    {
-        GameState->Combat.OptionSelected = GameState->Combat.NumberOfOptions - 1;
-    }
-
     switch(GameState->Combat.SelectedOptions[0])
     {
         case 0:
@@ -708,6 +710,7 @@ void UpdateAndRenderCombat(game_state *GameState, input *Input, r32 DeltaTime)
         if(Enemy[Index]->Alive)
         {
             Trans = TranslationMat4({Enemy[Index]->Position.X, Enemy[Index]->Position.Y, 0.0f});
+            Scale = ScaleMat4({16, 24, 0.0f});
             SetWorldMat4(GameState, Trans * Scale);
             RenderFrame(GameState->Renderer, GameState->Mesh, GameState->UIFrameShader, GameState->HeroTexture,
                         GameState->FrameConstBuffer, 16, 24, Enemy[Index]->Frame, Enemy[Index]->Skin);
@@ -732,7 +735,8 @@ void UpdateAndRenderCombat(game_state *GameState, input *Input, r32 DeltaTime)
         {
             ColorBuffer.Color = Color(255.0f, 0.0f, 0.0f);
             MapConstBuffer(GameState->Renderer, GameState->ColorConstBuffer, (void *)&ColorBuffer, sizeof(color_const_buffer), 1); 
-            Trans = TranslationMat4({Enemy[Index]->Position.X, Enemy[Index]->Position.Y + 8.0f, 0.0f});
+            Trans = TranslationMat4({Enemy[Index]->Position.X + 4.0f, Enemy[Index]->Position.Y + 24.0f, 0.0f});
+            Scale = ScaleMat4({8, 8, 0.0f});
             SetWorldMat4(GameState, Trans * Scale);
             RenderMesh(GameState->Renderer, GameState->Mesh, GameState->UIColorShader);
         }

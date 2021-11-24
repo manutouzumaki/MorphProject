@@ -83,6 +83,8 @@ void GameSetUp(memory *Memory)
     GameState->Combat.EntitiesEventQueue = 0;
     GameState->Combat.ActionsEventQueue = 0;
     GameState->Combat.ProcessingEvent = false;
+
+    // TODO(manuto): Party Test...
 }
 
 void GameUpdateAndRender(memory *Memory, input *Input, r32 DeltaTime)
@@ -115,7 +117,7 @@ void GameUpdateAndRender(memory *Memory, input *Input, r32 DeltaTime)
                 ++Index)
             {
                 entity *Entity = &GameState->Entities[Index];
-                if(Index != 0 && Entity->TimeToWait >= 0.0f)
+                if((Index > 3) && (Entity->TimeToWait >= 0.0f))
                 {
                     SetEntityInRandomDirection(Entity, &GameState->Tilemap);
                 }
@@ -162,9 +164,9 @@ void GameUpdateAndRender(memory *Memory, input *Input, r32 DeltaTime)
                     layer *ActualLayer = FirstLayer + Index;
 
                     RenderLayer(GameState, Tilemap, ActualLayer, false, 0.5f);
-                    entity Entities[5];
-                    memcpy(Entities, GameState->Entities, 5*sizeof(entity));
-                    InsertionSort(Entities, 5); 
+                    entity Entities[8];
+                    memcpy(Entities, GameState->Entities, 8*sizeof(entity));
+                    InsertionSort(Entities, 8); 
                     for(i32 I = 0;
                         I < ArrayCount(Entities);
                         ++I)
