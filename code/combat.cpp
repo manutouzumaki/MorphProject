@@ -19,16 +19,16 @@ void InitCombat(game_state *GameState, entity *Player)
         ++GameState->Combat.NumberOfEntities;
     }
 
+    GameState->Combat.SelectedOptions[0] = -1;
+    GameState->Combat.SelectedOptions[1] = -1;
+    GameState->Combat.SelectedOptions[2] = -1;
+
     GameState->Combat.NumberOfOptions = 4;
     GameState->Combat.OptionSelected = 0;
-    GameState->Combat.OptionLevel = 0;
     GameState->Combat.PlayerTurnFinish = false;
     GameState->Combat.EnemyTurnFinish = false;
     GameState->Combat.NumberOfEnemiesKill = 0;
     GameState->Combat.NumberOfHerosKill = 0;
-    GameState->Combat.Target = 0;
-    GameState->Combat.SelectingTarget = false;
-    GameState->Combat.TargetSelected = false;
 }
 
 void EndCombat(game_state *GameState)
@@ -245,7 +245,7 @@ void SortEventQueueByEntitySpeed(game_state *GameState, u64 *Entities, u64 *Acti
         {            
             u64 AIndex = ((*Entities >> I) & 0xF);
             u64 BIndex = ((*Entities >> J) & 0xF);
-            if(AIndex != 0 && BIndex != 0 && AIndex != BIndex)
+            if((AIndex != 0) && (BIndex != 0) && (AIndex != BIndex))
             { 
                 entity *AEntity = &GameState->Combat.Entities[AIndex - 1];
                 entity *BEntity = &GameState->Combat.Entities[BIndex - 1];
@@ -307,6 +307,12 @@ void UpdateCombatEventQueue(game_state *GameState, u64 *Entities, u64 *Actions, 
         // Process the Event...
         entity *Entity = &GameState->Combat.Entities[EntityIndex - 1];
         entity *Target = &GameState->Combat.Entities[TargetIndex - 1];
+
+        if(!Entity->Alive)
+        { 
+            GameState->Combat.ProcessingEvent = false;
+            return;
+        }
         
         if(ActionIndex == ATTACK)
         {
@@ -360,10 +366,6 @@ void SetEntityRandomAction(game_state *GameState, i32 EntityIndex)
             u32 SpellIndex = Enemy->Spells[0] + 1;
             SetCombatEventQueue(&GameState->Combat.EntitiesEventQueue, &GameState->Combat.ActionsEventQueue, EntityIndex + 1, 1, SPELLS, SpellIndex);        
         }
-        else  
-        {
-            RandomChoise = rand() % 3;
-        }
     }
     else if(RandomChoise == 2)
     {
@@ -373,18 +375,8 @@ void SetEntityRandomAction(game_state *GameState, i32 EntityIndex)
     }   
 }
 
-void UpdateAndRenderCombat(game_state *GameState, input *Input, r32 DeltaTime)
+void EndCombatIfNecessary(game_state *GameState, entity *Player)
 {
-    // TODO(manuto): ...
-    entity *Player = &GameState->Combat.Entities[0];
-    entity *Enemy[4] = {};
-    for(i32 Index = 0;
-        Index < GameState->Combat.NumberOfEntities - 1;
-        ++Index)
-    {
-        Enemy[Index] = &GameState->Combat.Entities[Index + 1];
-    }
-
     if(GameState->Combat.NumberOfEnemiesKill >= (GameState->Combat.NumberOfEntities - 1) ||
        Player->Stats.HP_Now <= 0)
     {
@@ -394,160 +386,166 @@ void UpdateAndRenderCombat(game_state *GameState, input *Input, r32 DeltaTime)
         GameState->GamePlayState = WORLD;
         EndCombat(GameState);
     }
+}
 
-    if(!GameState->Combat.EnemyTurnFinish)
+void UpdateEnemies(game_state *GameState, entity **Enemy)
+{
+    for(i32 Index = 0;
+        Index < GameState->Combat.NumberOfEntities - 1;
+        ++Index)
     {
-        for(i32 Index = 0;
-            Index < GameState->Combat.NumberOfEntities - 1;
-            ++Index)
+        Enemy[Index] = &GameState->Combat.Entities[Index + 1];
+        // check the enemies alive
+        if(Enemy[Index]->Stats.HP_Now <= 0 && Enemy[Index]->Alive)
         {
-            // check the enemies alive
-            if(Enemy[Index]->Stats.HP_Now <= 0 && Enemy[Index]->Alive)
-            {
-                Enemy[Index]->Alive = false;
-                ++GameState->Combat.NumberOfEnemiesKill;
-            }
-            
-            // set enemies actions
+            Enemy[Index]->Alive = false;
+            ++GameState->Combat.NumberOfEnemiesKill;
+        }
+
+        if(!GameState->Combat.EnemyTurnFinish)
+        {
             if(Enemy[Index]->Alive)
             {
                 SetEntityRandomAction(GameState, Index + 1);
-            }
+            }  
+            if(Index == (GameState->Combat.NumberOfEntities - 1) - 1)
+            { 
+                GameState->Combat.EnemyTurnFinish = true;
+            }  
         }
-        GameState->Combat.EnemyTurnFinish = true;
     }
+}
 
-    if(GameState->Combat.NumberOfOptions > 0 && !GameState->Combat.PlayerTurnFinish)
+void GetCombatImput(game_state *GameState, input *Input)
+{
+    if(GameState->Combat.PlayerTurnFinish)
+    {
+        return;
+    }
+    if(OnKeyDown(Input->Buttons->Up))
+    {
+        --GameState->Combat.OptionSelected;
+    }
+    if(OnKeyDown(Input->Buttons->Down))
+    {
+        ++GameState->Combat.OptionSelected;
+    }
+    if(OnKeyDown(Input->Buttons->Start))
     { 
-        if(OnKeyDown(Input->Buttons->Up))
+        
+        for(i32 Index = 0;
+            Index < 3;
+            ++Index)
         {
-            if(GameState->Combat.SelectingTarget)
+            if(GameState->Combat.SelectedOptions[Index] == -1)
             {
-                ++GameState->Combat.Target;
-                if(GameState->Combat.Target > GameState->Combat.NumberOfEntities - 2)
-                {
-                    GameState->Combat.Target = GameState->Combat.NumberOfEntities - 2;
-                }   
-            }
-            else
-            {
-                --GameState->Combat.OptionSelected;
-                if(GameState->Combat.OptionSelected < 0)
-                {
-                    GameState->Combat.OptionSelected = 0;    
-                }
-            } 
-        }
-        if(OnKeyDown(Input->Buttons->Down))
-        {
-            if(GameState->Combat.SelectingTarget)
-            {
-                --GameState->Combat.Target;
-                if(GameState->Combat.Target < 0)
-                {
-                    GameState->Combat.Target = 0;    
-                }
-            }
-            else
-            {
-                ++GameState->Combat.OptionSelected;
-                if(GameState->Combat.OptionSelected > GameState->Combat.NumberOfOptions - 1)
-                {
-                    GameState->Combat.OptionSelected = GameState->Combat.NumberOfOptions - 1;
-                }
+                GameState->Combat.SelectedOptions[Index] = GameState->Combat.OptionSelected;
+                //GameState->Combat.OptionSelected = 0;
+                break;
             }
         }
-        if(OnKeyDown(Input->Buttons->Start))
-        {
-            if(GameState->Combat.SelectingTarget)
-            {
-                GameState->Combat.TargetSelected = true;
-                GameState->Combat.SelectingTarget = false;
-            }
 
-            if(GameState->Combat.OptionLevel == 0)
-            {
-
-                GameState->Combat.ActualOption = GameState->Combat.OptionSelected;
-            }
-            if(GameState->Combat.OptionSelected == 1 && GameState->Combat.OptionLevel == 0)
-            {
-                GameState->Combat.NumberOfOptions = Player->SpellsCount;
-                GameState->Combat.OptionSelected = 0;
-                ++GameState->Combat.OptionLevel;
-                if(GameState->Combat.OptionLevel > 1)
-                {
-                    GameState->Combat.OptionLevel = 1;
-                }
-            }
-            else if(GameState->Combat.OptionSelected == 2 && GameState->Combat.OptionLevel == 0)
-            {
-                GameState->Combat.NumberOfOptions = Player->ItemsCount;
-                GameState->Combat.OptionSelected = 0;
-                ++GameState->Combat.OptionLevel;
-                if(GameState->Combat.OptionLevel > 1)
-                {
-                    GameState->Combat.OptionLevel = 1;
-                } 
-            }
-            else if(GameState->Combat.OptionSelected == 0 && GameState->Combat.OptionLevel == 0)
-            {
-                if(GameState->Combat.TargetSelected)
-                {
-                    SetCombatEventQueue(&GameState->Combat.EntitiesEventQueue, &GameState->Combat.ActionsEventQueue, 1, GameState->Combat.Target + 2, ATTACK, 1);
-                    GameState->Combat.PlayerTurnFinish = true;
-                    GameState->Combat.TargetSelected = false;
-                }
-                else
-                {
-                    GameState->Combat.SelectingTarget = true;
-                }
-            }
-            else if(GameState->Combat.ActualOption == 1 && GameState->Combat.OptionLevel == 1)
-            {
-                if(GameState->Combat.TargetSelected)
-                {
-                    if(Player->Stats.MP_Now - GameState->Spells[Player->Spells[GameState->Combat.OptionSelected]].MP_Cost >= 0)
-                    {
-                        u32 SpellIndex = Player->Spells[GameState->Combat.OptionSelected] + 1;
-                        SetCombatEventQueue(&GameState->Combat.EntitiesEventQueue, &GameState->Combat.ActionsEventQueue, 1, GameState->Combat.Target + 2, SPELLS, SpellIndex);        
-                        GameState->Combat.PlayerTurnFinish = true;
-                        GameState->Combat.TargetSelected = false;
-                    }
-                }
-                else
-                {
-                    GameState->Combat.SelectingTarget = true; 
-                }
-            }
-            else if(GameState->Combat.ActualOption == 2 && GameState->Combat.OptionLevel == 1)
-            {
-                u32 ItemIndex = Player->Items[GameState->Combat.OptionSelected] + 1;
-                SetCombatEventQueue(&GameState->Combat.EntitiesEventQueue, &GameState->Combat.ActionsEventQueue, 1, GameState->Combat.Target + 2, ITEMS, ItemIndex); 
-                GameState->Combat.PlayerTurnFinish = true;
-            }
-            else if(GameState->Combat.OptionSelected == 3 && GameState->Combat.OptionLevel == 0)
-            {
-                GameState->Combat.NumberOfOptions = 4;
-                GameState->Combat.EntitiesEventQueue = 0;
-                GameState->Combat.ActionsEventQueue = 0;
-                GameState->Combat.ProcessingEvent = false;
-                GameState->GamePlayState = WORLD;
-            }
-        }
     }
     if(OnKeyDown(Input->Buttons->Back))
     {
-        GameState->Combat.OptionLevel = 0;
         GameState->Combat.NumberOfOptions = 4;
         GameState->Combat.OptionSelected = 0;
-        --GameState->Combat.OptionLevel;
-        if(GameState->Combat.OptionLevel < 0)
-        {
-            GameState->Combat.OptionLevel = 0;
-        }
+        GameState->Combat.SelectedOptions[0] = -1;
+        GameState->Combat.SelectedOptions[1] = -1;
+        GameState->Combat.SelectedOptions[2] = -1;
     }
+}
+
+void FinishHeroTurn(game_state *GameState)
+{
+    GameState->Combat.SelectedOptions[0] = -1;
+    GameState->Combat.SelectedOptions[1] = -1;
+    GameState->Combat.SelectedOptions[2] = -1;
+    GameState->Combat.OptionSelected = 0;    
+    GameState->Combat.NumberOfOptions = 4;
+    GameState->Combat.PlayerTurnFinish = true;
+}
+
+void UpdateAndRenderCombat(game_state *GameState, input *Input, r32 DeltaTime)
+{
+    // TODO(manuto): ...
+    entity *Player = &GameState->Combat.Entities[0];
+    entity *Enemy[4] = {};
     
+    EndCombatIfNecessary(GameState, Player);
+    UpdateEnemies(GameState, Enemy);
+
+    GetCombatImput(GameState, Input);
+    if(GameState->Combat.OptionSelected < 0)
+    {
+        GameState->Combat.OptionSelected = 0;    
+    }
+    if(GameState->Combat.OptionSelected > GameState->Combat.NumberOfOptions - 1)
+    {
+        GameState->Combat.OptionSelected = GameState->Combat.NumberOfOptions - 1;
+    }
+
+    switch(GameState->Combat.SelectedOptions[0])
+    {
+        case 0:
+        {
+            i32 Target = GameState->Combat.SelectedOptions[1];
+            if((Target != -1) && Enemy[Target]->Alive)
+            { 
+                SetCombatEventQueue(&GameState->Combat.EntitiesEventQueue, &GameState->Combat.ActionsEventQueue, 1, Target + 2, ATTACK, 1);
+                FinishHeroTurn(GameState);
+            }
+            else
+            {
+                GameState->Combat.SelectedOptions[1] = -1;
+                GameState->Combat.NumberOfOptions = GameState->Combat.NumberOfEntities - 1;
+            }
+        }break;
+        case 1:
+        {
+            i32 Option = GameState->Combat.SelectedOptions[1];
+            i32 Target = GameState->Combat.SelectedOptions[2];
+            if((Option != -1) && (Target != -1) && Enemy[Target]->Alive)
+            {
+                u32 SpellIndex = Player->Spells[Option] + 1;
+                SetCombatEventQueue(&GameState->Combat.EntitiesEventQueue, &GameState->Combat.ActionsEventQueue, 1, Target + 2, SPELLS, SpellIndex);  
+                FinishHeroTurn(GameState);
+            }
+            else if(Option == -1) 
+            {
+                 
+                GameState->Combat.NumberOfOptions = Player->SpellsCount;
+            }
+            else
+            { 
+                GameState->Combat.SelectedOptions[2] = -1;
+                GameState->Combat.NumberOfOptions = GameState->Combat.NumberOfEntities - 1;
+            }
+        }break;
+        case 2:
+        {
+            i32 Option = GameState->Combat.SelectedOptions[1];
+            if(Option != -1)
+            {
+                u32 ItemIndex = Player->Items[Option] + 1;
+                SetCombatEventQueue(&GameState->Combat.EntitiesEventQueue, &GameState->Combat.ActionsEventQueue, 1, 1, ITEMS, ItemIndex); 
+                FinishHeroTurn(GameState);
+            }
+            else if(Option == -1) 
+            { 
+                GameState->Combat.NumberOfOptions = Player->ItemsCount;
+            }
+        }break;
+        case 3:
+        {
+            GameState->Combat.NumberOfOptions = 4;
+            GameState->Combat.EntitiesEventQueue = 0;
+            GameState->Combat.ActionsEventQueue = 0;
+            GameState->Combat.ProcessingEvent = false;
+            GameState->GamePlayState = WORLD;
+        }break; 
+    }
+
     // Render Combat UI 
     SetProjMat4(GameState, OrthogonalProjMat4(WND_WIDTH, WND_HEIGHT, 1.0f, 100.0f));
     
@@ -590,60 +588,66 @@ void UpdateAndRenderCombat(game_state *GameState, input *Input, r32 DeltaTime)
     Scale = ScaleMat4({400.0f, 64*2.0f, 0.0f});
     SetWorldMat4(GameState, Trans * Scale);
     RenderMesh(GameState->Renderer, GameState->Mesh, GameState->UIColorShader);
+    
+    if((GameState->Combat.SelectedOptions[0] < 0) || (GameState->Combat.SelectedOptions[0] > 0) && (GameState->Combat.SelectedOptions[1] == -1))
+    {
+        YPos -= 9.0f*2.0f;
+        YPos += 64.0f*2.0f - (GameState->Combat.OptionSelected * (9.0f*2.0f));
+        ColorBuffer.Color = Color(134.0f, 165.0f, 217.0f);
+        MapConstBuffer(GameState->Renderer, GameState->ColorConstBuffer, (void *)&ColorBuffer, sizeof(color_const_buffer), 1);
+        Trans = TranslationMat4({XPos, YPos, 0.0f});
+        Scale = ScaleMat4({400.0f, 9.0f*2.0f, 0.0f});
+        SetWorldMat4(GameState, Trans * Scale);
+        RenderMesh(GameState->Renderer, GameState->Mesh, GameState->UIColorShader);
+    }
 
-    YPos -= 9.0f*2.0f;
-    YPos += 64.0f*2.0f - (GameState->Combat.OptionSelected * (9.0f*2.0f));
-    ColorBuffer.Color = Color(134.0f, 165.0f, 217.0f);
-    MapConstBuffer(GameState->Renderer, GameState->ColorConstBuffer, (void *)&ColorBuffer, sizeof(color_const_buffer), 1);
-    Trans = TranslationMat4({XPos, YPos, 0.0f});
-    Scale = ScaleMat4({400.0f, 9.0f*2.0f, 0.0f});
-    SetWorldMat4(GameState, Trans * Scale);
-    RenderMesh(GameState->Renderer, GameState->Mesh, GameState->UIColorShader);
-   
     YPos = -WND_HEIGHT*0.5f;
     YPos += (BackPannel.Y*0.5f) - 64.0f;
     YPos += 64.0f*2.0f;
-    RenderString(GameState, "Actions:", XPos, YPos, 7.0f*2.0f, 9.0f*2.0f); 
-    if(GameState->Combat.OptionLevel == 0)
+    RenderString(GameState, "Actions:", XPos, YPos, 7.0f*2.0f, 9.0f*2.0f);
+    YPos -= 9.0f*2.0f;
+    switch(GameState->Combat.SelectedOptions[0])
     {
-        YPos = -WND_HEIGHT*0.5f;
-        YPos += (BackPannel.Y*0.5f) - 64.0f;
-        YPos += 64.0f*2.0f;
-        YPos -= 9.0f*2.0f;
-        RenderString(GameState, "-Atack", XPos, YPos, 7.0f*2.0f, 9.0f*2.0f);
-        YPos -= 9.0f*2.0f;
-        RenderString(GameState, "-Spells", XPos, YPos, 7.0f*2.0f, 9.0f*2.0f);
-        YPos -= 9.0f*2.0f;
-        RenderString(GameState, "-Item", XPos, YPos, 7.0f*2.0f, 9.0f*2.0f);
-        YPos -= 9.0f*2.0f;
-        RenderString(GameState, "-Run", XPos, YPos, 7.0f*2.0f, 9.0f*2.0f);
-    }
-    if(GameState->Combat.OptionLevel == 1)
-    {
-        YPos = -WND_HEIGHT*0.5f;
-        YPos += (BackPannel.Y*0.5f) - 64.0f;
-        YPos += 64.0f*2.0f;
-        YPos -= 9.0f*2.0f;
-        if(GameState->Combat.ActualOption == 1)
+        case -1:
+        {
+            RenderString(GameState, "-Atack", XPos, YPos, 7.0f*2.0f, 9.0f*2.0f);
+            YPos -= 9.0f*2.0f;
+            RenderString(GameState, "-Spells", XPos, YPos, 7.0f*2.0f, 9.0f*2.0f);
+            YPos -= 9.0f*2.0f;
+            RenderString(GameState, "-Item", XPos, YPos, 7.0f*2.0f, 9.0f*2.0f);
+            YPos -= 9.0f*2.0f;
+            RenderString(GameState, "-Run", XPos, YPos, 7.0f*2.0f, 9.0f*2.0f);
+        }break;
+        case 0:
+        {
+            RenderString(GameState, "-Atack", XPos, YPos, 7.0f*2.0f, 9.0f*2.0f);
+            YPos -= 9.0f*2.0f;
+            RenderString(GameState, "-Spells", XPos, YPos, 7.0f*2.0f, 9.0f*2.0f);
+            YPos -= 9.0f*2.0f;
+            RenderString(GameState, "-Item", XPos, YPos, 7.0f*2.0f, 9.0f*2.0f);
+            YPos -= 9.0f*2.0f;
+            RenderString(GameState, "-Run", XPos, YPos, 7.0f*2.0f, 9.0f*2.0f);
+        }break;
+        case 1:
         {
             for(i32 Index = 0;
-                Index < GameState->Combat.NumberOfOptions;
+                Index < 1;
                 ++Index)
             {
                 RenderString(GameState, GameState->Spells[Player->Spells[Index]].Name, XPos, YPos, 7.0f*2.0f, 9.0f*2.0f);
                 YPos -= 9.0f*2.0f;
             } 
-        }
-        else if(GameState->Combat.ActualOption == 2)
+        }break;
+        case 2:
         {
             for(i32 Index = 0;
-                Index < GameState->Combat.NumberOfOptions;
+                Index < 2;
                 ++Index)
             {
                 RenderString(GameState, GameState->Items[Player->Items[Index]].Name, XPos, YPos, 7.0f*2.0f, 9.0f*2.0f);
                 YPos -= 9.0f*2.0f;
-            } 
-        }
+            }
+        }break; 
     }
    
     YPos = -WND_HEIGHT*0.5f;
@@ -690,11 +694,13 @@ void UpdateAndRenderCombat(game_state *GameState, input *Input, r32 DeltaTime)
     // Render Combat Scene
     SetProjMat4(GameState, OrthogonalProjMat4(WND_WIDTH*0.5f, WND_HEIGHT*0.5f, 1.0f, 100.0f));
     
+    // Render Player
     Scale = ScaleMat4({16, 24, 0.0f});
     Trans = TranslationMat4({Player->Position.X, Player->Position.Y, 0.0f});
     SetWorldMat4(GameState, Trans * Scale);
     RenderFrame(GameState->Renderer, GameState->Mesh, GameState->UIFrameShader, GameState->HeroTexture,
                 GameState->FrameConstBuffer, 16, 24, Player->Frame, Player->Skin);
+    // Render Enemies
     for(i32 Index = 0;
         Index < GameState->Combat.NumberOfEntities - 1;
         ++Index)
@@ -706,7 +712,23 @@ void UpdateAndRenderCombat(game_state *GameState, input *Input, r32 DeltaTime)
             RenderFrame(GameState->Renderer, GameState->Mesh, GameState->UIFrameShader, GameState->HeroTexture,
                         GameState->FrameConstBuffer, 16, 24, Enemy[Index]->Frame, Enemy[Index]->Skin);
         }
-        if(GameState->Combat.SelectingTarget && GameState->Combat.Target == Index)
+        
+        i32 Target = -1;
+        switch(GameState->Combat.SelectedOptions[0])
+        {
+            case 0:
+            {
+                Target = GameState->Combat.OptionSelected;
+            }break;
+            default:
+            {
+                if(GameState->Combat.SelectedOptions[1] != -1)
+                {
+                    Target = GameState->Combat.OptionSelected; 
+                }
+            }break;
+        } 
+        if(Target == Index)
         {
             ColorBuffer.Color = Color(255.0f, 0.0f, 0.0f);
             MapConstBuffer(GameState->Renderer, GameState->ColorConstBuffer, (void *)&ColorBuffer, sizeof(color_const_buffer), 1); 
@@ -714,6 +736,7 @@ void UpdateAndRenderCombat(game_state *GameState, input *Input, r32 DeltaTime)
             SetWorldMat4(GameState, Trans * Scale);
             RenderMesh(GameState->Renderer, GameState->Mesh, GameState->UIColorShader);
         }
+
     }
     
     if(GameState->Combat.PlayerTurnFinish && GameState->Combat.EnemyTurnFinish)

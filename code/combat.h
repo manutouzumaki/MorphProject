@@ -16,15 +16,8 @@ struct combat
     u64 ActionsEventQueue;
     u32 EventData; 
 
-    // TEMP:
-    i32 Target;
-    bool SelectingTarget;
-    bool TargetSelected;
-
-
-    i32 ActualOption;
     i32 OptionSelected;
-    i32 OptionLevel;
+    i32 SelectedOptions[3];
     i32 NumberOfOptions;
     
     r32 Timer;
