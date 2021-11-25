@@ -7,8 +7,13 @@
 
 struct combat
 {
-    entity Entities[8];
-    i32 NumberOfEntities;
+    //entity Entities[8];
+    //i32 NumberOfEntities;
+
+    entity Players[4];
+    entity Enemies[4];
+    i32 NumberOfHeros;
+    i32 NumberOfEnemies;
     i32 NumberOfEnemiesKill;
     i32 NumberOfHerosKill;
     
@@ -16,6 +21,7 @@ struct combat
     u64 ActionsEventQueue;
     u32 EventData; 
 
+    i32 HeroEventSet;
     i32 OptionSelected;
     i32 SelectedOptions[3];
     i32 NumberOfOptions;

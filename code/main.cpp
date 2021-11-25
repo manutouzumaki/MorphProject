@@ -85,6 +85,7 @@ void GameSetUp(memory *Memory)
     GameState->Combat.ProcessingEvent = false;
 
     // TODO(manuto): Party Test...
+    GameState->HeroPartyCount = 2;
 }
 
 void GameUpdateAndRender(memory *Memory, input *Input, r32 DeltaTime)
@@ -121,7 +122,11 @@ void GameUpdateAndRender(memory *Memory, input *Input, r32 DeltaTime)
                 {
                     SetEntityInRandomDirection(Entity, &GameState->Tilemap);
                 }
-                MoveEntity(Entity, &GameState->Tilemap, DeltaTime);
+
+                if(((Entity->ID - 2) < GameState->HeroPartyCount) || ((Entity->ID - 2) >= 4))
+                {
+                    MoveEntity(Entity, &GameState->Tilemap, DeltaTime);
+                }
             }
             
             v2 NewCamPos = GameState->Entities[0].Position;
@@ -145,7 +150,8 @@ void GameUpdateAndRender(memory *Memory, input *Input, r32 DeltaTime)
             SetProjMat4(GameState, OrthogonalProjMat4(WND_WIDTH*0.5f, WND_HEIGHT*0.5f, 1.0f, 100.0f));
 
             i32 EntityID = GameState->Entities[0].Action[0];
-            if(EntityID >= 0 && EntityID != (GameState->Entities[0].ID - 2))
+            entity *EntityToCheck = GetEntitiByID(GameState->Entities, EntityID + 2);
+            if((EntityToCheck && (EntityToCheck->Type == ENEMY)))
             {
                 GameState->GamePlayState = COMBAT;
                 InitCombat(GameState, &GameState->Entities[0]);
@@ -173,11 +179,14 @@ void GameUpdateAndRender(memory *Memory, input *Input, r32 DeltaTime)
                     {
                         if(Index == Entities[I].Layer)
                         {
-                            mat4 Scale = ScaleMat4({16, 24, 0.0f});
-                            mat4 Trans = TranslationMat4({Entities[I].Position.X, Entities[I].Position.Y, 0.0f});
-                            SetWorldMat4(GameState, Trans * Scale);
-                            RenderFrame(GameState->Renderer, GameState->Mesh, GameState->FrameShader, GameState->HeroTexture,
-                                        GameState->FrameConstBuffer, 16, 24, Entities[I].Frame, Entities[I].Skin); 
+                            if(((Entities[I].ID - 2) < GameState->HeroPartyCount) || ((Entities[I].ID - 2) >= 4))
+                            {
+                                mat4 Scale = ScaleMat4({16, 24, 0.0f});
+                                mat4 Trans = TranslationMat4({Entities[I].Position.X, Entities[I].Position.Y, 0.0f});
+                                SetWorldMat4(GameState, Trans * Scale);
+                                RenderFrame(GameState->Renderer, GameState->Mesh, GameState->FrameShader, GameState->HeroTexture,
+                                            GameState->FrameConstBuffer, 16, 24, Entities[I].Frame, Entities[I].Skin); 
+                            }
                         }
                     }
                 }
@@ -186,6 +195,7 @@ void GameUpdateAndRender(memory *Memory, input *Input, r32 DeltaTime)
         else if(GameState->GamePlayState == COMBAT)
         {
             UpdateAndRenderCombat(GameState, Input, DeltaTime);
+            int Here = 0;
         }
     }
         

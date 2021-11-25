@@ -28,6 +28,15 @@ u32 GetFacing(v2 NextPosition, v2 OldPosition, u32 Facing)
     return Result;
 }
 
+entity *GetEntitiByID(entity *Entities, i32 ID)
+{
+    if(ID < 2)
+    {
+        return 0;
+    }
+    return &Entities[ID - 2];
+}
+
 void MoveHeroParty(entity *Entities, v2 OldPosition)
 {
     Entities[1].OldPosiotion = Entities[1].Position;
@@ -73,58 +82,68 @@ void GetHeroInput(input *Input, entity *Entity, tilemap *Tilemap, entity *Entiti
                 PositionToCheck.X += 16.0f;
                 Entity->Action[0] = GetTilemapValue(Tilemap, PositionToCheck, Entity->Layer) - 2;
             }
-            if(!Entities[Entity->Action[0]].IsWalking)
+            entity *EntityToCheck = GetEntitiByID(Entities, Entity->Action[0] + 2);
+            if(EntityToCheck && !EntityToCheck->IsWalking && (EntityToCheck->Type == ENEMY))
             {
                 // TODO(manuto): Search for more entities near by
-                if(Entity->Action[0] >= 0 && Entity->Action[0] != (Entity->ID - 2))
+                // fisrt search on the positive x axis
+                v2 ShearchPosition = PositionToCheck;
+                ShearchPosition.X += 16.0f;
+                i32 NewTileValue = (GetTilemapValue(Tilemap, ShearchPosition, Entity->Layer) - 2);
+                i32 Counter = 1;
+                EntityToCheck = GetEntitiByID(Entities, NewTileValue + 2);
+                while(EntityToCheck && (EntityToCheck->Type == ENEMY))
                 {
-                    // fisrt search on the positive x axis
-                    v2 ShearchPosition = PositionToCheck;
+                    Entity->Action[Counter++] = NewTileValue;
                     ShearchPosition.X += 16.0f;
-                    i32 NewTileValue = (GetTilemapValue(Tilemap, ShearchPosition, Entity->Layer) - 2);
-                    i32 Counter = 1;
-                    while(NewTileValue >= 0 && NewTileValue != (Entity->ID - 2))
-                    {
-                        Entity->Action[Counter++] = NewTileValue;
-                        ShearchPosition.X += 16.0f;
-                        NewTileValue = (GetTilemapValue(Tilemap, ShearchPosition, Entity->Layer) - 2);
-                        if(Counter >= 4) break; 
-                    }
-                    // search the negative x axis
-                    ShearchPosition = PositionToCheck;
+                    NewTileValue = (GetTilemapValue(Tilemap, ShearchPosition, Entity->Layer) - 2);
+                    EntityToCheck = GetEntitiByID(Entities, NewTileValue + 2);
+                    if(Counter >= 4) break; 
+                }
+                // search the negative x axis
+                ShearchPosition = PositionToCheck;
+                ShearchPosition.X -= 16.0f;
+                NewTileValue = (GetTilemapValue(Tilemap, ShearchPosition, Entity->Layer) - 2);
+                EntityToCheck = GetEntitiByID(Entities, NewTileValue + 2);
+                while(EntityToCheck && (EntityToCheck->Type == ENEMY))
+                {
+                    Entity->Action[Counter++] = NewTileValue;
                     ShearchPosition.X -= 16.0f;
                     NewTileValue = (GetTilemapValue(Tilemap, ShearchPosition, Entity->Layer) - 2);
-                    while(NewTileValue >= 0 && NewTileValue != (Entity->ID - 2))
-                    {
-                        Entity->Action[Counter++] = NewTileValue;
-                        ShearchPosition.X -= 16.0f;
-                        NewTileValue = (GetTilemapValue(Tilemap, ShearchPosition, Entity->Layer) - 2);
-                        if(Counter >= 4) break; 
-                    }
-                    // search on the positive y axis
-                    ShearchPosition = PositionToCheck;
+                    EntityToCheck = GetEntitiByID(Entities, NewTileValue + 2);
+                    if(Counter >= 4) break; 
+                }
+                // search on the positive y axis
+                ShearchPosition = PositionToCheck;
+                ShearchPosition.Y += 16.0f;
+                NewTileValue = (GetTilemapValue(Tilemap, ShearchPosition, Entity->Layer) - 2);
+                EntityToCheck = GetEntitiByID(Entities, NewTileValue + 2);
+                while(EntityToCheck && (EntityToCheck->Type == ENEMY))
+                {
+                    Entity->Action[Counter++] = NewTileValue;
                     ShearchPosition.Y += 16.0f;
                     NewTileValue = (GetTilemapValue(Tilemap, ShearchPosition, Entity->Layer) - 2);
-                    while(NewTileValue >= 0 && NewTileValue != (Entity->ID - 2))
-                    {
-                        Entity->Action[Counter++] = NewTileValue;
-                        ShearchPosition.Y += 16.0f;
-                        NewTileValue = (GetTilemapValue(Tilemap, ShearchPosition, Entity->Layer) - 2);
-                        if(Counter >= 4) break; 
-                    }
-                    // search the negative y axis
-                    ShearchPosition = PositionToCheck;
+                    EntityToCheck = GetEntitiByID(Entities, NewTileValue + 2);
+                    if(Counter >= 4) break; 
+                }
+                // search the negative y axis
+                ShearchPosition = PositionToCheck;
+                ShearchPosition.Y -= 16.0f;
+                NewTileValue = (GetTilemapValue(Tilemap, ShearchPosition, Entity->Layer) - 2);
+                EntityToCheck = GetEntitiByID(Entities, NewTileValue + 2);
+                while(EntityToCheck && (EntityToCheck->Type == ENEMY))
+                {
+                    Entity->Action[Counter++] = NewTileValue;
                     ShearchPosition.Y -= 16.0f;
                     NewTileValue = (GetTilemapValue(Tilemap, ShearchPosition, Entity->Layer) - 2);
-                    while(NewTileValue >= 0 && NewTileValue != (Entity->ID - 2))
-                    {
-                        Entity->Action[Counter++] = NewTileValue;
-                        ShearchPosition.Y -= 16.0f;
-                        NewTileValue = (GetTilemapValue(Tilemap, ShearchPosition, Entity->Layer) - 2);
-                        if(Counter >= 4) break; 
-                    }
-                    Entity->NumbOfActions = Counter;
+                    EntityToCheck = GetEntitiByID(Entities, NewTileValue + 2);
+                    if(Counter >= 4) break; 
                 }
+                Entity->NumbOfActions = Counter;
+            }
+            else
+            {
+                Entity->NumbOfActions = 0;
             }
         }
     }
@@ -144,7 +163,9 @@ void GetHeroInput(input *Input, entity *Entity, tilemap *Tilemap, entity *Entiti
             v2 NextPosition = Entity->OldPosiotion;
             NextPosition.Y += 16.0f;
             Entity->Facing = BIT(UP);
-            if(!IsCollision(NextPosition, 0, Tilemap))
+            i32 ID = GetTilemapValue(Tilemap, NextPosition, 0);
+            entity *Collision = GetEntitiByID(Entities, ID);
+            if(!IsCollision(NextPosition, 0, Tilemap) || (Collision && (Collision->Type == HERO)))
             {
                 SetCollition(Tilemap, NextPosition, Entity->Layer, Entity->ID);
                 Entity->NextPosition = NextPosition;
@@ -158,7 +179,9 @@ void GetHeroInput(input *Input, entity *Entity, tilemap *Tilemap, entity *Entiti
             v2 NextPosition = Entity->OldPosiotion;
             NextPosition.Y -= 16.0f;
             Entity->Facing = BIT(DOWN);
-            if(!IsCollision(NextPosition, 0, Tilemap))
+            i32 ID = GetTilemapValue(Tilemap, NextPosition, 0);
+            entity *Collision = GetEntitiByID(Entities, ID);
+            if(!IsCollision(NextPosition, 0, Tilemap) || (Collision && (Collision->Type == HERO)))
             {
                 SetCollition(Tilemap, NextPosition, Entity->Layer, Entity->ID);
                 Entity->NextPosition = NextPosition;
@@ -172,7 +195,9 @@ void GetHeroInput(input *Input, entity *Entity, tilemap *Tilemap, entity *Entiti
             v2 NextPosition = Entity->OldPosiotion;
             NextPosition.X -= 16.0f;
             Entity->Facing = BIT(LEFT);
-            if(!IsCollision(NextPosition, 0, Tilemap))
+            i32 ID = GetTilemapValue(Tilemap, NextPosition, 0);
+            entity *Collision = GetEntitiByID(Entities, ID);
+            if(!IsCollision(NextPosition, 0, Tilemap) || (Collision && (Collision->Type == HERO)))
             {
                 SetCollition(Tilemap, NextPosition, Entity->Layer, Entity->ID);
                 Entity->NextPosition = NextPosition;
@@ -186,7 +211,9 @@ void GetHeroInput(input *Input, entity *Entity, tilemap *Tilemap, entity *Entiti
             v2 NextPosition = Entity->OldPosiotion;
             NextPosition.X += 16.0f;
             Entity->Facing = BIT(RIGHT);
-            if(!IsCollision(NextPosition, 0, Tilemap))
+            i32 ID = GetTilemapValue(Tilemap, NextPosition, 0);
+            entity *Collision = GetEntitiByID(Entities, ID);
+            if(!IsCollision(NextPosition, 0, Tilemap) || (Collision && (Collision->Type == HERO)))
             {
                 SetCollition(Tilemap, NextPosition, Entity->Layer, Entity->ID);
                 Entity->NextPosition = NextPosition;

@@ -9,6 +9,13 @@
 
 #define MAX_NUM_OF_ENTITIES 20;
 
+enum entity_type
+{
+    HERO,
+    ENEMY,
+    NPC
+};
+
 enum attack_type
 {
     MELE,
@@ -56,6 +63,7 @@ struct entity
 {   
     // Sate stuff
     u32 ID;
+    entity_type Type;
     i32 Action[4];
     i32 NumbOfActions;
     // game play stuff

@@ -109,6 +109,7 @@ struct game_state
     item_stats Items[2]; 
     tilemap Tilemap; 
     combat Combat;
+    u32 HeroPartyCount;
 
 
     // TODO(manuto):

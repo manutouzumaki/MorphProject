@@ -1,23 +1,38 @@
 void InitCombat(game_state *GameState, entity *Player)
 {
-    GameState->Combat.NumberOfEntities = 0;
-
-    GameState->Combat.Entities[0] = *Player;
-    GameState->Combat.Entities[0].Position = {-100.0f, 0.0f};
-    GameState->Combat.Entities[0].Facing = BIT(RIGHT);
-    GameState->Combat.Entities[0].Frame = 4;
-    ++GameState->Combat.NumberOfEntities;
+    //GameState->Combat.NumberOfEntities = 0;
+    GameState->Combat.NumberOfHeros = 0;
+    GameState->Combat.NumberOfEnemies = 0;
+    GameState->Combat.NumberOfEnemiesKill = 0;
+    GameState->Combat.NumberOfHerosKill = 0;
     
+    // Init Players entities Array
     i32 Y = 1; 
-    for(i32 Index = Player->NumbOfActions;
-        Index > 0;
+    for(i32 Index = GameState->HeroPartyCount - 1;
+        Index >= 0;
         --Index)
     {
-        GameState->Combat.Entities[Index] = GameState->Entities[Player->Action[Index - 1]];
-        GameState->Combat.Entities[Index].Position = {100.0f, (Y*32.0f) - 64.0f};
-        GameState->Combat.Entities[Index].Facing = BIT(LEFT);
-        GameState->Combat.Entities[Index].Frame = 12;
-        ++GameState->Combat.NumberOfEntities;
+        GameState->Combat.Players[Index] = GameState->Entities[Y - 1];
+        GameState->Combat.Players[Index].Position = {-100.0f, (Y*32.0f) - 64.0f};
+        GameState->Combat.Players[Index].Facing = BIT(RIGHT);
+        GameState->Combat.Players[Index].Frame = 4;
+        //++GameState->Combat.NumberOfEntities;
+        ++GameState->Combat.NumberOfHeros;
+        ++Y;
+    }
+    
+    // Init Enemies entities Array
+    Y = 1; 
+    for(i32 Index = Player->NumbOfActions - 1;
+        Index >= 0;
+        --Index)
+    {
+        GameState->Combat.Enemies[Index] = GameState->Entities[Player->Action[Index]];
+        GameState->Combat.Enemies[Index].Position = {100.0f, (Y*32.0f) - 64.0f};
+        GameState->Combat.Enemies[Index].Facing = BIT(LEFT);
+        GameState->Combat.Enemies[Index].Frame = 12;
+        //++GameState->Combat.NumberOfEntities;
+        ++GameState->Combat.NumberOfEnemies;
         ++Y;
     }
 
@@ -31,16 +46,23 @@ void InitCombat(game_state *GameState, entity *Player)
     GameState->Combat.EnemyTurnFinish = false;
     GameState->Combat.NumberOfEnemiesKill = 0;
     GameState->Combat.NumberOfHerosKill = 0;
+    GameState->Combat.HeroEventSet = 0;
 }
 
 void EndCombat(game_state *GameState)
 {
     for(i32 Index = 0;
-        Index < GameState->Combat.NumberOfEntities;
+        Index < GameState->Combat.NumberOfHeros;
         ++Index)
     {
-        GameState->Entities[GameState->Combat.Entities[Index].ID - 2].Stats = GameState->Combat.Entities[Index].Stats;
-    } 
+        GameState->Entities[GameState->Combat.Players[Index].ID - 2].Stats = GameState->Combat.Players[Index].Stats;
+    }
+    for(i32 Index = 0;
+        Index < GameState->Combat.NumberOfEnemies;
+        ++Index)
+    {
+        GameState->Entities[GameState->Combat.Enemies[Index].ID - 2].Stats = GameState->Combat.Enemies[Index].Stats;
+    }
 }
 
 void AddEvent(u64 *EventQueue, u8 Event)
@@ -244,25 +266,46 @@ void SortEventQueueByEntitySpeed(game_state *GameState, u64 *Entities, u64 *Acti
     for(i32 I = 0; I < 64; I += 8)
     {
         for(i32 J = I; J < 64; J += 8)
-        {            
-            u64 AIndex = ((*Entities >> I) & 0xF);
-            u64 BIndex = ((*Entities >> J) & 0xF);
+        {   
+            if(J == 24 && I == 16)
+            {
+                int StopHere = 0;
+            }         
+            u64 AIndex = ((*Entities >> I) & 0xFull);
+            u64 BIndex = ((*Entities >> J) & 0xFull);
             if((AIndex != 0) && (BIndex != 0) && (AIndex != BIndex))
             { 
-                entity *AEntity = &GameState->Combat.Entities[AIndex - 1];
-                entity *BEntity = &GameState->Combat.Entities[BIndex - 1];
+                entity *AEntity =  0; //&GameState->Combat.Entities[AIndex - 1];
+                entity *BEntity =  0; //&GameState->Combat.Entities[BIndex - 1];
+                if(AIndex < 5)
+                {
+                    AEntity = &GameState->Combat.Players[AIndex - 1];
+                }
+                else
+                { 
+                    AEntity = &GameState->Combat.Enemies[AIndex - 5];
+                }
+                if(BIndex < 5)
+                {
+                    BEntity = &GameState->Combat.Players[BIndex - 1];
+                }
+                else
+                { 
+                    BEntity = &GameState->Combat.Enemies[BIndex - 5];
+                }
+
                 if(AEntity->Stats.Speed < BEntity->Stats.Speed)
                 {
-                    u64 TempEntity = ((*Entities >> J) & 0xFF);
-                    *Entities &= ~(0xFF << J);
-                    *Entities  |= ((*Entities >> I) & 0xFF) << J;
-                    u64 TempAction = ((*Actions >> J) & 0xFF);
-                    *Actions &= ~(0xFF << J);
-                    *Actions |= ((*Actions >> I) & 0xFF) << J;
+                    u64 TempEntity = ((*Entities >> J) & 0xFFull);
+                    *Entities &= ~(0xFFull << J);
+                    *Entities  |= ((*Entities >> I) & 0xFFull) << J;
+                    u64 TempAction = ((*Actions >> J) & 0xFFull);
+                    *Actions &= ~(0xFFull << J);
+                    *Actions |= ((*Actions >> I) & 0xFFull) << J;
 
-                    *Entities &= ~(0xFF << I);
+                    *Entities &= ~(0xFFull << I);
                     *Entities  |= (TempEntity << I);
-                    *Actions &= ~(0xFF << I);
+                    *Actions &= ~(0xFFull << I);
                     *Actions |= (TempAction << I);
                 }
             }
@@ -275,17 +318,17 @@ void UpdateCombatEventQueue(game_state *GameState, u64 *Entities, u64 *Actions, 
     if(!GameState->Combat.ProcessingEvent)
     {
         SortEventQueueByEntitySpeed(GameState, Entities, Actions);
-        if((*Entities & 0xFF) != 0)
+        if((*Entities & 0xFFull) != 0)
         {
             if(GameState->Combat.Timer > 0.5f)
             {
                 GameState->Combat.ProcessingEvent = true;
                 GameState->Combat.EventData = 0;
-                GameState->Combat.EventData |= (*Entities & 0xF);
-                GameState->Combat.EventData |= ((*Entities & 0xF0) >> 4) << 8;
+                GameState->Combat.EventData |= (*Entities & 0xFull);
+                GameState->Combat.EventData |= ((*Entities & 0xF0ull) >> 4) << 8;
                 *Entities = *Entities >> 8;
-                GameState->Combat.EventData |= (*Actions & 0xF) << 16;
-                GameState->Combat.EventData |= ((*Actions & 0xF0) >> 4) << 24;
+                GameState->Combat.EventData |= (*Actions & 0xFull) << 16;
+                GameState->Combat.EventData |= ((*Actions & 0xF0ull) >> 4) << 24;
                 *Actions = *Actions >> 8;
                 GameState->Combat.Timer = 0.0f;
             }
@@ -307,8 +350,24 @@ void UpdateCombatEventQueue(game_state *GameState, u64 *Entities, u64 *Actions, 
         u8 ActionIndex = (GameState->Combat.EventData & 0x00FF0000) >> 16;
         u8 OptionIndex = (GameState->Combat.EventData & 0xFF000000) >> 24;
         // Process the Event...
-        entity *Entity = &GameState->Combat.Entities[EntityIndex - 1];
-        entity *Target = &GameState->Combat.Entities[TargetIndex - 1];
+        entity *Entity = 0;
+        entity *Target = 0;
+        if(EntityIndex < 5)
+        {
+            Entity = &GameState->Combat.Players[EntityIndex - 1];
+        }
+        else
+        { 
+            Entity = &GameState->Combat.Enemies[EntityIndex - 5];
+        }
+        if(TargetIndex < 5)
+        {
+            Target = &GameState->Combat.Players[TargetIndex - 1];
+        }
+        else
+        { 
+            Target = &GameState->Combat.Enemies[TargetIndex - 5];
+        }
 
         if(!Entity->Alive)
         { 
@@ -355,32 +414,34 @@ void UpdateCombatEventQueue(game_state *GameState, u64 *Entities, u64 *Actions, 
 
 void SetEntityRandomAction(game_state *GameState, i32 EntityIndex)
 {
-    entity *Enemy = &GameState->Combat.Entities[EntityIndex];
+    entity *Enemy = &GameState->Combat.Enemies[EntityIndex];
     i32 RandomChoise = rand() % 3;
+    i32 Target = (rand() % GameState->Combat.NumberOfHeros) + 1;
     if(RandomChoise == 0)
     {
-        SetCombatEventQueue(&GameState->Combat.EntitiesEventQueue, &GameState->Combat.ActionsEventQueue, EntityIndex + 1, 1, ATTACK, 1);
+        SetCombatEventQueue(&GameState->Combat.EntitiesEventQueue, &GameState->Combat.ActionsEventQueue, EntityIndex + 5, Target, ATTACK, 1);
     }
     else if(RandomChoise == 1)
     {
         if(Enemy->Stats.MP_Now - GameState->Spells[0].MP_Cost >= 0)
         {
             u32 SpellIndex = Enemy->Spells[0] + 1;
-            SetCombatEventQueue(&GameState->Combat.EntitiesEventQueue, &GameState->Combat.ActionsEventQueue, EntityIndex + 1, 1, SPELLS, SpellIndex);        
+            SetCombatEventQueue(&GameState->Combat.EntitiesEventQueue, &GameState->Combat.ActionsEventQueue, EntityIndex + 5, Target, SPELLS, SpellIndex);        
         }
     }
     else if(RandomChoise == 2)
     {
         RandomChoise = rand() % 2;
         u32 ItemIndex = Enemy->Items[RandomChoise] + 1;
-        SetCombatEventQueue(&GameState->Combat.EntitiesEventQueue, &GameState->Combat.ActionsEventQueue, EntityIndex + 1, 1, ITEMS, ItemIndex);         
+        SetCombatEventQueue(&GameState->Combat.EntitiesEventQueue, &GameState->Combat.ActionsEventQueue, EntityIndex + 5, Target, ITEMS, ItemIndex);         
     }   
 }
 
-void EndCombatIfNecessary(game_state *GameState, entity *Player)
+
+void EndCombatIfNecessary(game_state *GameState)
 {
-    if(GameState->Combat.NumberOfEnemiesKill >= (GameState->Combat.NumberOfEntities - 1) ||
-       Player->Stats.HP_Now <= 0)
+    if((GameState->Combat.NumberOfEnemiesKill >= GameState->Combat.NumberOfEnemies) ||
+       (GameState->Combat.NumberOfHerosKill >= GameState->Combat.NumberOfHeros))
     {
         GameState->Combat.EntitiesEventQueue = 0;
         GameState->Combat.ActionsEventQueue = 0;
@@ -390,27 +451,44 @@ void EndCombatIfNecessary(game_state *GameState, entity *Player)
     }
 }
 
-void UpdateEnemies(game_state *GameState, entity **Enemy)
+
+void UpdatePlayer(game_state *GameState, entity *Players)
 {
+
     for(i32 Index = 0;
-        Index < GameState->Combat.NumberOfEntities - 1;
+        Index < GameState->Combat.NumberOfHeros;
         ++Index)
     {
-        Enemy[Index] = &GameState->Combat.Entities[Index + 1];
         // check the enemies alive
-        if(Enemy[Index]->Stats.HP_Now <= 0 && Enemy[Index]->Alive)
+        if(Players[Index].Stats.HP_Now <= 0 && Players[Index].Alive)
         {
-            Enemy[Index]->Alive = false;
+            Players[Index].Alive = false;
+            ++GameState->Combat.NumberOfHerosKill;
+        }
+    }
+
+}
+
+void UpdateEnemies(game_state *GameState, entity *Enemies)
+{
+    for(i32 Index = 0;
+        Index < GameState->Combat.NumberOfEnemies;
+        ++Index)
+    {
+        // check the enemies alive
+        if(Enemies[Index].Stats.HP_Now <= 0 && Enemies[Index].Alive)
+        {
+            Enemies[Index].Alive = false;
             ++GameState->Combat.NumberOfEnemiesKill;
         }
 
         if(!GameState->Combat.EnemyTurnFinish)
         {
-            if(Enemy[Index]->Alive)
+            if(Enemies[Index].Alive)
             {
-                SetEntityRandomAction(GameState, Index + 1);
+                SetEntityRandomAction(GameState, Index);
             }  
-            if(Index == (GameState->Combat.NumberOfEntities - 1) - 1)
+            if(Index == (GameState->Combat.NumberOfEnemies - 1))
             { 
                 GameState->Combat.EnemyTurnFinish = true;
             }  
@@ -442,7 +520,6 @@ void GetCombatImput(game_state *GameState, input *Input)
             if(GameState->Combat.SelectedOptions[Index] == -1)
             {
                 GameState->Combat.SelectedOptions[Index] = GameState->Combat.OptionSelected;
-                //GameState->Combat.OptionSelected = 0;
                 break;
             }
         }
@@ -467,87 +544,107 @@ void GetCombatImput(game_state *GameState, input *Input)
     }
 }
 
-void FinishHeroTurn(game_state *GameState)
+void NextHeroTurn(game_state *GameState)
 {
     GameState->Combat.SelectedOptions[0] = -1;
     GameState->Combat.SelectedOptions[1] = -1;
     GameState->Combat.SelectedOptions[2] = -1;
     GameState->Combat.OptionSelected = 0;    
     GameState->Combat.NumberOfOptions = 4;
-    GameState->Combat.PlayerTurnFinish = true;
+    ++GameState->Combat.HeroEventSet;
+    //GameState->Combat.PlayerTurnFinish = true;
 }
 
 void UpdateAndRenderCombat(game_state *GameState, input *Input, r32 DeltaTime)
 {
     // TODO(manuto): ...
-    entity *Player = &GameState->Combat.Entities[0];
-    entity *Enemy[4] = {};
+    //entity *Player = &GameState->Combat.Players[0];
+    entity *Players = GameState->Combat.Players;
+    entity *Enemies = GameState->Combat.Enemies;
     
-    EndCombatIfNecessary(GameState, Player);
-    UpdateEnemies(GameState, Enemy);
-
-    GetCombatImput(GameState, Input);
-    switch(GameState->Combat.SelectedOptions[0])
+    EndCombatIfNecessary(GameState);
+    
+    UpdatePlayer(GameState, Players);
+    UpdateEnemies(GameState, Enemies);
+    
+    if(GameState->Combat.HeroEventSet < GameState->Combat.NumberOfHeros)
     {
-        case 0:
+        entity *Player = &GameState->Combat.Players[GameState->Combat.HeroEventSet];
+        
+        GetCombatImput(GameState, Input);
+        switch(GameState->Combat.SelectedOptions[0])
         {
-            i32 Target = GameState->Combat.SelectedOptions[1];
-            if((Target != -1) && Enemy[Target]->Alive)
-            { 
-                SetCombatEventQueue(&GameState->Combat.EntitiesEventQueue, &GameState->Combat.ActionsEventQueue, 1, Target + 2, ATTACK, 1);
-                FinishHeroTurn(GameState);
-            }
-            else
+            case 0:
             {
-                GameState->Combat.SelectedOptions[1] = -1;
-                GameState->Combat.NumberOfOptions = GameState->Combat.NumberOfEntities - 1;
-            }
-        }break;
-        case 1:
-        {
-            i32 Option = GameState->Combat.SelectedOptions[1];
-            i32 Target = GameState->Combat.SelectedOptions[2];
-            if((Option != -1) && (Target != -1) && Enemy[Target]->Alive)
+                i32 Target = GameState->Combat.SelectedOptions[1];
+                if((Target != -1) && Enemies[Target].Alive)
+                { 
+                    SetCombatEventQueue(&GameState->Combat.EntitiesEventQueue, &GameState->Combat.ActionsEventQueue, GameState->Combat.HeroEventSet + 1, Target + 5, ATTACK, 1);
+                    NextHeroTurn(GameState);
+                }
+                else
+                {
+                    GameState->Combat.SelectedOptions[1] = -1;
+                    GameState->Combat.NumberOfOptions = GameState->Combat.NumberOfEnemies;
+                }
+            }break;
+            case 1:
             {
-                u32 SpellIndex = Player->Spells[Option] + 1;
-                SetCombatEventQueue(&GameState->Combat.EntitiesEventQueue, &GameState->Combat.ActionsEventQueue, 1, Target + 2, SPELLS, SpellIndex);  
-                FinishHeroTurn(GameState);
-            }
-            else if(Option == -1) 
+                i32 Option = GameState->Combat.SelectedOptions[1];
+                i32 Target = GameState->Combat.SelectedOptions[2];
+                if((Option != -1) && (Target != -1) && Enemies[Target].Alive)
+                {
+                    u32 SpellIndex = Player->Spells[Option] + 1;
+                    SetCombatEventQueue(&GameState->Combat.EntitiesEventQueue, &GameState->Combat.ActionsEventQueue, GameState->Combat.HeroEventSet + 1, Target + 5, SPELLS, SpellIndex);  
+                    NextHeroTurn(GameState);
+                }
+                else if(Option == -1) 
+                {
+                     
+                    GameState->Combat.NumberOfOptions = Player->SpellsCount;
+                }
+                else
+                { 
+                    GameState->Combat.SelectedOptions[2] = -1;
+                    GameState->Combat.NumberOfOptions = GameState->Combat.NumberOfEnemies;
+                }
+            }break;
+            case 2:
             {
-                 
-                GameState->Combat.NumberOfOptions = Player->SpellsCount;
-            }
-            else
-            { 
-                GameState->Combat.SelectedOptions[2] = -1;
-                GameState->Combat.NumberOfOptions = GameState->Combat.NumberOfEntities - 1;
-            }
-        }break;
-        case 2:
-        {
-            i32 Option = GameState->Combat.SelectedOptions[1];
-            if(Option != -1)
+                i32 Option = GameState->Combat.SelectedOptions[1];
+                if(Option != -1)
+                {
+                    u32 ItemIndex = Player->Items[Option] + 1;
+                    SetCombatEventQueue(&GameState->Combat.EntitiesEventQueue, &GameState->Combat.ActionsEventQueue, GameState->Combat.HeroEventSet + 1, 1, ITEMS, ItemIndex); 
+                    NextHeroTurn(GameState);
+                }
+                else if(Option == -1) 
+                { 
+                    GameState->Combat.NumberOfOptions = Player->ItemsCount;
+                }
+            }break;
+            case 3:
             {
-                u32 ItemIndex = Player->Items[Option] + 1;
-                SetCombatEventQueue(&GameState->Combat.EntitiesEventQueue, &GameState->Combat.ActionsEventQueue, 1, 1, ITEMS, ItemIndex); 
-                FinishHeroTurn(GameState);
-            }
-            else if(Option == -1) 
-            { 
-                GameState->Combat.NumberOfOptions = Player->ItemsCount;
-            }
-        }break;
-        case 3:
-        {
-            GameState->Combat.NumberOfOptions = 4;
-            GameState->Combat.EntitiesEventQueue = 0;
-            GameState->Combat.ActionsEventQueue = 0;
-            GameState->Combat.ProcessingEvent = false;
-            GameState->GamePlayState = WORLD;
-        }break; 
+                GameState->Combat.NumberOfOptions = 4;
+                GameState->Combat.EntitiesEventQueue = 0;
+                GameState->Combat.ActionsEventQueue = 0;
+                GameState->Combat.ProcessingEvent = false;
+                GameState->GamePlayState = WORLD;
+            }break; 
+        }
+    }
+    else
+    {
+        GameState->Combat.HeroEventSet = 0;
+        GameState->Combat.PlayerTurnFinish = true;
     }
 
+    entity *Player = &GameState->Combat.Players[GameState->Combat.HeroEventSet];
+    if(GameState->Combat.HeroEventSet >= GameState->Combat.NumberOfHeros)
+    {
+        Player = &GameState->Combat.Players[0];
+    }
+    
     // Render Combat UI 
     SetProjMat4(GameState, OrthogonalProjMat4(WND_WIDTH, WND_HEIGHT, 1.0f, 100.0f));
     
@@ -697,23 +794,29 @@ void UpdateAndRenderCombat(game_state *GameState, input *Input, r32 DeltaTime)
     SetProjMat4(GameState, OrthogonalProjMat4(WND_WIDTH*0.5f, WND_HEIGHT*0.5f, 1.0f, 100.0f));
     
     // Render Player
-    Scale = ScaleMat4({16, 24, 0.0f});
-    Trans = TranslationMat4({Player->Position.X, Player->Position.Y, 0.0f});
-    SetWorldMat4(GameState, Trans * Scale);
-    RenderFrame(GameState->Renderer, GameState->Mesh, GameState->UIFrameShader, GameState->HeroTexture,
-                GameState->FrameConstBuffer, 16, 24, Player->Frame, Player->Skin);
-    // Render Enemies
     for(i32 Index = 0;
-        Index < GameState->Combat.NumberOfEntities - 1;
+        Index < GameState->Combat.NumberOfHeros;
         ++Index)
     {
-        if(Enemy[Index]->Alive)
+        Scale = ScaleMat4({16, 24, 0.0f});
+        Trans = TranslationMat4({Players[Index].Position.X, Players[Index].Position.Y, 0.0f});
+        SetWorldMat4(GameState, Trans * Scale);
+        RenderFrame(GameState->Renderer, GameState->Mesh, GameState->UIFrameShader, GameState->HeroTexture,
+                    GameState->FrameConstBuffer, 16, 24, Players[Index].Frame, Players[Index].Skin);
+    }
+    
+    // Render Enemies
+    for(i32 Index = 0;
+        Index < GameState->Combat.NumberOfEnemies;
+        ++Index)
+    {
+        if(Enemies[Index].Alive)
         {
-            Trans = TranslationMat4({Enemy[Index]->Position.X, Enemy[Index]->Position.Y, 0.0f});
+            Trans = TranslationMat4({Enemies[Index].Position.X, Enemies[Index].Position.Y, 0.0f});
             Scale = ScaleMat4({16, 24, 0.0f});
             SetWorldMat4(GameState, Trans * Scale);
             RenderFrame(GameState->Renderer, GameState->Mesh, GameState->UIFrameShader, GameState->HeroTexture,
-                        GameState->FrameConstBuffer, 16, 24, Enemy[Index]->Frame, Enemy[Index]->Skin);
+                        GameState->FrameConstBuffer, 16, 24, Enemies[Index].Frame, Enemies[Index].Skin);
         }
         
         i32 Target = -1;
@@ -735,7 +838,7 @@ void UpdateAndRenderCombat(game_state *GameState, input *Input, r32 DeltaTime)
         {
             ColorBuffer.Color = Color(255.0f, 0.0f, 0.0f);
             MapConstBuffer(GameState->Renderer, GameState->ColorConstBuffer, (void *)&ColorBuffer, sizeof(color_const_buffer), 1); 
-            Trans = TranslationMat4({Enemy[Index]->Position.X + 4.0f, Enemy[Index]->Position.Y + 24.0f, 0.0f});
+            Trans = TranslationMat4({Enemies[Index].Position.X + 4.0f, Enemies[Index].Position.Y + 24.0f, 0.0f});
             Scale = ScaleMat4({8, 8, 0.0f});
             SetWorldMat4(GameState, Trans * Scale);
             RenderMesh(GameState->Renderer, GameState->Mesh, GameState->UIColorShader);

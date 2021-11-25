@@ -113,6 +113,7 @@ void InitEntities(game_state *GameState)
     // The first element on the array always has to be the hero
     GameState->Entities[0].Name = "Manuto";
     GameState->Entities[0].ID = 2;
+    GameState->Entities[0].Type = HERO;
     GameState->Entities[0].Facing = BIT(DOWN);
     GameState->Entities[0].Layer = 0;
     GameState->Entities[0].Skin = 1;
@@ -136,22 +137,26 @@ void InitEntities(game_state *GameState)
     SetEntityPosition(&GameState->Entities[0], &GameState->Tilemap, 8, 12);
 
     GameState->Entities[1] = GameState->Entities[0];
+    GameState->Entities[1].Name = "Hailee";
     GameState->Entities[1].ID = 3;
     GameState->Entities[1].Skin = 2;
     SetEntityPosition(&GameState->Entities[1], &GameState->Tilemap, 8, 13);
     
     GameState->Entities[2] = GameState->Entities[0];
+    GameState->Entities[2].Name = "Camila";
     GameState->Entities[2].ID = 4;
     GameState->Entities[2].Skin = 7;
     SetEntityPosition(&GameState->Entities[2], &GameState->Tilemap, 8, 14);
     
     GameState->Entities[3] = GameState->Entities[0];
+    GameState->Entities[3].Name = "Sabrina";
     GameState->Entities[3].ID = 5;
     GameState->Entities[3].Skin =8;
     SetEntityPosition(&GameState->Entities[3], &GameState->Tilemap, 8, 15);
 
     GameState->Entities[4].Name = "Thomex";
     GameState->Entities[4].ID = 6;
+    GameState->Entities[4].Type = ENEMY;
     GameState->Entities[4].Facing = BIT(DOWN);
     GameState->Entities[4].Layer = 0;
     GameState->Entities[4].Skin = 2;
@@ -176,6 +181,7 @@ void InitEntities(game_state *GameState)
 
     GameState->Entities[5].Name = "Big Daddy";
     GameState->Entities[5].ID = 7;
+    GameState->Entities[5].Type = ENEMY;
     GameState->Entities[5].Facing = BIT(DOWN);
     GameState->Entities[5].Layer = 0;
     GameState->Entities[5].Skin = 3;
@@ -200,6 +206,7 @@ void InitEntities(game_state *GameState)
 
     GameState->Entities[6].Name = "Gonzitron";
     GameState->Entities[6].ID = 8;
+    GameState->Entities[6].Type = ENEMY;
     GameState->Entities[6].Facing = BIT(RIGHT);
     GameState->Entities[6].Layer = 0;
     GameState->Entities[6].Skin = 6;
@@ -224,6 +231,7 @@ void InitEntities(game_state *GameState)
 
     GameState->Entities[7].Name = "Jhosep";
     GameState->Entities[7].ID = 9;
+    GameState->Entities[7].Type = ENEMY;
     GameState->Entities[7].Facing = BIT(RIGHT);
     GameState->Entities[7].Layer = 0;
     GameState->Entities[7].Skin = 5;
