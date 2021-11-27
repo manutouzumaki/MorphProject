@@ -85,7 +85,7 @@ void GameSetUp(memory *Memory)
     GameState->Combat.ActionsEventQueue = 0;
     GameState->Combat.ProcessingEvent = false;
 
-    GameState->HeroPartyCount = 2;
+    GameState->HeroPartyCount = 4;
 
     InitInventory(&GameState->Inventory);
     AddItem(&GameState->Inventory, 1, 2);
@@ -207,12 +207,6 @@ void GameUpdateAndRender(memory *Memory, input *Input, r32 DeltaTime)
         }
         else if(GameState->GamePlayState == MENU) 
         {
-            /*
-            if(OnKeyDown(Input->Buttons->Back))
-            {
-                GameState->GamePlayState = WORLD;
-            }
-            */
             SetProjMat4(GameState, OrthogonalProjMat4(WND_WIDTH, WND_HEIGHT, 1.0f, 100.0f));
             UpdateAndRenderInventory(GameState, Input);
         }

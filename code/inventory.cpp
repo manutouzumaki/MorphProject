@@ -131,7 +131,7 @@ void RenderInventoryItem(game_state *GameState, i32 *X, i32 *Y, inventory_item *
     *Y -= Height + 1;
 }
 
-void InventoryIntput(input *Input, inventory *Inventory)
+void InventoryIntput(game_state *GameState, input *Input, inventory *Inventory)
 {
     if(OnKeyDown(Input->Buttons->Up))
     {
@@ -156,10 +156,21 @@ void InventoryIntput(input *Input, inventory *Inventory)
     }
     if(OnKeyDown(Input->Buttons->Back))
     {
-        Inventory->NumberOfOptions = 15;
-        Inventory->OptionSelected = 0;
-        Inventory->SelectedOptions[0] = -1;
-        Inventory->SelectedOptions[1] = -1;
+        if(Inventory->SelectedOptions[0] != -1)
+        {
+            Inventory->NumberOfOptions = 15;
+            Inventory->OptionSelected = 0;
+            Inventory->SelectedOptions[0] = -1;
+            Inventory->SelectedOptions[1] = -1;
+        }
+        else
+        {
+            Inventory->NumberOfOptions = 15;
+            Inventory->OptionSelected = 0;
+            Inventory->SelectedOptions[0] = -1;
+            Inventory->SelectedOptions[1] = -1;
+            GameState->GamePlayState = WORLD;
+        }
     }
 
     if(Inventory->OptionSelected < 0)
@@ -175,12 +186,12 @@ void InventoryIntput(input *Input, inventory *Inventory)
 void UpdateAndRenderInventory(game_state *GameState, input *Input)
 {
 
-    InventoryIntput(Input, &GameState->Inventory);
+    InventoryIntput(GameState, Input, &GameState->Inventory);
     inventory *Inventory = &GameState->Inventory;    
     if(Inventory->SelectedOptions[0] != -1 && Inventory->NumberOfOptions == 15)
     {
         Inventory->OptionSelected = 0;
-        Inventory->NumberOfOptions = 4;
+        Inventory->NumberOfOptions = GameState->HeroPartyCount;
     }
 
 
@@ -188,7 +199,7 @@ void UpdateAndRenderInventory(game_state *GameState, input *Input)
     i32 XPos = (WND_WIDTH*0.5f)*0.1f;
     i32 YPos = ((WND_HEIGHT*0.5f) - 100.0f) + (430.0f*0.5f);
     for(i32 Index = 0;
-        Index < 4;//GameState->HeroPartyCount;
+        Index < GameState->HeroPartyCount;
         ++Index)
     {
         RenderHeroInfo(GameState, &XPos, &YPos, 10, &GameState->Entities[Index], Index);
