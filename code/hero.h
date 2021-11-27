@@ -72,8 +72,11 @@ struct entity
     u32 Weapon;
     u32 Spells[3];
     u32 SpellsCount;
+
+    // TODO(manuto): Remove Items From entities    
     u32 Items[2];
     u32 ItemsCount;
+
     u32 Stage;
 
     // renderer stuff

@@ -182,3 +182,22 @@ void RenderMemoryData(game_state *GameState, arena *Arena, char *Text, int *XPos
     RenderMesh(GameState->Renderer, GameState->Mesh, GameState->MemBarShader);
     *YPos -= 9;
 }
+
+void RenderUIQuad(game_state *GameState, i32 X, i32 Y, i32 Width, i32 Height, r32 R, r32 G, r32 B)
+{
+    mat4 Trans = TranslationMat4({(r32)X, (r32)Y, 0.0f});
+    mat4 Scale = ScaleMat4({(r32)Width, (r32)Height, 0.0f});
+    SetWorldMat4(GameState, Trans * Scale);
+    v3 NormalizeColor = Color(R, G, B);
+    color_const_buffer ColorBuffer = { NormalizeColor };
+    MapConstBuffer(GameState->Renderer, GameState->ColorConstBuffer, (void *)&ColorBuffer, sizeof(color_const_buffer), 1);
+    RenderMesh(GameState->Renderer, GameState->Mesh, GameState->UIColorShader);
+}
+
+void RenderUIQuad(game_state *GameState, i32 X, i32 Y, i32 Width, i32 Height, texture *Texture)
+{
+    mat4 Trans = TranslationMat4({(r32)X, (r32)Y, 0.0f});
+    mat4 Scale = ScaleMat4({(r32)Width, (r32)Height, 0.0f});
+    SetWorldMat4(GameState, Trans * Scale);
+    RenderMesh(GameState->Renderer, GameState->Mesh, GameState->UISimpleShader, Texture);       
+}

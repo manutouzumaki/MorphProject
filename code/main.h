@@ -3,6 +3,7 @@
 
 #include "tilemap.h"
 #include "map_editor.h"
+#include "inventory.h"
 #include "hero.h"
 #include "combat.h"
 
@@ -46,6 +47,7 @@ enum gameplay_state
 {
     WORLD,
     COMBAT,
+    MENU,
 };
 
 struct game_state
@@ -106,15 +108,11 @@ struct game_state
     entity Entities[8];
     weapon_stats Weapons[3];
     spells_stats Spells[3];
-    item_stats Items[2]; 
+    item_stats Items[2];
+    inventory Inventory;
     tilemap Tilemap; 
     combat Combat;
     u32 HeroPartyCount;
-
-
-    // TODO(manuto):
-    // Party Test...
-
 
     editor Editor;
 };

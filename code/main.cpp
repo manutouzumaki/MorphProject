@@ -1,6 +1,7 @@
 #include "game_utility.cpp"
 #include "tilemap.cpp"
 #include "map_editor.cpp"
+#include "inventory.cpp"
 #include "hero.cpp"
 #include "combat.cpp"
 #include "init.cpp"
@@ -84,34 +85,41 @@ void GameSetUp(memory *Memory)
     GameState->Combat.ActionsEventQueue = 0;
     GameState->Combat.ProcessingEvent = false;
 
-    // TODO(manuto): Party Test...
     GameState->HeroPartyCount = 2;
+
+    InitInventory(&GameState->Inventory);
+    AddItem(&GameState->Inventory, 1, 2);
+    AddItem(&GameState->Inventory, 2, 3);
+    AddItem(&GameState->Inventory, 1, 2);
 }
 
 void GameUpdateAndRender(memory *Memory, input *Input, r32 DeltaTime)
 {
     game_state *GameState = (game_state *)Memory->Data;
     // TODO(manuto): Update...
-    if(Input->Buttons->Debug.IsDown != Input->Buttons->Debug.WasDown)
+    if(OnKeyDown(Input->Buttons->Debug))
     {
-        if(Input->Buttons->Debug.IsDown)
+        if(GameState->AppState == GAME_STATE)
         {
-            if(GameState->AppState == GAME_STATE)
-            {
-                GameState->AppState = EDITOR_STATE;
-            }
-            else if(GameState->AppState == EDITOR_STATE)
-            {
-                GameState->AppState = GAME_STATE;
-            }
+            GameState->AppState = EDITOR_STATE;
+        }
+        else if(GameState->AppState == EDITOR_STATE)
+        {
+            GameState->AppState = GAME_STATE;
         }
     }
+
     
     if(GameState->AppState == GAME_STATE)
     {
         // Update...
         if(GameState->GamePlayState == WORLD)
         {
+            if(OnKeyDown(Input->Buttons->Back))
+            {
+                GameState->GamePlayState = MENU;
+            }
+
             GetHeroInput(Input ,&GameState->Entities[0], &GameState->Tilemap, GameState->Entities);
             for(i32 Index = 0;
                 Index < ArrayCount(GameState->Entities);
@@ -191,11 +199,20 @@ void GameUpdateAndRender(memory *Memory, input *Input, r32 DeltaTime)
                     }
                 }
             }
+
         }
         else if(GameState->GamePlayState == COMBAT)
         {
             UpdateAndRenderCombat(GameState, Input, DeltaTime);
-            int Here = 0;
+        }
+        else if(GameState->GamePlayState == MENU) 
+        {
+            if(OnKeyDown(Input->Buttons->Back))
+            {
+                GameState->GamePlayState = WORLD;
+            }
+            SetProjMat4(GameState, OrthogonalProjMat4(WND_WIDTH, WND_HEIGHT, 1.0f, 100.0f));
+            UpdateAndRenderInventory(GameState);
         }
     }
         
