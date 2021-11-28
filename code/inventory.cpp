@@ -4,7 +4,7 @@ void InitInventory(inventory *Inventory)
     Inventory->SelectedOptions[0] = -1;
     Inventory->SelectedOptions[1] = -1;
     Inventory->OptionSelected = 0;
-    Inventory->NumberOfOptions = 15;
+    Inventory->NumberOfOptions = 0;
     for(i32 Index = 0;
         Index < 15;
         ++Index)
@@ -33,9 +33,32 @@ void AddItem(inventory *Inventory, i32 ItemID, i32 Count)
         Inventory->Items[Inventory->ItemsCount].Count = Count;
         ++Inventory->ItemsCount;
     }
+    Inventory->NumberOfOptions = Inventory->ItemsCount;
 }
 
-
+void UpdateItems(inventory *Inventory)
+{
+    for(i32 Index = 0;
+        Index < Inventory->ItemsCount;
+        ++Index)
+    {
+        if(Inventory->Items[Index].Count == 0 && Inventory->Items[Index].ID != 0)
+        {
+            --Inventory->ItemsCount;
+            Inventory->NumberOfOptions = Inventory->ItemsCount;
+            inventory_item ZeroItem = {};
+            if(Index < 14)
+            {
+                Inventory->Items[Index] = Inventory->Items[Index + 1];
+                Inventory->Items[Index + 1] = ZeroItem;
+            }
+            else
+            {
+                Inventory->Items[Index] = ZeroItem; 
+            }
+        }
+    }
+}
 
 void RenderHeroInfo(game_state *GameState, i32 *X, i32 *Y, i32 YOffset, entity *Hero, i32 Index)
 {
@@ -137,35 +160,40 @@ void InventoryIntput(game_state *GameState, input *Input, inventory *Inventory)
     {
         --Inventory->OptionSelected;
     }
-    if(OnKeyDown(Input->Buttons->Down))
+    else if(OnKeyDown(Input->Buttons->Down))
     {
         ++Inventory->OptionSelected;
     }
-    if(OnKeyDown(Input->Buttons->Start))
+    else if(OnKeyDown(Input->Buttons->Start))
     {  
         for(i32 Index = 0;
             Index < 2;
             ++Index)
         {
-            if(Inventory->SelectedOptions[Index] == -1)
+            if((Inventory->SelectedOptions[Index] == -1) && (Inventory->OptionSelected > -1))
             {
                 Inventory->SelectedOptions[Index] = Inventory->OptionSelected;
+                if(Index == 0)
+                {
+                    Inventory->OptionSelected = 0;
+                    Inventory->NumberOfOptions = GameState->HeroPartyCount;
+                }
                 break;
             }
         }
     }
-    if(OnKeyDown(Input->Buttons->Back))
+    else if(OnKeyDown(Input->Buttons->Back))
     {
         if(Inventory->SelectedOptions[0] != -1)
         {
-            Inventory->NumberOfOptions = 15;
+            Inventory->NumberOfOptions = Inventory->ItemsCount;
             Inventory->OptionSelected = 0;
             Inventory->SelectedOptions[0] = -1;
             Inventory->SelectedOptions[1] = -1;
         }
         else
         {
-            Inventory->NumberOfOptions = 15;
+            Inventory->NumberOfOptions = Inventory->ItemsCount;
             Inventory->OptionSelected = 0;
             Inventory->SelectedOptions[0] = -1;
             Inventory->SelectedOptions[1] = -1;
@@ -188,12 +216,23 @@ void UpdateAndRenderInventory(game_state *GameState, input *Input)
 
     InventoryIntput(GameState, Input, &GameState->Inventory);
     inventory *Inventory = &GameState->Inventory;    
-    if(Inventory->SelectedOptions[0] != -1 && Inventory->NumberOfOptions == 15)
+    
+    inventory_item *InvItem =  &GameState->Inventory.Items[Inventory->SelectedOptions[0]];
+    i32 EntityIndex = Inventory->SelectedOptions[1]; 
+    if(EntityIndex != -1)
     {
+        entity *EntitySelected = &GameState->Entities[EntityIndex];
+        item_stats Item = GameState->Items[InvItem->ID - 1];
+        EntitySelected->Stats.HP_Now += Item.HP_Modifire;
+        EntitySelected->Stats.MP_Now += Item.MP_Modifire;
+        --InvItem->Count;
+        Inventory->SelectedOptions[0] = -1;
+        Inventory->SelectedOptions[1] = -1;
         Inventory->OptionSelected = 0;
-        Inventory->NumberOfOptions = GameState->HeroPartyCount;
+        Inventory->NumberOfOptions = Inventory->ItemsCount;
     }
 
+    UpdateItems(Inventory);
 
     RenderUIQuad(GameState, -(WND_WIDTH*0.5f), -(WND_HEIGHT*0.5f), WND_WIDTH, WND_HEIGHT, 22.0f, 25.0f, 37.0f);
     i32 XPos = (WND_WIDTH*0.5f)*0.1f;

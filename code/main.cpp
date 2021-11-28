@@ -85,7 +85,7 @@ void GameSetUp(memory *Memory)
     GameState->Combat.ActionsEventQueue = 0;
     GameState->Combat.ProcessingEvent = false;
 
-    GameState->HeroPartyCount = 4;
+    GameState->HeroPartyCount = 2;
 
     InitInventory(&GameState->Inventory);
     AddItem(&GameState->Inventory, 1, 2);
