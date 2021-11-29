@@ -233,7 +233,7 @@ void UpdateAndRenderInventory(game_state *GameState, input *Input)
     }
 
     UpdateItems(Inventory);
-
+    
     RenderUIQuad(GameState, -(WND_WIDTH*0.5f), -(WND_HEIGHT*0.5f), WND_WIDTH, WND_HEIGHT, 22.0f, 25.0f, 37.0f);
     i32 XPos = (WND_WIDTH*0.5f)*0.1f;
     i32 YPos = ((WND_HEIGHT*0.5f) - 100.0f) + (430.0f*0.5f);

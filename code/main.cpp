@@ -85,7 +85,7 @@ void GameSetUp(memory *Memory)
     GameState->Combat.ActionsEventQueue = 0;
     GameState->Combat.ProcessingEvent = false;
 
-    GameState->HeroPartyCount = 2;
+    GameState->HeroPartyCount = 4;
 
     InitInventory(&GameState->Inventory);
     AddItem(&GameState->Inventory, 1, 2);
@@ -126,7 +126,7 @@ void GameUpdateAndRender(memory *Memory, input *Input, r32 DeltaTime)
                 ++Index)
             {
                 entity *Entity = &GameState->Entities[Index];
-                if((Index > 3) && (Entity->TimeToWait >= 0.0f))
+                if((Index > 3) && (Entity->TimeToWait >= 0.0f) && Entity->Alive)
                 {
                     SetEntityInRandomDirection(Entity, &GameState->Tilemap);
                 }
@@ -159,10 +159,10 @@ void GameUpdateAndRender(memory *Memory, input *Input, r32 DeltaTime)
 
             i32 EntityID = GameState->Entities[0].Action[0];
             entity *EntityToCheck = GetEntitiByID(GameState->Entities, EntityID + 2);
-            if((EntityToCheck && (EntityToCheck->Type == ENEMY)))
+            if((EntityToCheck && (EntityToCheck->Type == ENEMY) && (EntityToCheck->Alive)))
             {
                 GameState->GamePlayState = COMBAT;
-                InitCombat(GameState, &GameState->Entities[0]);
+                InitCombat(GameState, &GameState->Combat, &GameState->Entities[0]);
             }
 
             // Render...
@@ -187,7 +187,7 @@ void GameUpdateAndRender(memory *Memory, input *Input, r32 DeltaTime)
                     {
                         if(Index == Entities[I].Layer)
                         {
-                            if(((Entities[I].ID - 2) < GameState->HeroPartyCount) || ((Entities[I].ID - 2) >= 4))
+                            if(Entities[I].Alive && (((Entities[I].ID - 2) < GameState->HeroPartyCount) || ((Entities[I].ID - 2) >= 4)))
                             {
                                 mat4 Scale = ScaleMat4({16, 24, 0.0f});
                                 mat4 Trans = TranslationMat4({Entities[I].Position.X, Entities[I].Position.Y, 0.0f});
@@ -203,7 +203,7 @@ void GameUpdateAndRender(memory *Memory, input *Input, r32 DeltaTime)
         }
         else if(GameState->GamePlayState == COMBAT)
         {
-            UpdateAndRenderCombat(GameState, Input, DeltaTime);
+            UpdateAndRenderCombat(GameState, &GameState->Combat, Input, DeltaTime);
         }
         else if(GameState->GamePlayState == MENU) 
         {

@@ -7,9 +7,6 @@
 
 struct combat
 {
-    //entity Entities[8];
-    //i32 NumberOfEntities;
-
     entity Players[4];
     entity Enemies[4];
     i32 NumberOfHeros;

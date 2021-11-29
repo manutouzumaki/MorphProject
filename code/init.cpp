@@ -130,9 +130,6 @@ void InitEntities(game_state *GameState)
     GameState->Entities[0].Spells[1] = -1;
     GameState->Entities[0].Spells[2] = -1;
     GameState->Entities[0].SpellsCount = 1;
-    GameState->Entities[0].Items[0] = 0;
-    GameState->Entities[0].Items[1] = 1;
-    GameState->Entities[0].ItemsCount = 2;
     GameState->Entities[0].Alive = true;
     SetEntityPosition(&GameState->Entities[0], &GameState->Tilemap, 8, 12);
 
@@ -173,9 +170,6 @@ void InitEntities(game_state *GameState)
     GameState->Entities[4].Spells[1] = -1;
     GameState->Entities[4].Spells[2] = -1;
     GameState->Entities[4].SpellsCount = 0;
-    GameState->Entities[4].Items[0] = 0;
-    GameState->Entities[4].Items[1] = 1;
-    GameState->Entities[4].ItemsCount = 2;
     GameState->Entities[4].Alive = true;
     SetEntityPosition(&GameState->Entities[4], &GameState->Tilemap, 15, 11);
 
@@ -198,9 +192,6 @@ void InitEntities(game_state *GameState)
     GameState->Entities[5].Spells[1] = -1;
     GameState->Entities[5].Spells[2] = -1;
     GameState->Entities[5].SpellsCount = 0;
-    GameState->Entities[5].Items[0] = 0;
-    GameState->Entities[5].Items[1] = 1;
-    GameState->Entities[5].ItemsCount = 2;
     GameState->Entities[5].Alive = true;
     SetEntityPosition(&GameState->Entities[5], &GameState->Tilemap, 3, 3);
 
@@ -223,9 +214,6 @@ void InitEntities(game_state *GameState)
     GameState->Entities[6].Spells[1] = -1;
     GameState->Entities[6].Spells[2] = -1;
     GameState->Entities[6].SpellsCount = 0;
-    GameState->Entities[6].Items[0] = 0;
-    GameState->Entities[6].Items[1] = 1;
-    GameState->Entities[6].ItemsCount = 2;
     GameState->Entities[6].Alive = true;
     SetEntityPosition(&GameState->Entities[6], &GameState->Tilemap, 3, 4);
 
@@ -248,9 +236,6 @@ void InitEntities(game_state *GameState)
     GameState->Entities[7].Spells[1] = -1;
     GameState->Entities[7].Spells[2] = -1;
     GameState->Entities[7].SpellsCount = 0;
-    GameState->Entities[7].Items[0] = 0;
-    GameState->Entities[7].Items[1] = 1;
-    GameState->Entities[7].ItemsCount = 2;
     GameState->Entities[7].Alive = true;
     SetEntityPosition(&GameState->Entities[7], &GameState->Tilemap, 3, 5);
 }
