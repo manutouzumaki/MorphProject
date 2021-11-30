@@ -1,3 +1,71 @@
+void RenderCombatHeroUI(game_state *GameState, entity *Hero)
+{
+    i32 Width = (WND_WIDTH*0.5f);
+    i32 Height = (WND_HEIGHT*0.5f);
+    v2 FontSize = {7.0f*2.0f, 9.0f*2.0f}; 
+    i32 XAbsPos = -Width; 
+    i32 YAbsPos = -Height; 
+    char *StatsNames[] = {"HP: ", "MP: ", "ST: ", "SP: ", "IN: "};
+    RenderUIQuad(GameState, XAbsPos + 10,  YAbsPos + 10, (Width*0.5f) - 20, (Height*0.5f) - 20, 35.0f, 57.0f, 91.0f);
+    i32 YPos = Height*0.5f - FontSize.Y  - 10;
+    RenderString(GameState, Hero->Name, XAbsPos + 10, YPos - Height, FontSize.X, FontSize.Y);
+    RenderUIQuad(GameState, XAbsPos + 40, YAbsPos + 20, (Width*0.5f) - 80, (Height*0.5f) - 30 - FontSize.Y - 10, GameState->HeroPortraitTexture);
+    XAbsPos = -Width + (WND_WIDTH*0.75f); 
+    RenderUIQuad(GameState, XAbsPos + 10,  YAbsPos + 10, (Width*0.5f) - 20, (Height*0.5f) - 20, 35.0f, 57.0f, 91.0f);
+    i32 XPos = XAbsPos + 10;
+    YPos -= Height;
+    i32 NameIndex = 0;
+    for(i32 Index = 0;
+        Index < 4;
+        Index += 2)
+    {
+        i32 XOffset = RenderString(GameState, StatsNames[NameIndex++], XPos, YPos, FontSize.X, FontSize.Y);
+        i32 InnerXPos = XPos + (XOffset*(FontSize.X));
+        XOffset = RenderUInt(GameState, Hero->Stats.Stat[Index], InnerXPos, YPos, FontSize.X, FontSize.Y);
+        InnerXPos += (XOffset*(FontSize.X));
+        XOffset = RenderString(GameState, "/", InnerXPos, YPos, FontSize.X, FontSize.Y);
+        InnerXPos += (XOffset*(FontSize.X));
+        RenderUInt(GameState, Hero->Stats.Stat[Index + 1], InnerXPos, YPos, FontSize.X, FontSize.Y);
+        YPos -= FontSize.Y;
+    }
+    for(i32 Index = 0;
+        Index < 3;
+        ++Index)
+    {
+        i32 XOffset = RenderString(GameState, StatsNames[Index + 2], XPos, YPos, FontSize.X, FontSize.Y);
+        i32 InnerXPos = XPos + (XOffset*(FontSize.X));
+        RenderUInt(GameState, Hero->Stats.Stat[Index + 4], InnerXPos, YPos, FontSize.X, FontSize.Y);
+        YPos -= FontSize.Y;
+    }
+}
+
+void RenderCombatOptionUI(game_state *GameState, tree::node *Node)
+{
+    i32 Width = (WND_WIDTH*0.5f);
+    i32 Height = (WND_HEIGHT*0.5f);
+    v2 FontSize = {7.0f*2.0f, 9.0f*2.0f}; 
+    i32 XAbsPos = Width*0.5 - Width; 
+    i32 YAbsPos = -Height; 
+    RenderUIQuad(GameState, XAbsPos + 10,  YAbsPos + 10, Width - 20, (Height*0.5f) - 20, 35.0f, 57.0f, 91.0f);
+    tree::node *FirstSibling = Node;
+    while(FirstSibling->BackSibling)
+    {
+        FirstSibling = FirstSibling->BackSibling;
+    }
+    i32 YPos = Height*0.5f - FontSize.Y  - 10;
+    while(FirstSibling)
+    {
+        if(FirstSibling->ID == Node->ID)
+        { 
+            RenderUIQuad(GameState, XAbsPos + 10, YPos -Height, Width - 20, FontSize.Y, 134.0f, 165.0f, 217.0f);
+        }
+        RenderString(GameState, FirstSibling->Name, XAbsPos + 10, YPos -Height, FontSize.X, FontSize.Y);
+        YPos -= FontSize.Y;
+        FirstSibling = FirstSibling->NextSibling;
+    }
+}
+
+
 void InitCombat(game_state *GameState, combat *Combat, entity *Player)
 {
     //GameState->Combat.NumberOfEntities = 0;
@@ -39,6 +107,9 @@ void InitCombat(game_state *GameState, combat *Combat, entity *Player)
     Combat->SelectedOptions[2] = -1;
 
     Combat->NumberOfOptions = 4;
+
+    Combat->Node = GameState->Tree.FindNodeByID(1);
+
     Combat->OptionSelected = 0;
     Combat->PlayerTurnFinish = false;
     Combat->EnemyTurnFinish = false;
@@ -507,41 +578,31 @@ void GetCombatImput(combat *Combat, input *Input)
     }
     if(OnKeyDown(Input->Buttons->Up))
     {
-        --Combat->OptionSelected;
+        if(Combat->Node->BackSibling)
+        {
+            Combat->Node = Combat->Node->BackSibling;
+        }
     }
     else if(OnKeyDown(Input->Buttons->Down))
     {
-        ++Combat->OptionSelected;
+        if(Combat->Node->NextSibling)
+        {
+            Combat->Node = Combat->Node->NextSibling;
+        }
     }
     else if(OnKeyDown(Input->Buttons->Start))
-    {     
-        for(i32 Index = 0;
-            Index < 3;
-            ++Index)
+    {
+        if(Combat->Node->Child)
         {
-            if(Combat->SelectedOptions[Index] == -1)
-            {
-                Combat->SelectedOptions[Index] = Combat->OptionSelected;
-                break;
-            }
+            Combat->Node = Combat->Node->Child;
         }
     }
     else if(OnKeyDown(Input->Buttons->Back))
     {
-        Combat->NumberOfOptions = 4;
-        Combat->OptionSelected = 0;
-        Combat->SelectedOptions[0] = -1;
-        Combat->SelectedOptions[1] = -1;
-        Combat->SelectedOptions[2] = -1;
-    }
-
-    if(Combat->OptionSelected < 0)
-    {
-        Combat->OptionSelected = 0;    
-    }
-    if(Combat->OptionSelected > Combat->NumberOfOptions - 1)
-    {
-        Combat->OptionSelected = Combat->NumberOfOptions - 1;
+        if(Combat->Node->Parent)
+        {
+            Combat->Node = Combat->Node->Parent;
+        }
     }
 }
 
@@ -654,154 +715,21 @@ void UpdateAndRenderCombat(game_state *GameState, combat *Combat, input *Input, 
     // Render Combat UI 
     SetProjMat4(GameState, OrthogonalProjMat4(WND_WIDTH, WND_HEIGHT, 1.0f, 100.0f));
     
-    r32 XPos = -WND_WIDTH*0.5f;
-    r32 YPos = -WND_HEIGHT*0.5f;
-    color_const_buffer ColorBuffer = {};
-               
-    mat4 Trans = TranslationMat4({XPos, YPos + 192.0f, 0.0f});
-    mat4 Scale = ScaleMat4({(r32)WND_WIDTH, WND_HEIGHT- 192.0f, 0.0f});
-    SetWorldMat4(GameState, Trans * Scale);
-    RenderMesh(GameState->Renderer, GameState->Mesh, GameState->UISimpleShader, GameState->CombatBgTexture);       
-    
-    v2 BackPannel = {(r32)WND_WIDTH, 192.0f};
-    Trans = TranslationMat4({XPos, YPos, 0.0f});
-    Scale = ScaleMat4({BackPannel.X, BackPannel.Y, 0.0f});
-    SetWorldMat4(GameState, Trans * Scale);
-    ColorBuffer.Color = Color(22.0f, 25.0f, 37.0f);
-    MapConstBuffer(GameState->Renderer, GameState->ColorConstBuffer, (void *)&ColorBuffer, sizeof(color_const_buffer), 1);
-    RenderMesh(GameState->Renderer, GameState->Mesh, GameState->UIColorShader);
-    
-    XPos += 32.0f;
-    YPos += (BackPannel.Y*0.5f) - 64.0f;
-    ColorBuffer.Color = Color(35.0f, 57.0f, 91.0f);
-    MapConstBuffer(GameState->Renderer, GameState->ColorConstBuffer, (void *)&ColorBuffer, sizeof(color_const_buffer), 1);
-    Trans = TranslationMat4({XPos, YPos, 0.0f});
-    Scale = ScaleMat4({100.0f, 64*2.0f, 0.0f});
-    SetWorldMat4(GameState, Trans * Scale);
-    RenderMesh(GameState->Renderer, GameState->Mesh, GameState->UIColorShader);
-    RenderString(GameState, Player->Name, XPos, YPos + 64.0f*2.0f, 7.0f*2.0f, 9.0f*2.0f);
-    Trans = TranslationMat4({XPos + 50.0f - (81.0f*0.5f), YPos + 64.0f - (76.0f*0.5f), 0.0f});
-    Scale = ScaleMat4({81.0f, 76.0f, 0.0f});
-    SetWorldMat4(GameState, Trans * Scale);
-    RenderMesh(GameState->Renderer, GameState->Mesh, GameState->UISimpleShader, GameState->HeroPortraitTexture);       
+    // Render background image
+    i32 Height = WND_HEIGHT * 0.75f;
+    i32 Offset = WND_HEIGHT * 0.25f;
+    RenderUIQuad(GameState, -(WND_WIDTH*0.5f), -(WND_HEIGHT*0.5f) + Offset, WND_WIDTH, Height, GameState->CombatBgTexture);
+    RenderUIQuad(GameState, -(WND_WIDTH*0.5f), -(WND_HEIGHT*0.5f), WND_WIDTH, Offset, 22.0f, 25.0f, 37.0f);
+    // Render Actions and Options
+    RenderCombatHeroUI(GameState, Player);
+    RenderCombatOptionUI(GameState, Combat->Node);
 
-    XPos += 100.0f;
-    XPos += 32.0f;
-    ColorBuffer.Color = Color(35.0f, 57.0f, 91.0f);
-    MapConstBuffer(GameState->Renderer, GameState->ColorConstBuffer, (void *)&ColorBuffer, sizeof(color_const_buffer), 1);
-    Trans = TranslationMat4({XPos, YPos, 0.0f});
-    Scale = ScaleMat4({400.0f, 64*2.0f, 0.0f});
-    SetWorldMat4(GameState, Trans * Scale);
-    RenderMesh(GameState->Renderer, GameState->Mesh, GameState->UIColorShader);
-    
-    if((Combat->SelectedOptions[0] < 0) || (Combat->SelectedOptions[0] > 0) && (Combat->SelectedOptions[1] == -1))
-    {
-        YPos -= 9.0f*2.0f;
-        YPos += 64.0f*2.0f - (Combat->OptionSelected * (9.0f*2.0f));
-        ColorBuffer.Color = Color(134.0f, 165.0f, 217.0f);
-        MapConstBuffer(GameState->Renderer, GameState->ColorConstBuffer, (void *)&ColorBuffer, sizeof(color_const_buffer), 1);
-        Trans = TranslationMat4({XPos, YPos, 0.0f});
-        Scale = ScaleMat4({400.0f, 9.0f*2.0f, 0.0f});
-        SetWorldMat4(GameState, Trans * Scale);
-        RenderMesh(GameState->Renderer, GameState->Mesh, GameState->UIColorShader);
-    }
-
-    YPos = -WND_HEIGHT*0.5f;
-    YPos += (BackPannel.Y*0.5f) - 64.0f;
-    YPos += 64.0f*2.0f;
-    RenderString(GameState, "Actions:", XPos, YPos, 7.0f*2.0f, 9.0f*2.0f);
-    YPos -= 9.0f*2.0f;
-    switch(Combat->SelectedOptions[0])
-    {
-        case -1:
-        {
-            RenderString(GameState, "-Atack", XPos, YPos, 7.0f*2.0f, 9.0f*2.0f);
-            YPos -= 9.0f*2.0f;
-            RenderString(GameState, "-Spells", XPos, YPos, 7.0f*2.0f, 9.0f*2.0f);
-            YPos -= 9.0f*2.0f;
-            RenderString(GameState, "-Item", XPos, YPos, 7.0f*2.0f, 9.0f*2.0f);
-            YPos -= 9.0f*2.0f;
-            RenderString(GameState, "-Run", XPos, YPos, 7.0f*2.0f, 9.0f*2.0f);
-        }break;
-        case 0:
-        {
-            RenderString(GameState, "-Atack", XPos, YPos, 7.0f*2.0f, 9.0f*2.0f);
-            YPos -= 9.0f*2.0f;
-            RenderString(GameState, "-Spells", XPos, YPos, 7.0f*2.0f, 9.0f*2.0f);
-            YPos -= 9.0f*2.0f;
-            RenderString(GameState, "-Item", XPos, YPos, 7.0f*2.0f, 9.0f*2.0f);
-            YPos -= 9.0f*2.0f;
-            RenderString(GameState, "-Run", XPos, YPos, 7.0f*2.0f, 9.0f*2.0f);
-        }break;
-        case 1:
-        {
-            for(i32 Index = 0;
-                Index < 1;
-                ++Index)
-            {
-                RenderString(GameState, GameState->Spells[Player->Spells[Index]].Name, XPos, YPos, 7.0f*2.0f, 9.0f*2.0f);
-                YPos -= 9.0f*2.0f;
-            } 
-        }break;
-        case 2:
-        {
-            for(i32 Index = 0;
-                Index < Inventory->ItemsCount;
-                ++Index)
-            {
-                inventory_item *Item = &Inventory->Items[Index];
-                i32 InnerXPos = RenderString(GameState, GameState->Items[Item->ID - 1].Name, XPos, YPos, 7.0f*2.0f, 9.0f*2.0f);
-                RenderUInt(GameState, Item->Count, InnerXPos, YPos, 7.0f*2.0f, 9.0f*2.0f);
-                YPos -= 9.0f*2.0f;
-            }
-        }break; 
-    }
-   
-    YPos = -WND_HEIGHT*0.5f;
-    YPos += (BackPannel.Y*0.5f) - 64.0f;
-    XPos += 400.0f;
-    XPos += 32.0f;
-    ColorBuffer.Color = Color(35.0f, 57.0f, 91.0f);
-    MapConstBuffer(GameState->Renderer, GameState->ColorConstBuffer, (void *)&ColorBuffer, sizeof(color_const_buffer), 1);
-    Trans = TranslationMat4({XPos, YPos, 0.0f});
-    Scale = ScaleMat4({BackPannel.X - (XPos + WND_WIDTH*0.5f) - 32.0f, 64*2.0f, 0.0f});
-    SetWorldMat4(GameState, Trans * Scale);
-    RenderMesh(GameState->Renderer, GameState->Mesh, GameState->UIColorShader);
-    YPos += 64.0f*2.0f;
-    RenderString(GameState, "Stats:", XPos, YPos, 7.0f*2.0f, 9.0f*2.0f); 
-    YPos -= 9.0f*2.0f;
-    i32 XOffset = RenderString(GameState, "-HP:", XPos, YPos, 7.0f*2.0f, 9.0f*2.0f);
-    i32 InnerXPos = XPos + (XOffset*(7.0f*2.0f));
-    XOffset = RenderUInt(GameState, Player->Stats.HP_Now, InnerXPos, YPos, 7.0f*2.0f, 9.0f*2.0f);
-    InnerXPos += (XOffset*(7.0f*2.0f));
-    XOffset = RenderString(GameState, "/", InnerXPos, YPos, 7.0f*2.0f, 9.0f*2.0f);
-    InnerXPos += (XOffset*(7.0f*2.0f));
-    RenderUInt(GameState, Player->Stats.HP_Max, InnerXPos, YPos, 7.0f*2.0f, 9.0f*2.0f);
-    YPos -= 9.0f*2.0f;
-    XOffset = RenderString(GameState, "-MP:", XPos, YPos, 7.0f*2.0f, 9.0f*2.0f);
-    InnerXPos = XPos + (XOffset*(7.0f*2.0f));
-    XOffset = RenderUInt(GameState, Player->Stats.MP_Now, InnerXPos, YPos, 7.0f*2.0f, 9.0f*2.0f);
-    InnerXPos += (XOffset*(7.0f*2.0f));
-    XOffset = RenderString(GameState, "/", InnerXPos, YPos, 7.0f*2.0f, 9.0f*2.0f);
-    InnerXPos += (XOffset*(7.0f*2.0f));
-    RenderUInt(GameState, Player->Stats.MP_Max, InnerXPos, YPos, 7.0f*2.0f, 9.0f*2.0f);
-    YPos -= 9.0f*2.0f;
-    XOffset = RenderString(GameState, "-ST:", XPos, YPos, 7.0f*2.0f, 9.0f*2.0f);
-    InnerXPos = XPos + (XOffset*(7.0f*2.0f));
-    RenderUInt(GameState, Player->Stats.Strength, InnerXPos, YPos, 7.0f*2.0f, 9.0f*2.0f);
-    YPos -= 9.0f*2.0f;
-    XOffset = RenderString(GameState, "-SP:", XPos, YPos, 7.0f*2.0f, 9.0f*2.0f);
-    InnerXPos = XPos + (XOffset*(7.0f*2.0f));
-    RenderUInt(GameState, Player->Stats.Speed, InnerXPos, YPos, 7.0f*2.0f, 9.0f*2.0f);
-    YPos -= 9.0f*2.0f;
-    XOffset = RenderString(GameState, "-IN:", XPos, YPos, 7.0f*2.0f, 9.0f*2.0f);
-    InnerXPos = XPos + (XOffset*(7.0f*2.0f));
-    RenderUInt(GameState, Player->Stats.Intelligence, InnerXPos, YPos, 7.0f*2.0f, 9.0f*2.0f);
-    
     // Render Combat Scene
     SetProjMat4(GameState, OrthogonalProjMat4(WND_WIDTH*0.5f, WND_HEIGHT*0.5f, 1.0f, 100.0f));
     
     // Render Player
+    mat4 Trans = IdentityMat4();
+    mat4 Scale = IdentityMat4();
     for(i32 Index = 0;
         Index < Combat->NumberOfHeros;
         ++Index)
@@ -844,6 +772,7 @@ void UpdateAndRenderCombat(game_state *GameState, combat *Combat, input *Input, 
         } 
         if(Target == Index)
         {
+            color_const_buffer ColorBuffer = {};
             ColorBuffer.Color = Color(255.0f, 0.0f, 0.0f);
             MapConstBuffer(GameState->Renderer, GameState->ColorConstBuffer, (void *)&ColorBuffer, sizeof(color_const_buffer), 1); 
             Trans = TranslationMat4({Enemies[Index].Position.X + 4.0f, Enemies[Index].Position.Y + 24.0f, 0.0f});

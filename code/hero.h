@@ -48,15 +48,19 @@ struct weapon_stats
     u32 Weight;
 };
 
-struct entity_stats
+union entity_stats
 {
-    i32 HP_Now; // Healt Points
-    i32 HP_Max;
-    i32 MP_Now; // Magic Points
-    i32 MP_Max;
-    i32 Strength;
-    i32 Speed;
-    i32 Intelligence; 
+    struct 
+    {
+        i32 HP_Now; // Healt Points
+        i32 HP_Max;
+        i32 MP_Now; // Magic Points
+        i32 MP_Max;
+        i32 Strength;
+        i32 Speed;
+        i32 Intelligence; 
+    };
+    i32 Stat[7];
 };
 
 struct entity

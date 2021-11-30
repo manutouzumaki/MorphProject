@@ -9,13 +9,14 @@ bool tree::IsEmpty()
     return (First == 0);
 }
 
-i32 tree::AddChildByID(i32 Value, i32 ID)
+i32 tree::AddChildByID(i32 Value, char *Name, i32 ID)
 {
     i32 ChildID = Size;
     if(First == 0)
     {
         First = PushStruct(Arena, node);
         First->Value = Value;
+        First->Name = Name;
         First->ID = ID;
         First->Parent = 0;
         First->NextSibling = 0;
@@ -23,18 +24,19 @@ i32 tree::AddChildByID(i32 Value, i32 ID)
     }
     else
     {
-        node *Actual = FindNodeByID(First, ID);
-        Actual->AddChild(Value, ChildID, Arena);
+        node *Actual = FindNodeByID(ID);
+        Actual->AddChild(Value, Name, ChildID, Arena);
     }
     ++Size;
     return ChildID;
 }
-void tree::node::AddChild(i32 Value, i32 ID, arena *Arena)
+void tree::node::AddChild(i32 Value, char *Name, i32 ID, arena *Arena)
 {
     if(Child == 0)
     {
         Child = PushStruct(Arena, node);
         Child->ID = ID;
+        Child->Name = Name;
         Child->Value = Value;
         Child->Parent = this;
     }
@@ -48,6 +50,7 @@ void tree::node::AddChild(i32 Value, i32 ID, arena *Arena)
         }
         Node->NextSibling = PushStruct(Arena, node);
         Node->NextSibling->ID = ID;
+        Node->NextSibling->Name = Name;
         Node->NextSibling->Value = Value;
         Node->NextSibling->Parent = this;
         Node->NextSibling->BackSibling = Node;
@@ -55,7 +58,7 @@ void tree::node::AddChild(i32 Value, i32 ID, arena *Arena)
     }
 }
 
-tree::node *tree::FindNodeByID(node *First, i32 ID)
+tree::node *tree::FindNodeByID(i32 ID)
 {
     node *Node = First;
     while(Node->Child)

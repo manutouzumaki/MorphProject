@@ -8,6 +8,21 @@
 #include "combat.cpp"
 #include "init.cpp"
 
+void CreateUI(tree *Tree)
+{
+    i32 Actions = Tree->AddChildByID(0, "Actions", 0);
+    // Actions
+    i32 Attacks = Tree->AddChildByID(0, "Attack", Actions);
+    i32 Spells  = Tree->AddChildByID(1, "Spells", Actions);
+    i32 Items   = Tree->AddChildByID(2, "Items", Actions);
+    i32 Run     = Tree->AddChildByID(3, "Run", Actions);
+    // Spells
+    i32 Fireball = Tree->AddChildByID(0, "Fireball", Spells);
+    // Items
+    i32 Potion = Tree->AddChildByID(0, "Potion", Items);
+    i32 Ether  = Tree->AddChildByID(1, "Ether", Items);
+}
+
 void GameSetUp(memory *Memory)
 {
     game_state *GameState = (game_state *)Memory->Data;
@@ -97,27 +112,7 @@ void GameSetUp(memory *Memory)
 
     //GameState->Options.Init(&GameState->OptionStackArena);
     GameState->Tree.Init(&GameState->TreeArena);
-
-    i32 Root = GameState->Tree.AddChildByID(100, 0);
-    i32 A = GameState->Tree.AddChildByID(10, Root);
-    i32 B = GameState->Tree.AddChildByID(20, Root);
-    i32 H = GameState->Tree.AddChildByID(6, B);
-    i32 C = GameState->Tree.AddChildByID(1, A);
-    i32 E = GameState->Tree.AddChildByID(3, C);
-    i32 D = GameState->Tree.AddChildByID(2, A);
-    i32 F = GameState->Tree.AddChildByID(4, C);
-    i32 G = GameState->Tree.AddChildByID(5, D);
-    i32 I = GameState->Tree.AddChildByID(7, B);
-
-    
-    if(GameState->Tree.IsEmpty())
-    {
-        OutputDebugString("Tree is empty\n");
-    }
-    else
-    {
-        OutputDebugString("Tree is Not empty\n"); 
-    }
+    CreateUI(&GameState->Tree);
 }
 
 void GameUpdateAndRender(memory *Memory, input *Input, r32 DeltaTime)

@@ -19,6 +19,9 @@ struct combat
     u32 EventData; 
 
     i32 HeroEventSet;
+    
+    tree::node *Node;
+
     i32 OptionSelected;
     i32 SelectedOptions[3];
     i32 NumberOfOptions;
