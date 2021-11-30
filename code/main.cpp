@@ -1,6 +1,8 @@
 #include "game_utility.cpp"
 #include "tilemap.cpp"
 #include "map_editor.cpp"
+#include "stack.cpp"
+#include "tree.cpp"
 #include "inventory.cpp"
 #include "hero.cpp"
 #include "combat.cpp"
@@ -20,6 +22,7 @@ void GameSetUp(memory *Memory)
     InitArena(Memory, &GameState->IntToCharTempArena, sizeof(u32) * 10);
     InitArena(Memory, &GameState->TextureArena, Kilobytes(1));
     InitArena(Memory, &GameState->TexListArena, Kilobytes(1));
+    InitArena(Memory, &GameState->TreeArena, Megabytes(10));
     
     // Init window and renderer stuff
     GameState->Window = PlatformCreateWindow(0, 0, WND_WIDTH, WND_HEIGHT, "MorphProject", &GameState->EngineArena);
@@ -91,6 +94,30 @@ void GameSetUp(memory *Memory)
     AddItem(&GameState->Inventory, 1, 2);
     AddItem(&GameState->Inventory, 2, 3);
     AddItem(&GameState->Inventory, 1, 2);
+
+    //GameState->Options.Init(&GameState->OptionStackArena);
+    GameState->Tree.Init(&GameState->TreeArena);
+
+    i32 Root = GameState->Tree.AddChildByID(100, 0);
+    i32 A = GameState->Tree.AddChildByID(10, Root);
+    i32 B = GameState->Tree.AddChildByID(20, Root);
+    i32 H = GameState->Tree.AddChildByID(6, B);
+    i32 C = GameState->Tree.AddChildByID(1, A);
+    i32 E = GameState->Tree.AddChildByID(3, C);
+    i32 D = GameState->Tree.AddChildByID(2, A);
+    i32 F = GameState->Tree.AddChildByID(4, C);
+    i32 G = GameState->Tree.AddChildByID(5, D);
+    i32 I = GameState->Tree.AddChildByID(7, B);
+
+    
+    if(GameState->Tree.IsEmpty())
+    {
+        OutputDebugString("Tree is empty\n");
+    }
+    else
+    {
+        OutputDebugString("Tree is Not empty\n"); 
+    }
 }
 
 void GameUpdateAndRender(memory *Memory, input *Input, r32 DeltaTime)

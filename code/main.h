@@ -3,6 +3,8 @@
 
 #include "tilemap.h"
 #include "map_editor.h"
+#include "stack.h"
+#include "tree.h"
 #include "inventory.h"
 #include "hero.h"
 #include "combat.h"
@@ -66,6 +68,7 @@ struct game_state
     arena IntToCharTempArena;
     arena TexListArena;
     arena BatchArena;
+    arena TreeArena;
 
     const_buffer *ConstBuffer;
     const_buffer *ColorConstBuffer;
@@ -109,6 +112,10 @@ struct game_state
     weapon_stats Weapons[3];
     spells_stats Spells[3];
     item_stats Items[2];
+
+    tree Tree;
+    //i32_ll_stack Options;
+    
     inventory Inventory;
     tilemap Tilemap; 
     combat Combat;
