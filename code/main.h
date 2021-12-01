@@ -112,10 +112,7 @@ struct game_state
     weapon_stats Weapons[3];
     spells_stats Spells[3];
     item_stats Items[2];
-
-    tree Tree;
-    //i32_ll_stack Options;
-    
+ 
     inventory Inventory;
     tilemap Tilemap; 
     combat Combat;

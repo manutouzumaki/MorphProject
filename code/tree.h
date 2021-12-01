@@ -17,7 +17,6 @@ struct tree
         void AddChild(i32 Value, char *Name, i32 ID, arena *Arena);
     };
     node *First;
-    node *Data;
     arena *Arena;
     i32 Size; 
     void Init(arena *Arena);

@@ -30,10 +30,24 @@ void InitArena(memory *Memory, arena *Arena, size_t Size)
     Arena->Base = (char *)Memory->Data + Memory->Used;
     Arena->Size = Size;
     Memory->Used += Size;
+    // Clear the memory to zero
+    for(i32 Index = 0;
+        Index < Arena->Size;
+        ++Index)
+    {
+        Arena->Base[Index] = 0;
+    }
 }
 
 void ClearArena(arena *Arena)
 {
+    // Clear the memory to zero
+    for(i32 Index = 0;
+        Index < Arena->Size;
+        ++Index)
+    {
+        Arena->Base[Index] = 0;
+    }
     Arena->Used = 0;
 }
 

@@ -1,7 +1,9 @@
 void tree::Init(arena *Arena)
 {
+    ClearArena(Arena);
     this->Arena = Arena;
     First = 0; 
+    Size = 0;
 }
 
 bool tree::IsEmpty()

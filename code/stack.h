@@ -1,7 +1,7 @@
 #ifndef STACK_H
 #define STACK_H
 
-struct i32_ll_stack
+struct stack
 {
     struct node
     {

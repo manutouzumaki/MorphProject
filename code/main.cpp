@@ -8,21 +8,6 @@
 #include "combat.cpp"
 #include "init.cpp"
 
-void CreateUI(tree *Tree)
-{
-    i32 Actions = Tree->AddChildByID(0, "Actions", 0);
-    // Actions
-    i32 Attacks = Tree->AddChildByID(0, "Attack", Actions);
-    i32 Spells  = Tree->AddChildByID(1, "Spells", Actions);
-    i32 Items   = Tree->AddChildByID(2, "Items", Actions);
-    i32 Run     = Tree->AddChildByID(3, "Run", Actions);
-    // Spells
-    i32 Fireball = Tree->AddChildByID(0, "Fireball", Spells);
-    // Items
-    i32 Potion = Tree->AddChildByID(0, "Potion", Items);
-    i32 Ether  = Tree->AddChildByID(1, "Ether", Items);
-}
-
 void GameSetUp(memory *Memory)
 {
     game_state *GameState = (game_state *)Memory->Data;
@@ -37,7 +22,7 @@ void GameSetUp(memory *Memory)
     InitArena(Memory, &GameState->IntToCharTempArena, sizeof(u32) * 10);
     InitArena(Memory, &GameState->TextureArena, Kilobytes(1));
     InitArena(Memory, &GameState->TexListArena, Kilobytes(1));
-    InitArena(Memory, &GameState->TreeArena, Megabytes(10));
+    InitArena(Memory, &GameState->TreeArena, Kilobytes(1));
     
     // Init window and renderer stuff
     GameState->Window = PlatformCreateWindow(0, 0, WND_WIDTH, WND_HEIGHT, "MorphProject", &GameState->EngineArena);
@@ -98,21 +83,12 @@ void GameSetUp(memory *Memory)
     GameState->AppState = GAME_STATE;
     GameState->GamePlayState = WORLD;
 
-    GameState->Combat.NumberOfOptions = 4;
-    GameState->Combat.EntitiesEventQueue = 0;
-    GameState->Combat.ActionsEventQueue = 0;
-    GameState->Combat.ProcessingEvent = false;
-
     GameState->HeroPartyCount = 4;
 
     InitInventory(&GameState->Inventory);
     AddItem(&GameState->Inventory, 1, 2);
     AddItem(&GameState->Inventory, 2, 3);
     AddItem(&GameState->Inventory, 1, 2);
-
-    //GameState->Options.Init(&GameState->OptionStackArena);
-    GameState->Tree.Init(&GameState->TreeArena);
-    CreateUI(&GameState->Tree);
 }
 
 void GameUpdateAndRender(memory *Memory, input *Input, r32 DeltaTime)
@@ -253,6 +229,10 @@ void GameUpdateAndRender(memory *Memory, input *Input, r32 DeltaTime)
     RenderMemoryData(GameState, &GameState->MapEditorSaves, "Map Editor Saves Arena", &XPos, &YPos);
     RenderMemoryData(GameState, &GameState->TexListArena, "TexList Arena", &XPos, &YPos);
     RenderMemoryData(GameState, &GameState->BatchArena, "Batch Renderer Arena", &XPos, &YPos);
+    
+    //RenderMemoryData(GameState, &GameState->StackArena, "Stack Arena", &XPos, &YPos);
+    RenderMemoryData(GameState, &GameState->TreeArena, "Tree Arena", &XPos, &YPos);
+
 #endif 
 
 }

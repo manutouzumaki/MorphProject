@@ -4,6 +4,7 @@
 #define ATTACK 1
 #define SPELLS 2
 #define ITEMS 3
+#define RUN 4
 
 struct combat
 {
@@ -20,12 +21,12 @@ struct combat
 
     i32 HeroEventSet;
     
+    tree Tree;
     tree::node *Node;
+    tree::node *NodeSelected;
+    bool SelectingTarget;
+    i32 Target;
 
-    i32 OptionSelected;
-    i32 SelectedOptions[3];
-    i32 NumberOfOptions;
-    
     r32 Timer;
     r32 AnimTimer;
    

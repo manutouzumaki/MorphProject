@@ -1,16 +1,17 @@
-void i32_ll_stack::Init(arena *Arena)
+void stack::Init(arena *Arena)
 {
     this->Arena = Arena;
+    this->Arena->Used = 0;
     First = 0;
     Size = 0;
 }
 
-bool i32_ll_stack::IsEmpty()
+bool stack::IsEmpty()
 {
     return (First == 0);
 }
 
-void i32_ll_stack::Push(int Value)
+void stack::Push(int Value)
 {
     if(First == 0)
     {
@@ -28,7 +29,7 @@ void i32_ll_stack::Push(int Value)
     ++Size;
 }
 
-i32 i32_ll_stack::Pop()
+i32 stack::Pop()
 {
     if(IsEmpty())
     {
@@ -43,7 +44,7 @@ i32 i32_ll_stack::Pop()
     return Result;
 }
 
-i32 i32_ll_stack::GetValueByIndex(i32 Index)
+i32 stack::GetValueByIndex(i32 Index)
 {
     if((Index > (Size - 1)) || Index < 0)
     {
@@ -59,7 +60,7 @@ i32 i32_ll_stack::GetValueByIndex(i32 Index)
     return Actual->Value;
 }
 
-void i32_ll_stack::Clear()
+void stack::Clear()
 {
     while(!IsEmpty())
     {
