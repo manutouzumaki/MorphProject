@@ -37,7 +37,6 @@ struct combat
     tree::node *Hero;
     tree::node *Target_;
 
-
     r32 Timer;
     r32 AnimTimer;
    

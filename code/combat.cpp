@@ -109,7 +109,7 @@ void RenderCombatOptionUI(game_state *GameState, tree::node *Node)
     i32 YPos = Height*0.5f - FontSize.Y  - 10;
     while(FirstSibling)
     {
-        if(FirstSibling->ID == Node->ID)
+        if(FirstSibling->ID == Node->ID && GameState->Combat.SelectingAction)
         { 
             RenderUIQuad(GameState, XAbsPos + 10, YPos -Height, Width - 20, FontSize.Y, 134.0f, 165.0f, 217.0f);
         }
@@ -135,6 +135,7 @@ void InitCombat(game_state *GameState, combat *Combat, entity *Player)
     Combat->ActionsEventQueue = 0;
     Combat->EnemiesActionSet = false;
     Combat->ProcessingEvent = false;
+    Combat->SelectingAction = false;
     Combat->Action = 0;
     Combat->Hero = 0;
     Combat->Target_ = 0;
@@ -737,6 +738,7 @@ void SelectHeroOrTarget(combat *Combat, input *Input, i32 Flag)
     }
     if(OnKeyDown(Input->Buttons->Back) && Flag == SELECT_TARGET)
     {
+        Combat->SelectingAction = true;
         Combat->Action = 0;
     }
 }
@@ -773,12 +775,12 @@ void SelectAction(combat *Combat, input *Input)
     {
         if(Combat->Node->Parent)
         {
-            Combat->SelectingAction = false;
             Combat->Action = 0;
             Combat->Node = Combat->Node->Parent;
         }
         else
         {
+            Combat->SelectingAction = false;
             Combat->Hero = 0;
             Combat->EntityNode = Combat->EntityTree.FindNodeByID(Combat->FirstHeroID);
         }
@@ -910,7 +912,7 @@ void UpdateAndRenderCombat(game_state *GameState, combat *Combat, input *Input, 
         }
     } 
     // Render Hero and Target selector
-    if(!Combat->ProcessingEvent && !Combat->SelectingAction)
+    if((Combat->NumberOfHeroSet < (Combat->NumberOfHeros - Combat->NumberOfHerosKill)) && !Combat->SelectingAction)
     { 
         color_const_buffer ColorBuffer = {};
         if(Combat->EntityNode->Parent->ID == HEROES)
