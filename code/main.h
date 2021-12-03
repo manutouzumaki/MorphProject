@@ -69,6 +69,7 @@ struct game_state
     arena TexListArena;
     arena BatchArena;
     arena TreeArena;
+    arena EntityTreeArena;
 
     const_buffer *ConstBuffer;
     const_buffer *ColorConstBuffer;

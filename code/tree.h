@@ -8,6 +8,7 @@ struct tree
         // menu cell info 
         char *Name;
         i32 Value;
+        bool Disabled = false;
         // data structure info
         i32 ID;
         node *Parent;

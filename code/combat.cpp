@@ -1,5 +1,6 @@
-void CreateCombatUI(combat *Combat, tree *Tree)
+void CreateCombatUI(game_state *GameState, combat *Combat, tree *Tree, tree *EntityTree)
 {
+    // Build Menu 
     i32 ActionsID = Tree->AddChildByID(0, "Actions", 0);
     // Actions
     i32 AttacksID = Tree->AddChildByID(0, "Attack", ActionsID);
@@ -9,8 +10,46 @@ void CreateCombatUI(combat *Combat, tree *Tree)
     // Spells
     i32 FireballID = Tree->AddChildByID(0, "Fireball", SpellsID);
     // Items
-    i32 PotionID = Tree->AddChildByID(0, "Potion", ItemsID);
-    i32 EtherID  = Tree->AddChildByID(1, "Ether", ItemsID);
+    //
+    for(i32 Index = 0;
+        Index < GameState->Inventory.ItemsCount;
+        ++Index)
+    {
+        inventory_item *Item = &GameState->Inventory.Items[Index];
+        item_stats ItemStat = GameState->Items[Item->ID - 1];
+        Tree->AddChildByID(Index, ItemStat.Name, ItemsID);
+    }
+
+    // Build Hero and Target selector
+    i32 Root    = EntityTree->AddChildByID(0, "Entities", 0);
+    i32 Heroes  = EntityTree->AddChildByID(0, "Heroes", Root);
+    i32 Enemies = EntityTree->AddChildByID(1, "Enemies", Root);
+    for(i32 Index = 0;
+        Index < Combat->NumberOfHeros;
+        ++Index)
+    {
+        if(Index == 0)
+        {
+            Combat->FirstHeroID = EntityTree->AddChildByID(Index, "Hero", Heroes);
+        }
+        else
+        {
+            EntityTree->AddChildByID(Index, "Hero", Heroes);
+        }
+    }
+    for(i32 Index = 0;
+        Index < Combat->NumberOfEnemies;
+        ++Index)
+    {
+        if(Index == 0)
+        {
+           Combat->FirstEnemyID = EntityTree->AddChildByID(Index, "Enemy", Enemies);
+        }
+        else
+        {
+            EntityTree->AddChildByID(Index, "Enemy", Enemies);
+        }
+    } 
 }
 
 void RenderCombatHeroUI(game_state *GameState, entity *Hero)
@@ -75,6 +114,11 @@ void RenderCombatOptionUI(game_state *GameState, tree::node *Node)
             RenderUIQuad(GameState, XAbsPos + 10, YPos -Height, Width - 20, FontSize.Y, 134.0f, 165.0f, 217.0f);
         }
         RenderString(GameState, FirstSibling->Name, XAbsPos + 10, YPos -Height, FontSize.X, FontSize.Y);
+        if(Node->Parent && Node->Parent->ID == ITEMS)
+        {
+            inventory_item *Item = &GameState->Inventory.Items[FirstSibling->Value];
+            RenderUInt(GameState, Item->Count, XAbsPos + Width - 10 - FontSize.X, YPos - Height, FontSize.X, FontSize.Y);
+        }
         YPos -= FontSize.Y;
         FirstSibling = FirstSibling->NextSibling;
     }
@@ -87,15 +131,13 @@ void InitCombat(game_state *GameState, combat *Combat, entity *Player)
     Combat->NumberOfEnemies = 0;
     Combat->NumberOfEnemiesKill = 0;
     Combat->NumberOfHerosKill = 0;
-    Combat->PlayerTurnFinish = false;
-    Combat->EnemyTurnFinish = false;
-    Combat->HeroEventSet = 0;
     Combat->EntitiesEventQueue = 0;
     Combat->ActionsEventQueue = 0;
+    Combat->EnemiesActionSet = false;
     Combat->ProcessingEvent = false;
-    Combat->SelectingTarget = false;
-    Combat->NodeSelected = 0;
-    Combat->Target = 0;
+    Combat->Action = 0;
+    Combat->Hero = 0;
+    Combat->Target_ = 0;
     
     // Init Players entities Array
     i32 Y = 1; 
@@ -126,8 +168,12 @@ void InitCombat(game_state *GameState, combat *Combat, entity *Player)
     }
     
     Combat->Tree.Init(&GameState->TreeArena);
-    CreateCombatUI(Combat, &Combat->Tree);
+    Combat->EntityTree.Init(&GameState->EntityTreeArena);
+
+    CreateCombatUI(GameState, Combat, &Combat->Tree, &Combat->EntityTree);
+    
     Combat->Node = Combat->Tree.FindNodeByID(1);
+    Combat->EntityNode = Combat->EntityTree.FindNodeByID(Combat->FirstHeroID);
 }
 
 void EndCombat(game_state *GameState, combat *Combat)
@@ -427,8 +473,19 @@ void UpdateCombatEventQueue(game_state *GameState, combat *Combat, u64 *Entities
         }
         else
         {
-            Combat->PlayerTurnFinish = false;
-            Combat->EnemyTurnFinish = false;
+            Combat->NumberOfHeroSet = 0;
+            Combat->EnemiesActionSet = false;
+            for(i32 Index = 0;
+                Index < Combat->NumberOfHeros;
+                ++Index)
+            {
+                if(Combat->Players[Index].Alive)
+                {
+                    i32 HeroID = Combat->FirstHeroID + Index;
+                    tree::node *HeroNode = Combat->EntityTree.FindNodeByID(HeroID);
+                    HeroNode->Disabled = false;
+                }
+            }
         }
     }
     else
@@ -512,7 +569,7 @@ void SetEntityRandomAction(game_state *GameState, combat *Combat, i32 EntityInde
     }
     else if(RandomChoise == 1)
     {
-        if(Enemy->Stats.MP_Now - GameState->Spells[0].MP_Cost >= 0)
+        //if(Enemy->Stats.MP_Now - GameState->Spells[0].MP_Cost >= 0)
         {
             u32 SpellIndex = Enemy->Spells[0] + 1;
             SetCombatEventQueue(&Combat->EntitiesEventQueue, &Combat->ActionsEventQueue, EntityIndex + 5, Target, SPELLS, SpellIndex);        
@@ -520,13 +577,12 @@ void SetEntityRandomAction(game_state *GameState, combat *Combat, i32 EntityInde
     }
 }
 
-
 void EndCombatIfNecessary(game_state *GameState, combat *Combat)
 {
     if((Combat->NumberOfEnemiesKill >= Combat->NumberOfEnemies) ||
        (Combat->NumberOfHerosKill >= Combat->NumberOfHeros))
     {
-        if(!Combat->PlayerTurnFinish)
+        if(Combat->NumberOfHeroSet < Combat->NumberOfHeros)
         {
             Combat->EntitiesEventQueue = 0;
             Combat->ActionsEventQueue = 0;
@@ -537,10 +593,8 @@ void EndCombatIfNecessary(game_state *GameState, combat *Combat)
     }
 }
 
-
 void UpdatePlayer(combat *Combat, entity *Players)
 {
-
     for(i32 Index = 0;
         Index < Combat->NumberOfHeros;
         ++Index)
@@ -549,10 +603,12 @@ void UpdatePlayer(combat *Combat, entity *Players)
         if(Players[Index].Stats.HP_Now <= 0 && Players[Index].Alive)
         {
             Players[Index].Alive = false;
+            i32 HeroID = Combat->FirstHeroID + Index;
+            tree::node *HeroNode = Combat->EntityTree.FindNodeByID(HeroID);
+            HeroNode->Disabled = true;
             ++Combat->NumberOfHerosKill;
         }
     }
-
 }
 
 void UpdateEnemies(game_state *GameState, combat *Combat, entity *Enemies)
@@ -565,10 +621,13 @@ void UpdateEnemies(game_state *GameState, combat *Combat, entity *Enemies)
         if(Enemies[Index].Stats.HP_Now <= 0 && Enemies[Index].Alive)
         {
             Enemies[Index].Alive = false;
+            i32 EnemyID = Combat->FirstEnemyID + Index;
+            tree::node *EnemyNode = Combat->EntityTree.FindNodeByID(EnemyID);
+            EnemyNode->Disabled = true;
             ++Combat->NumberOfEnemiesKill;
         }
 
-        if(!Combat->EnemyTurnFinish)
+        if(!Combat->EnemiesActionSet)
         {
             if(Enemies[Index].Alive)
             {
@@ -576,94 +635,213 @@ void UpdateEnemies(game_state *GameState, combat *Combat, entity *Enemies)
             }  
             if(Index == (Combat->NumberOfEnemies - 1))
             { 
-                Combat->EnemyTurnFinish = true;
+                Combat->EnemiesActionSet = true;
             }  
+        }
+    }
+}
+
+void SelectHeroOrTarget(combat *Combat, input *Input, i32 Flag)
+{
+    if(OnKeyDown(Input->Buttons->Up))
+    {
+        if(Combat->EntityNode->BackSibling && !Combat->EntityNode->BackSibling->Disabled)
+        {
+            Combat->EntityNode = Combat->EntityNode->BackSibling;
+        }
+        else if(Combat->EntityNode->BackSibling && Combat->EntityNode->BackSibling->Disabled)
+        {
+            tree::node *TestNode = Combat->EntityNode->BackSibling;
+            while(TestNode)
+            {
+                if(!TestNode->Disabled)
+                {
+                    Combat->EntityNode = TestNode;
+                    break; 
+                }
+                TestNode = TestNode->BackSibling;
+            }
+        }
+            
+    }
+    if(OnKeyDown(Input->Buttons->Down))
+    {
+        if(Combat->EntityNode->NextSibling && !Combat->EntityNode->NextSibling->Disabled)
+        {
+            Combat->EntityNode = Combat->EntityNode->NextSibling;
+        }
+        else if(Combat->EntityNode->NextSibling && Combat->EntityNode->NextSibling->Disabled)
+        {
+            tree::node *TestNode = Combat->EntityNode->NextSibling;
+            while(TestNode)
+            {
+                if(!TestNode->Disabled)
+                {
+                    Combat->EntityNode = TestNode;
+                    break; 
+                }
+                TestNode = TestNode->NextSibling;
+            }
+        }
+
+    }
+    if(OnKeyDown(Input->Buttons->Left))
+    {
+        if(Combat->EntityNode->Parent->BackSibling)
+        {
+            Combat->EntityNode = Combat->EntityNode->Parent->BackSibling->Child;
+            while(Combat->EntityNode->NextSibling && Combat->EntityNode->Disabled)
+            {
+                Combat->EntityNode = Combat->EntityNode->NextSibling;
+            }
+        }
+    }
+    if(OnKeyDown(Input->Buttons->Right) && Flag == SELECT_TARGET)
+    {
+        if(Combat->EntityNode->Parent->NextSibling)
+        {
+            Combat->EntityNode = Combat->EntityNode->Parent->NextSibling->Child;
+            while(Combat->EntityNode->NextSibling && Combat->EntityNode->Disabled)
+            {
+                Combat->EntityNode = Combat->EntityNode->NextSibling;
+            }
+
+        }
+    }
+
+    while(Combat->EntityNode->NextSibling && Combat->EntityNode->Disabled)
+    {
+        Combat->EntityNode = Combat->EntityNode->NextSibling;
+    }
+     
+
+
+    if(OnKeyDown(Input->Buttons->Start))
+    {
+        switch(Flag)
+        {
+            case SELECT_HERO:
+            {
+                Combat->Hero = Combat->EntityNode;
+                Combat->EntityNode = Combat->EntityTree.FindNodeByID(Combat->FirstEnemyID);
+                Combat->SelectingAction = true;
+            }break;
+            case SELECT_TARGET:
+            {
+                Combat->Target_ = Combat->EntityNode;
+                Combat->EntityNode = Combat->EntityTree.FindNodeByID(Combat->FirstHeroID);
+            }break;
+            default:
+            {}break;
+        }
+    }
+    if(OnKeyDown(Input->Buttons->Back) && Flag == SELECT_TARGET)
+    {
+        Combat->Action = 0;
+    }
+}
+
+void SelectAction(combat *Combat, input *Input)
+{
+    if(OnKeyDown(Input->Buttons->Up))
+    {
+        if(Combat->Node->BackSibling)
+        {
+            Combat->Node = Combat->Node->BackSibling;
+        }
+    } 
+    if(OnKeyDown(Input->Buttons->Down))
+    {
+        if(Combat->Node->NextSibling)
+        {
+            Combat->Node = Combat->Node->NextSibling;
+        }
+    }
+    if(OnKeyDown(Input->Buttons->Start))
+    {
+        if(Combat->Node->Child)
+        {
+            Combat->Node = Combat->Node->Child;
+        }
+        else
+        {
+            Combat->SelectingAction = false;
+            Combat->Action = Combat->Node;
+        }
+    }
+    if(OnKeyDown(Input->Buttons->Back))
+    {
+        if(Combat->Node->Parent)
+        {
+            Combat->SelectingAction = false;
+            Combat->Action = 0;
+            Combat->Node = Combat->Node->Parent;
+        }
+        else
+        {
+            Combat->Hero = 0;
+            Combat->EntityNode = Combat->EntityTree.FindNodeByID(Combat->FirstHeroID);
         }
     }
 }
 
 void GetCombatImput(combat *Combat, input *Input)
 {
-    if(Combat->PlayerTurnFinish)
+    if(Combat->NumberOfHeroSet >= (Combat->NumberOfHeros - Combat->NumberOfHerosKill))
     {
         return;
     }
-    if(!Combat->SelectingTarget) 
+    if(Combat->Hero == 0)
+    {
+        SelectHeroOrTarget(Combat, Input, SELECT_HERO);
+    }
+    else if(Combat->Action == 0) 
     { 
-        if(OnKeyDown(Input->Buttons->Up))
-        {
-            if(Combat->Node->BackSibling)
-            {
-                Combat->Node = Combat->Node->BackSibling;
-            }
-        }
-        
-        if(OnKeyDown(Input->Buttons->Down))
-        {
-            if(Combat->Node->NextSibling)
-            {
-                Combat->Node = Combat->Node->NextSibling;
-            }
-        }
-        
-        if(OnKeyDown(Input->Buttons->Start))
-        {
-            if(Combat->Node->Child)
-            {
-                Combat->Node = Combat->Node->Child;
-            }
-            else
-            {
-                Combat->SelectingTarget = true;
-                Combat->NodeSelected = Combat->Node;
-            }
-        }
-        
-        if(OnKeyDown(Input->Buttons->Back))
-        {
-            if(Combat->Node->Parent)
-            {
-                Combat->NodeSelected = 0;
-                Combat->Node = Combat->Node->Parent;
-            }
-        }
+        SelectAction(Combat, Input);
     }
     else
     {
-        if(OnKeyDown(Input->Buttons->Up))
-        {
-            --Combat->Target;
-            if(Combat->Target < 0)
-            {
-                Combat->Target = 0;
-            }
-        }
-        else if(OnKeyDown(Input->Buttons->Down))
-        {
-            ++Combat->Target;
-            if(Combat->Target >= Combat->NumberOfEnemies)
-            {
-                Combat->Target = Combat->NumberOfEnemies - 1;
-            }
-        }
-        else if(OnKeyDown(Input->Buttons->Start))
-        {
-            Combat->SelectingTarget = false;
-        }
-        else if(OnKeyDown(Input->Buttons->Back))
-        {
-            Combat->NodeSelected = 0;
-            Combat->SelectingTarget = false;
-        }
-
+        SelectHeroOrTarget(Combat, Input, SELECT_TARGET);
     }
 }
 
 void NextHeroTurn(combat *Combat)
 {
-    Combat->SelectingTarget = false;
-    Combat->NodeSelected = 0;
-    ++Combat->HeroEventSet;
+    Combat->Hero = 0;
+    Combat->Action = 0;
+    Combat->Target_ = 0;
+}
+
+void SetHeroEvents(game_state *GameState, combat *Combat, entity *Player, inventory *Inventory, i32 *NumberOfHeroSet)
+{
+    if(Combat->Hero && Combat->Action && Combat->Target_)
+    {
+        i32 Offset = 1;
+        if(Combat->Target_->Parent->ID == ENEMIES) { Offset = 5;}
+        Combat->Hero->Disabled = true; 
+        if(Combat->Action->ID == ATTACK)
+        {
+            SetCombatEventQueue(&Combat->EntitiesEventQueue, &Combat->ActionsEventQueue, Combat->Hero->Value + 1, Combat->Target_->Value + Offset, ATTACK, 1);
+            NextHeroTurn(Combat); 
+        }
+        else if(Combat->Action->ID == RUN)
+        {
+            GameState->GamePlayState = WORLD;        
+        }
+        else if(Combat->Action->Parent->ID == SPELLS)
+        {
+            u32 SpellIndex = Player->Spells[Combat->Action->Value] + 1;
+            SetCombatEventQueue(&Combat->EntitiesEventQueue, &Combat->ActionsEventQueue, Combat->Hero->Value + 1, Combat->Target_->Value + Offset, SPELLS, SpellIndex);  
+            NextHeroTurn(Combat);  
+        }
+        else if(Combat->Action->Parent->ID == ITEMS)
+        {
+            inventory_item *Item = &Inventory->Items[Combat->Action->Value];
+            SetCombatEventQueue(&Combat->EntitiesEventQueue, &Combat->ActionsEventQueue, Combat->Hero->Value + 1, Combat->Target_->Value + Offset, ITEMS, Item->ID); 
+            NextHeroTurn(Combat);
+        }
+        ++*NumberOfHeroSet;
+    }
 }
 
 void UpdateAndRenderCombat(game_state *GameState, combat *Combat, input *Input, r32 DeltaTime)
@@ -675,85 +853,24 @@ void UpdateAndRenderCombat(game_state *GameState, combat *Combat, input *Input, 
     
     UpdatePlayer(Combat, Players);
     UpdateEnemies(GameState, Combat, Enemies);
-    UpdateItems(Inventory); 
     EndCombatIfNecessary(GameState, Combat);
+   
+    GetCombatImput(Combat, Input);
     
-    if(Combat->HeroEventSet < Combat->NumberOfHeros)
+    entity *Player = 0;
+    if(Combat->Hero)
     {
-        entity *Player = &Combat->Players[Combat->HeroEventSet];
-        
-        GetCombatImput(Combat, Input); 
-        if(Combat->NodeSelected != 0/* && !Combat->SelectingTarget*/)
-        {
-            switch(Combat->NodeSelected->ID)
-            {
-                case ATTACK:
-                {
-                    if(!Combat->SelectingTarget)
-                    {
-                        SetCombatEventQueue(&Combat->EntitiesEventQueue, &Combat->ActionsEventQueue, Combat->HeroEventSet + 1, Combat->Target + 5, ATTACK, 1);
-                        NextHeroTurn(Combat);  
-                    }              
-                }break;
-                case RUN:
-                {
-                    Combat->SelectingTarget = false;
-                    Combat->NodeSelected = 0;
-                    Combat->Target = 0;
-                    Combat->EntitiesEventQueue = 0;
-                    Combat->ActionsEventQueue = 0;
-                    Combat->ProcessingEvent = false;
-                    GameState->GamePlayState = WORLD; 
-                }break;
-                default:
-                {
-                    tree::node *Parent = Combat->NodeSelected->Parent;
-                    switch(Parent->ID)
-                    {
-                        case SPELLS:
-                        {
-                            if(!Combat->SelectingTarget)
-                            {
-                                u32 SpellIndex = Player->Spells[Combat->NodeSelected->Value] + 1;
-                                SetCombatEventQueue(&Combat->EntitiesEventQueue, &Combat->ActionsEventQueue, Combat->HeroEventSet + 1, Combat->Target + 5, SPELLS, SpellIndex);  
-                                NextHeroTurn(Combat);  
-                            }                      
-                        }break;
-                        case ITEMS:
-                        { 
-                            inventory_item *Item = &Inventory->Items[Combat->NodeSelected->Value];
-                            if(Item->Count > 0)
-                            {
-                                --Item->Count;
-                                u32 ItemIndex = Item->ID;
-                                SetCombatEventQueue(&Combat->EntitiesEventQueue, &Combat->ActionsEventQueue, Combat->HeroEventSet + 1, 1, ITEMS, ItemIndex); 
-                                NextHeroTurn(Combat);
-                            }
-                        }break;
-                        default:
-                        {
-                            Assert(false);
-                        }break;
-                    }
-                }break;
-            }
-        }
+        Player = &Combat->Players[Combat->Hero->Value]; 
     }
     else
     {
-        Combat->HeroEventSet = 0;
-        Combat->PlayerTurnFinish = true;
+        Player = &Combat->Players[Combat->EntityNode->Value]; 
     }
-
-    entity *Player = &Combat->Players[Combat->HeroEventSet];
-    if(Combat->HeroEventSet >= Combat->NumberOfHeros)
-    {
-        Player = &Combat->Players[0];
-    }
+    
+    SetHeroEvents(GameState, Combat, Player, Inventory, &Combat->NumberOfHeroSet); 
     
     // Render Combat UI 
-    SetProjMat4(GameState, OrthogonalProjMat4(WND_WIDTH, WND_HEIGHT, 1.0f, 100.0f));
-    
+    SetProjMat4(GameState, OrthogonalProjMat4(WND_WIDTH, WND_HEIGHT, 1.0f, 100.0f)); 
     // Render background image
     i32 Height = WND_HEIGHT * 0.75f;
     i32 Offset = WND_HEIGHT * 0.25f;
@@ -762,7 +879,6 @@ void UpdateAndRenderCombat(game_state *GameState, combat *Combat, input *Input, 
     // Render Actions and Options
     RenderCombatHeroUI(GameState, Player);
     RenderCombatOptionUI(GameState, Combat->Node);
-
     // Render Combat Scene
     SetProjMat4(GameState, OrthogonalProjMat4(WND_WIDTH*0.5f, WND_HEIGHT*0.5f, 1.0f, 100.0f));
     
@@ -792,24 +908,30 @@ void UpdateAndRenderCombat(game_state *GameState, combat *Combat, input *Input, 
             RenderFrame(GameState->Renderer, GameState->Mesh, GameState->UIFrameShader, GameState->HeroTexture,
                         GameState->FrameConstBuffer, 16, 24, Enemies[Index].Frame, Enemies[Index].Skin);
         }
-        
-        if(Combat->SelectingTarget)
+    } 
+    // Render Hero and Target selector
+    if(!Combat->ProcessingEvent && !Combat->SelectingAction)
+    { 
+        color_const_buffer ColorBuffer = {};
+        if(Combat->EntityNode->Parent->ID == HEROES)
         {
-            if(Combat->Target == Index)
-            {
-                color_const_buffer ColorBuffer = {};
-                ColorBuffer.Color = Color(255.0f, 0.0f, 0.0f);
-                MapConstBuffer(GameState->Renderer, GameState->ColorConstBuffer, (void *)&ColorBuffer, sizeof(color_const_buffer), 1); 
-                Trans = TranslationMat4({Enemies[Index].Position.X + 4.0f, Enemies[Index].Position.Y + 24.0f, 0.0f});
-                Scale = ScaleMat4({8, 8, 0.0f});
-                SetWorldMat4(GameState, Trans * Scale);
-                RenderMesh(GameState->Renderer, GameState->Mesh, GameState->UIColorShader);
-            }
+            ColorBuffer.Color = Color(0.0f, 255.0f, 0.0f);
+            MapConstBuffer(GameState->Renderer, GameState->ColorConstBuffer, (void *)&ColorBuffer, sizeof(color_const_buffer), 1); 
+            Trans = TranslationMat4({Players[Combat->EntityNode->Value].Position.X + 4.0f, Players[Combat->EntityNode->Value].Position.Y + 24.0f, 0.0f});
         }
+        else if(Combat->EntityNode->Parent->ID == ENEMIES)
+        {
+            ColorBuffer.Color = Color(255.0f, 0.0f, 0.0f);
+            MapConstBuffer(GameState->Renderer, GameState->ColorConstBuffer, (void *)&ColorBuffer, sizeof(color_const_buffer), 1); 
+            Trans = TranslationMat4({Enemies[Combat->EntityNode->Value].Position.X + 4.0f, Enemies[Combat->EntityNode->Value].Position.Y + 24.0f, 0.0f});
+        }
+        Scale = ScaleMat4({8, 8, 0.0f});
+        SetWorldMat4(GameState, Trans * Scale);
+        RenderMesh(GameState->Renderer, GameState->Mesh, GameState->UIColorShader);
     }
-    
-    if(Combat->PlayerTurnFinish && Combat->EnemyTurnFinish)
+
+    if(Combat->NumberOfHeroSet >= (Combat->NumberOfHeros - Combat->NumberOfHerosKill))
     {
-        UpdateCombatEventQueue(GameState, Combat, &Combat->EntitiesEventQueue, &Combat->ActionsEventQueue, DeltaTime);
+        UpdateCombatEventQueue(GameState, Combat, &Combat->EntitiesEventQueue, &Combat->ActionsEventQueue, DeltaTime); 
     }
 }

@@ -6,6 +6,12 @@
 #define ITEMS 3
 #define RUN 4
 
+#define HEROES 1
+#define ENEMIES 2
+
+#define SELECT_HERO 0
+#define SELECT_TARGET 1
+
 struct combat
 {
     entity Players[4];
@@ -14,25 +20,30 @@ struct combat
     i32 NumberOfEnemies;
     i32 NumberOfEnemiesKill;
     i32 NumberOfHerosKill;
+    i32 NumberOfHeroSet;
+    i32 FirstHeroID;
+    i32 FirstEnemyID;
     
     u64 EntitiesEventQueue;
     u64 ActionsEventQueue;
     u32 EventData; 
-
-    i32 HeroEventSet;
-    
+ 
     tree Tree;
     tree::node *Node;
-    tree::node *NodeSelected;
-    bool SelectingTarget;
-    i32 Target;
+    tree::node *Action;
+    
+    tree EntityTree;
+    tree::node *EntityNode;
+    tree::node *Hero;
+    tree::node *Target_;
+
 
     r32 Timer;
     r32 AnimTimer;
    
-    bool PlayerTurnFinish;
-    bool EnemyTurnFinish;
+    bool EnemiesActionSet;
     bool ProcessingEvent;
+    bool SelectingAction;
 };
 
 #endif

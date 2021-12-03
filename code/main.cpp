@@ -23,7 +23,8 @@ void GameSetUp(memory *Memory)
     InitArena(Memory, &GameState->TextureArena, Kilobytes(1));
     InitArena(Memory, &GameState->TexListArena, Kilobytes(1));
     InitArena(Memory, &GameState->TreeArena, Kilobytes(1));
-    
+    InitArena(Memory, &GameState->EntityTreeArena, Kilobytes(1));
+ 
     // Init window and renderer stuff
     GameState->Window = PlatformCreateWindow(0, 0, WND_WIDTH, WND_HEIGHT, "MorphProject", &GameState->EngineArena);
     GameState->Renderer = PlatformCreateRenderer(GameState->Window, &GameState->EngineArena);
@@ -106,8 +107,7 @@ void GameUpdateAndRender(memory *Memory, input *Input, r32 DeltaTime)
             GameState->AppState = GAME_STATE;
         }
     }
-
-    
+ 
     if(GameState->AppState == GAME_STATE)
     {
         // Update...
@@ -229,10 +229,8 @@ void GameUpdateAndRender(memory *Memory, input *Input, r32 DeltaTime)
     RenderMemoryData(GameState, &GameState->MapEditorSaves, "Map Editor Saves Arena", &XPos, &YPos);
     RenderMemoryData(GameState, &GameState->TexListArena, "TexList Arena", &XPos, &YPos);
     RenderMemoryData(GameState, &GameState->BatchArena, "Batch Renderer Arena", &XPos, &YPos);
-    
-    //RenderMemoryData(GameState, &GameState->StackArena, "Stack Arena", &XPos, &YPos);
     RenderMemoryData(GameState, &GameState->TreeArena, "Tree Arena", &XPos, &YPos);
-
+    RenderMemoryData(GameState, &GameState->EntityTreeArena, "Entity Tree Arena", &XPos, &YPos);
 #endif 
 
 }
