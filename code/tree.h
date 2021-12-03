@@ -9,6 +9,7 @@ struct tree
         char *Name;
         i32 Value;
         bool Disabled = false;
+        bool Dead = false;
         // data structure info
         i32 ID;
         node *Parent;

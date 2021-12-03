@@ -607,6 +607,7 @@ void UpdatePlayer(combat *Combat, entity *Players)
             i32 HeroID = Combat->FirstHeroID + Index;
             tree::node *HeroNode = Combat->EntityTree.FindNodeByID(HeroID);
             HeroNode->Disabled = true;
+            HeroNode->Dead = true;
             ++Combat->NumberOfHerosKill;
         }
     }
@@ -624,7 +625,7 @@ void UpdateEnemies(game_state *GameState, combat *Combat, entity *Enemies)
             Enemies[Index].Alive = false;
             i32 EnemyID = Combat->FirstEnemyID + Index;
             tree::node *EnemyNode = Combat->EntityTree.FindNodeByID(EnemyID);
-            EnemyNode->Disabled = true;
+            EnemyNode->Dead = true;
             ++Combat->NumberOfEnemiesKill;
         }
 
@@ -642,7 +643,7 @@ void UpdateEnemies(game_state *GameState, combat *Combat, entity *Enemies)
     }
 }
 
-void SelectHeroOrTarget(combat *Combat, input *Input, i32 Flag)
+void SelectHero(combat *Combat, input *Input)
 {
     if(OnKeyDown(Input->Buttons->Up))
     {
@@ -684,6 +685,63 @@ void SelectHeroOrTarget(combat *Combat, input *Input, i32 Flag)
                 TestNode = TestNode->NextSibling;
             }
         }
+    }
+    
+    while(Combat->EntityNode->NextSibling && Combat->EntityNode->Disabled)
+    {
+        Combat->EntityNode = Combat->EntityNode->NextSibling;
+    }
+
+    if(OnKeyDown(Input->Buttons->Start))
+    {
+        Combat->Hero = Combat->EntityNode;
+        Combat->EntityNode = Combat->EntityTree.FindNodeByID(Combat->FirstEnemyID);
+        Combat->SelectingAction = true;
+    }
+}
+
+void SelectTarget(combat *Combat, input *Input)
+{
+    if(OnKeyDown(Input->Buttons->Up))
+    {
+        if(Combat->EntityNode->BackSibling && !Combat->EntityNode->BackSibling->Dead)
+        {
+            Combat->EntityNode = Combat->EntityNode->BackSibling;
+        }
+        else if(Combat->EntityNode->BackSibling && Combat->EntityNode->BackSibling->Dead)
+        {
+            tree::node *TestNode = Combat->EntityNode->BackSibling;
+            while(TestNode)
+            {
+                if(!TestNode->Dead)
+                {
+                    Combat->EntityNode = TestNode;
+                    break; 
+                }
+                TestNode = TestNode->BackSibling;
+            }
+        }
+            
+    }
+    if(OnKeyDown(Input->Buttons->Down))
+    {
+        if(Combat->EntityNode->NextSibling && !Combat->EntityNode->NextSibling->Dead)
+        {
+            Combat->EntityNode = Combat->EntityNode->NextSibling;
+        }
+        else if(Combat->EntityNode->NextSibling && Combat->EntityNode->NextSibling->Dead)
+        {
+            tree::node *TestNode = Combat->EntityNode->NextSibling;
+            while(TestNode)
+            {
+                if(!TestNode->Dead)
+                {
+                    Combat->EntityNode = TestNode;
+                    break; 
+                }
+                TestNode = TestNode->NextSibling;
+            }
+        }
 
     }
     if(OnKeyDown(Input->Buttons->Left))
@@ -697,7 +755,7 @@ void SelectHeroOrTarget(combat *Combat, input *Input, i32 Flag)
             }
         }
     }
-    if(OnKeyDown(Input->Buttons->Right) && Flag == SELECT_TARGET)
+    if(OnKeyDown(Input->Buttons->Right))
     {
         if(Combat->EntityNode->Parent->NextSibling)
         {
@@ -710,33 +768,17 @@ void SelectHeroOrTarget(combat *Combat, input *Input, i32 Flag)
         }
     }
 
-    while(Combat->EntityNode->NextSibling && Combat->EntityNode->Disabled)
+    while(Combat->EntityNode->NextSibling && Combat->EntityNode->Dead)
     {
         Combat->EntityNode = Combat->EntityNode->NextSibling;
     }
-     
-
-
+    
     if(OnKeyDown(Input->Buttons->Start))
     {
-        switch(Flag)
-        {
-            case SELECT_HERO:
-            {
-                Combat->Hero = Combat->EntityNode;
-                Combat->EntityNode = Combat->EntityTree.FindNodeByID(Combat->FirstEnemyID);
-                Combat->SelectingAction = true;
-            }break;
-            case SELECT_TARGET:
-            {
-                Combat->Target_ = Combat->EntityNode;
-                Combat->EntityNode = Combat->EntityTree.FindNodeByID(Combat->FirstHeroID);
-            }break;
-            default:
-            {}break;
-        }
+        Combat->Target_ = Combat->EntityNode;
+        Combat->EntityNode = Combat->EntityTree.FindNodeByID(Combat->FirstHeroID);
     }
-    if(OnKeyDown(Input->Buttons->Back) && Flag == SELECT_TARGET)
+    if(OnKeyDown(Input->Buttons->Back))
     {
         Combat->SelectingAction = true;
         Combat->Action = 0;
@@ -795,7 +837,7 @@ void GetCombatImput(combat *Combat, input *Input)
     }
     if(Combat->Hero == 0)
     {
-        SelectHeroOrTarget(Combat, Input, SELECT_HERO);
+        SelectHero(Combat, Input);
     }
     else if(Combat->Action == 0) 
     { 
@@ -803,7 +845,7 @@ void GetCombatImput(combat *Combat, input *Input)
     }
     else
     {
-        SelectHeroOrTarget(Combat, Input, SELECT_TARGET);
+        SelectTarget(Combat, Input);
     }
 }
 
