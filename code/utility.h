@@ -240,6 +240,18 @@ bool OnKeyDown(button Button)
     return false;
 }
 
+bool OnKeyUp(button Button)
+{
+    if(Button.IsDown != Button.WasDown)
+    {
+        if(Button.WasDown)
+        {
+            return true;
+        }
+    }
+    return false;
+}
+
 void *ReadEntireFile(char *FileName, size_t *FileSizePtr, arena *Arena)
 {
     HANDLE FileHandle =  CreateFileA(FileName, GENERIC_READ, FILE_SHARE_READ, 0,

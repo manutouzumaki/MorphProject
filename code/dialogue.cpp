@@ -21,18 +21,20 @@ void GetDialogueInput(game_state *GameState, input *Input, dialogue_action *Dial
     dialoque_state *Dialogue = &GameState->Dialogue;
    
     
-    if(Dialogue->Writing && Input->Buttons->Start.IsDown)
+    if(Dialogue->Writing)
     {
-        Dialogue->TimeToWait = 0.02f;
+        if(OnKeyDown(Input->Buttons->Start))
+        {
+            Dialogue->TimeToWait = 0.01f;
+        }
+        if(OnKeyUp(Input->Buttons->Start))
+        {
+            Dialogue->TimeToWait = 0.08f; 
+        }
     }
-    else
+    if(!Dialogue->Writing)
     {
-        Dialogue->TimeToWait = 0.08f; 
-    }
-
-    if(OnKeyDown(Input->Buttons->Start))
-    {
-        if(!Dialogue->Writing)
+        if(OnKeyDown(Input->Buttons->Start))
         {
             if(Dialogue->Finish)
             {
@@ -44,6 +46,7 @@ void GetDialogueInput(game_state *GameState, input *Input, dialogue_action *Dial
                 Dialogue->Offset += Dialogue->Counter;
                 Dialogue->NumbLetterToDraw = 0;
                 Dialogue->Writing = true;
+                Dialogue->TimeToWait = 0.08f; 
             }
         }
     }
