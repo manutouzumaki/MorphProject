@@ -9,6 +9,7 @@ void InitDialogue(dialoque_state *Dialogue)
     Dialogue->Offset = 0;
     Dialogue->Counter = 0;
     Dialogue->NumbLetterToDraw = 0;
+    Dialogue->TimeToWait = 0.08f;
     Dialogue->Timer = 0.0f;
     Dialogue->Finish = false;
     Dialogue->Writing = true;
@@ -18,19 +19,32 @@ void InitDialogue(dialoque_state *Dialogue)
 void GetDialogueInput(game_state *GameState, input *Input, dialogue_action *DialogueAction)
 {
     dialoque_state *Dialogue = &GameState->Dialogue;
+   
     
+    if(Dialogue->Writing && Input->Buttons->Start.IsDown)
+    {
+        Dialogue->TimeToWait = 0.02f;
+    }
+    else
+    {
+        Dialogue->TimeToWait = 0.08f; 
+    }
+
     if(OnKeyDown(Input->Buttons->Start))
     {
-        if(Dialogue->Finish)
+        if(!Dialogue->Writing)
         {
-            DialogueAction->ShowingDialogue = false;
-        }
-        else if(!Dialogue->Writing)
-        {
-            ++Dialogue->Counter;
-            Dialogue->Offset += Dialogue->Counter;
-            Dialogue->NumbLetterToDraw = 0;
-            Dialogue->Writing = true;
+            if(Dialogue->Finish)
+            {
+                DialogueAction->ShowingDialogue = false;
+            }
+            else 
+            {
+                ++Dialogue->Counter;
+                Dialogue->Offset += Dialogue->Counter;
+                Dialogue->NumbLetterToDraw = 0;
+                Dialogue->Writing = true;
+            }
         }
     }
 }
@@ -66,7 +80,7 @@ void UpdateAndRenderDialogue(game_state *GameState, entity *Entity, r32 DeltaTim
     
     if(Dialogue->Writing)
     { 
-        if(Dialogue->Timer > 0.05f)
+        if(Dialogue->Timer > Dialogue->TimeToWait)
         {
             ++Dialogue->NumbLetterToDraw;
             Dialogue->Timer = 0;
