@@ -868,10 +868,12 @@ void SetHeroEvents(game_state *GameState, combat *Combat, entity *Player, invent
             SetCombatEventQueue(&Combat->EntitiesEventQueue, &Combat->ActionsEventQueue, Combat->Hero->Value + 1, Combat->Target_->Value + Offset, ATTACK, 1);
             NextHeroTurn(Combat); 
         }
+        /*
         else if(Combat->Action->ID == RUN)
         {
             GameState->GamePlayState = WORLD;        
         }
+        */
         else if(Combat->Action->Parent->ID == SPELLS)
         {
             u32 SpellIndex = Player->Spells[Combat->Action->Value] + 1;
@@ -909,10 +911,13 @@ void UpdateAndRenderCombat(game_state *GameState, combat *Combat, input *Input, 
     else
     {
         Player = &Combat->Players[Combat->EntityNode->Value]; 
-    }
-    
+    } 
     SetHeroEvents(GameState, Combat, Player, Inventory, &Combat->NumberOfHeroSet); 
-    
+    if(Combat->Action && Combat->Action->ID == RUN)
+    {
+        GameState->GamePlayState = WORLD;        
+    }
+ 
     // Render Combat UI 
     SetProjMat4(GameState, OrthogonalProjMat4(WND_WIDTH, WND_HEIGHT, 1.0f, 100.0f)); 
     // Render background image
@@ -955,23 +960,26 @@ void UpdateAndRenderCombat(game_state *GameState, combat *Combat, input *Input, 
     } 
     // Render Hero and Target selector
     if((Combat->NumberOfHeroSet < (Combat->NumberOfHeros - Combat->NumberOfHerosKill)) && !Combat->SelectingAction)
-    { 
-        color_const_buffer ColorBuffer = {};
-        if(Combat->EntityNode->Parent->ID == HEROES)
-        {
-            ColorBuffer.Color = Color(0.0f, 255.0f, 0.0f);
-            MapConstBuffer(GameState->Renderer, GameState->ColorConstBuffer, (void *)&ColorBuffer, sizeof(color_const_buffer), 1); 
-            Trans = TranslationMat4({Players[Combat->EntityNode->Value].Position.X + 4.0f, Players[Combat->EntityNode->Value].Position.Y + 24.0f, 0.0f});
+    {
+        if(!Combat->EntityNode->Disabled && !Combat->EntityNode->Dead)
+        { 
+            color_const_buffer ColorBuffer = {};
+            if(Combat->EntityNode->Parent->ID == HEROES)
+            {
+                ColorBuffer.Color = Color(0.0f, 255.0f, 0.0f);
+                MapConstBuffer(GameState->Renderer, GameState->ColorConstBuffer, (void *)&ColorBuffer, sizeof(color_const_buffer), 1); 
+                Trans = TranslationMat4({Players[Combat->EntityNode->Value].Position.X + 4.0f, Players[Combat->EntityNode->Value].Position.Y + 24.0f, 0.0f});
+            }
+            else if(Combat->EntityNode->Parent->ID == ENEMIES)
+            {
+                ColorBuffer.Color = Color(255.0f, 0.0f, 0.0f);
+                MapConstBuffer(GameState->Renderer, GameState->ColorConstBuffer, (void *)&ColorBuffer, sizeof(color_const_buffer), 1); 
+                Trans = TranslationMat4({Enemies[Combat->EntityNode->Value].Position.X + 4.0f, Enemies[Combat->EntityNode->Value].Position.Y + 24.0f, 0.0f});
+            }
+            Scale = ScaleMat4({8, 8, 0.0f});
+            SetWorldMat4(GameState, Trans * Scale);
+            RenderMesh(GameState->Renderer, GameState->Mesh, GameState->UIColorShader);
         }
-        else if(Combat->EntityNode->Parent->ID == ENEMIES)
-        {
-            ColorBuffer.Color = Color(255.0f, 0.0f, 0.0f);
-            MapConstBuffer(GameState->Renderer, GameState->ColorConstBuffer, (void *)&ColorBuffer, sizeof(color_const_buffer), 1); 
-            Trans = TranslationMat4({Enemies[Combat->EntityNode->Value].Position.X + 4.0f, Enemies[Combat->EntityNode->Value].Position.Y + 24.0f, 0.0f});
-        }
-        Scale = ScaleMat4({8, 8, 0.0f});
-        SetWorldMat4(GameState, Trans * Scale);
-        RenderMesh(GameState->Renderer, GameState->Mesh, GameState->UIColorShader);
     }
 
     if(Combat->NumberOfHeroSet >= (Combat->NumberOfHeros - Combat->NumberOfHerosKill))

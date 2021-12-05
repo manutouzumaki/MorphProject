@@ -8,6 +8,7 @@
 #include "inventory.h"
 #include "hero.h"
 #include "combat.h"
+#include "dialogue.h"
 
 struct vs_constant_buffer
 {
@@ -118,6 +119,8 @@ struct game_state
     tilemap Tilemap; 
     combat Combat;
     u32 HeroPartyCount;
+    dialogue_action DialogueAction;
+    dialoque_state Dialogue;
 
     editor Editor;
 };

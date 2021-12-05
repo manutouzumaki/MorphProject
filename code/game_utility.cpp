@@ -94,6 +94,23 @@ i32 RenderString(game_state *GameState, char *String, i32 XPos, i32 YPos, r32 Wi
 }
 
 
+void RenderLetter(game_state *GameState, char *LetterPtr, i32 XPos, i32 YPos, r32 Width, r32 Height)
+{
+    i32 Letter = (i32)*LetterPtr;
+    if(Letter >= 32 && Letter <= 126)
+    {
+        Letter -= 32;
+        texture_info TextureInfo = GetTextureInfo(GameState->FontTexture);
+        i32 TextureNumOfCols = (TextureInfo.Width / 7);
+        i32 FrameX = Letter % TextureNumOfCols;
+        i32 FrameY = Letter / TextureNumOfCols;
+        mat4 Scale = ScaleMat4({Width, Height});
+        mat4 Trans = TranslationMat4({(r32)XPos, (r32)YPos, 0.0f});
+        SetWorldMat4(GameState, Trans * Scale);
+        RenderFrame(GameState->Renderer, GameState->Mesh, GameState->UIFrameShader, GameState->FontTexture,
+                    GameState->FrameConstBuffer, 7, 9, FrameX, FrameY);
+    }
+}
 
 u32 RenderUInt(game_state *GameState, u32 Number, i32 XPos, i32 YPos)
 {

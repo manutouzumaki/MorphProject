@@ -7,6 +7,7 @@
 #include "hero.cpp"
 #include "combat.cpp"
 #include "init.cpp"
+#include "dialogue.cpp"
 
 void GameSetUp(memory *Memory)
 {
@@ -118,21 +119,28 @@ void GameUpdateAndRender(memory *Memory, input *Input, r32 DeltaTime)
                 GameState->GamePlayState = MENU;
             }
 
-            GetHeroInput(Input ,&GameState->Entities[0], &GameState->Tilemap, GameState->Entities);
-            for(i32 Index = 0;
-                Index < ArrayCount(GameState->Entities);
-                ++Index)
+            if(!GameState->DialogueAction.ShowingDialogue)
             {
-                entity *Entity = &GameState->Entities[Index];
-                if((Index > 3) && (Entity->TimeToWait >= 0.0f) && Entity->Alive)
+                GetHeroInput(Input ,&GameState->Entities[0], &GameState->Tilemap, GameState->Entities);
+                for(i32 Index = 0;
+                    Index < ArrayCount(GameState->Entities);
+                    ++Index)
                 {
-                    SetEntityInRandomDirection(Entity, &GameState->Tilemap);
-                }
+                    entity *Entity = &GameState->Entities[Index];
+                    if((Index > 3) && (Entity->TimeToWait >= 0.0f) && Entity->Alive)
+                    {
+                        SetEntityInRandomDirection(Entity, &GameState->Tilemap);
+                    }
 
-                if(((Entity->ID - 2) < GameState->HeroPartyCount) || ((Entity->ID - 2) >= 4))
-                {
-                    MoveEntity(Entity, &GameState->Tilemap, DeltaTime);
+                    if(((Entity->ID - 2) < GameState->HeroPartyCount) || ((Entity->ID - 2) >= 4))
+                    {
+                        MoveEntity(Entity, &GameState->Tilemap, DeltaTime);
+                    }
                 }
+            }
+            else
+            {
+                GetDialogueInput(GameState, Input, &GameState->DialogueAction); 
             }
             
             v2 NewCamPos = GameState->Entities[0].Position;
@@ -157,10 +165,25 @@ void GameUpdateAndRender(memory *Memory, input *Input, r32 DeltaTime)
 
             i32 EntityID = GameState->Entities[0].Action[0];
             entity *EntityToCheck = GetEntitiByID(GameState->Entities, EntityID + 2);
-            if((EntityToCheck && (EntityToCheck->Type == ENEMY) && (EntityToCheck->Alive)))
+            if(EntityToCheck && EntityToCheck->Alive)
             {
-                GameState->GamePlayState = COMBAT;
-                InitCombat(GameState, &GameState->Combat, &GameState->Entities[0]);
+                switch(EntityToCheck->Type)
+                {
+                    case ENEMY:
+                    {
+                        GameState->GamePlayState = COMBAT;
+                        InitCombat(GameState, &GameState->Combat, &GameState->Entities[0]); 
+                    }break;
+                    case NPC:
+                    {
+                        InitDialogue(&GameState->Dialogue);
+                        GameState->DialogueAction.ShowingDialogue = true;
+                        GameState->DialogueAction.Entity = EntityToCheck;
+                        GameState->Entities[0].Action[0] = -1;
+                    }break;
+                    default:
+                    {}break;
+                }
             }
 
             // Render...
@@ -196,6 +219,10 @@ void GameUpdateAndRender(memory *Memory, input *Input, r32 DeltaTime)
                         }
                     }
                 }
+            }
+            if(GameState->DialogueAction.ShowingDialogue)
+            {
+                UpdateAndRenderDialogue(GameState, GameState->DialogueAction.Entity, DeltaTime);
             }
 
         }

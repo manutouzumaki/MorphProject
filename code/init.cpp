@@ -153,7 +153,8 @@ void InitEntities(game_state *GameState)
 
     GameState->Entities[4].Name = "Thomex";
     GameState->Entities[4].ID = 6;
-    GameState->Entities[4].Type = ENEMY;
+    GameState->Entities[4].Type = NPC;
+    GameState->Entities[4].Dialogue = 1;
     GameState->Entities[4].Facing = BIT(DOWN);
     GameState->Entities[4].Layer = 0;
     GameState->Entities[4].Skin = 2;
@@ -175,7 +176,7 @@ void InitEntities(game_state *GameState)
 
     GameState->Entities[5].Name = "Big Daddy";
     GameState->Entities[5].ID = 7;
-    GameState->Entities[5].Type = ENEMY;
+    GameState->Entities[5].Type = NPC;
     GameState->Entities[5].Facing = BIT(DOWN);
     GameState->Entities[5].Layer = 0;
     GameState->Entities[5].Skin = 3;

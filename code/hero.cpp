@@ -55,6 +55,65 @@ void MoveHeroParty(entity *Entities, v2 OldPosition)
     Entities[3].Facing = GetFacing(Entities[3].NextPosition, Entities[3].OldPosiotion, Entities[3].Facing);
 }
 
+void SearchForEnemiesNearBy(entity *Entity, tilemap *Tilemap, entity *Entities, v2 PositionToCheck)
+{
+    // fisrt search on the positive x axis
+    v2 ShearchPosition = PositionToCheck;
+    ShearchPosition.X += 16.0f;
+    i32 NewTileValue = (GetTilemapValue(Tilemap, ShearchPosition, Entity->Layer) - 2);
+    i32 Counter = 1;
+    entity *EntityToCheck = GetEntitiByID(Entities, NewTileValue + 2);
+    while(EntityToCheck && (EntityToCheck->Type == ENEMY))
+    {
+        Entity->Action[Counter++] = NewTileValue;
+        ShearchPosition.X += 16.0f;
+        NewTileValue = (GetTilemapValue(Tilemap, ShearchPosition, Entity->Layer) - 2);
+        EntityToCheck = GetEntitiByID(Entities, NewTileValue + 2);
+        if(Counter >= 4) break; 
+    }
+    // search the negative x axis
+    ShearchPosition = PositionToCheck;
+    ShearchPosition.X -= 16.0f;
+    NewTileValue = (GetTilemapValue(Tilemap, ShearchPosition, Entity->Layer) - 2);
+    EntityToCheck = GetEntitiByID(Entities, NewTileValue + 2);
+    while(EntityToCheck && (EntityToCheck->Type == ENEMY))
+    {
+        Entity->Action[Counter++] = NewTileValue;
+        ShearchPosition.X -= 16.0f;
+        NewTileValue = (GetTilemapValue(Tilemap, ShearchPosition, Entity->Layer) - 2);
+        EntityToCheck = GetEntitiByID(Entities, NewTileValue + 2);
+        if(Counter >= 4) break; 
+    }
+    // search on the positive y axis
+    ShearchPosition = PositionToCheck;
+    ShearchPosition.Y += 16.0f;
+    NewTileValue = (GetTilemapValue(Tilemap, ShearchPosition, Entity->Layer) - 2);
+    EntityToCheck = GetEntitiByID(Entities, NewTileValue + 2);
+    while(EntityToCheck && (EntityToCheck->Type == ENEMY))
+    {
+        Entity->Action[Counter++] = NewTileValue;
+        ShearchPosition.Y += 16.0f;
+        NewTileValue = (GetTilemapValue(Tilemap, ShearchPosition, Entity->Layer) - 2);
+        EntityToCheck = GetEntitiByID(Entities, NewTileValue + 2);
+        if(Counter >= 4) break; 
+    }
+    // search the negative y axis
+    ShearchPosition = PositionToCheck;
+    ShearchPosition.Y -= 16.0f;
+    NewTileValue = (GetTilemapValue(Tilemap, ShearchPosition, Entity->Layer) - 2);
+    EntityToCheck = GetEntitiByID(Entities, NewTileValue + 2);
+    while(EntityToCheck && (EntityToCheck->Type == ENEMY))
+    {
+        Entity->Action[Counter++] = NewTileValue;
+        ShearchPosition.Y -= 16.0f;
+        NewTileValue = (GetTilemapValue(Tilemap, ShearchPosition, Entity->Layer) - 2);
+        EntityToCheck = GetEntitiByID(Entities, NewTileValue + 2);
+        if(Counter >= 4) break; 
+    }
+    Entity->NumbOfActions = Counter;
+}
+
+
 void GetHeroInput(input *Input, entity *Entity, tilemap *Tilemap, entity *Entities)
 {
     if(Input->Buttons->Start.IsDown != Input->Buttons->Start.WasDown)
@@ -85,61 +144,7 @@ void GetHeroInput(input *Input, entity *Entity, tilemap *Tilemap, entity *Entiti
             entity *EntityToCheck = GetEntitiByID(Entities, Entity->Action[0] + 2);
             if(EntityToCheck && !EntityToCheck->IsWalking && (EntityToCheck->Type == ENEMY))
             {
-                // TODO(manuto): Search for more entities near by
-                // fisrt search on the positive x axis
-                v2 ShearchPosition = PositionToCheck;
-                ShearchPosition.X += 16.0f;
-                i32 NewTileValue = (GetTilemapValue(Tilemap, ShearchPosition, Entity->Layer) - 2);
-                i32 Counter = 1;
-                EntityToCheck = GetEntitiByID(Entities, NewTileValue + 2);
-                while(EntityToCheck && (EntityToCheck->Type == ENEMY))
-                {
-                    Entity->Action[Counter++] = NewTileValue;
-                    ShearchPosition.X += 16.0f;
-                    NewTileValue = (GetTilemapValue(Tilemap, ShearchPosition, Entity->Layer) - 2);
-                    EntityToCheck = GetEntitiByID(Entities, NewTileValue + 2);
-                    if(Counter >= 4) break; 
-                }
-                // search the negative x axis
-                ShearchPosition = PositionToCheck;
-                ShearchPosition.X -= 16.0f;
-                NewTileValue = (GetTilemapValue(Tilemap, ShearchPosition, Entity->Layer) - 2);
-                EntityToCheck = GetEntitiByID(Entities, NewTileValue + 2);
-                while(EntityToCheck && (EntityToCheck->Type == ENEMY))
-                {
-                    Entity->Action[Counter++] = NewTileValue;
-                    ShearchPosition.X -= 16.0f;
-                    NewTileValue = (GetTilemapValue(Tilemap, ShearchPosition, Entity->Layer) - 2);
-                    EntityToCheck = GetEntitiByID(Entities, NewTileValue + 2);
-                    if(Counter >= 4) break; 
-                }
-                // search on the positive y axis
-                ShearchPosition = PositionToCheck;
-                ShearchPosition.Y += 16.0f;
-                NewTileValue = (GetTilemapValue(Tilemap, ShearchPosition, Entity->Layer) - 2);
-                EntityToCheck = GetEntitiByID(Entities, NewTileValue + 2);
-                while(EntityToCheck && (EntityToCheck->Type == ENEMY))
-                {
-                    Entity->Action[Counter++] = NewTileValue;
-                    ShearchPosition.Y += 16.0f;
-                    NewTileValue = (GetTilemapValue(Tilemap, ShearchPosition, Entity->Layer) - 2);
-                    EntityToCheck = GetEntitiByID(Entities, NewTileValue + 2);
-                    if(Counter >= 4) break; 
-                }
-                // search the negative y axis
-                ShearchPosition = PositionToCheck;
-                ShearchPosition.Y -= 16.0f;
-                NewTileValue = (GetTilemapValue(Tilemap, ShearchPosition, Entity->Layer) - 2);
-                EntityToCheck = GetEntitiByID(Entities, NewTileValue + 2);
-                while(EntityToCheck && (EntityToCheck->Type == ENEMY))
-                {
-                    Entity->Action[Counter++] = NewTileValue;
-                    ShearchPosition.Y -= 16.0f;
-                    NewTileValue = (GetTilemapValue(Tilemap, ShearchPosition, Entity->Layer) - 2);
-                    EntityToCheck = GetEntitiByID(Entities, NewTileValue + 2);
-                    if(Counter >= 4) break; 
-                }
-                Entity->NumbOfActions = Counter;
+                SearchForEnemiesNearBy(Entity, Tilemap, Entities, PositionToCheck);
             }
             else
             {
