@@ -61,7 +61,9 @@ void GetMenuOptionInput(menu *Menu, input *Input)
         {
             Menu->Option = Menu->Option->Child;
         }
-        else if(Menu->Option->Parent->ID == OP_INVENTORY)
+        else if(Menu->Option->Parent->ID == OP_INVENTORY ||
+                Menu->Option->Parent->ID == OP_SPELLS    ||
+                Menu->Option->Parent->ID == OP_WEAPON)
         {
             Menu->Hero = 0;
             Menu->SelectingHero = true;
@@ -124,7 +126,7 @@ void RenderMainMenu(game_state *GameState, menu *Menu, tree::node *FirstSibling)
     }
 }
 
-// INVENTORY MENU
+// TODO: INVENTORY MENU
 void RenderInventoryMenu(game_state *GameState, menu *Menu, tree::node *FirstSibling)
 {
     v2 FontSize = {7.0f*2.0f, 9.0f*2.0f}; 
@@ -181,45 +183,73 @@ void RenderInventoryMenu(game_state *GameState, menu *Menu, tree::node *FirstSib
             RenderUInt(GameState, Hero->Stats.Stat[Index + 4], InnerXPos, YPos, FontSize.X, FontSize.Y);
             YPos -= FontSize.Y;
         }
-
-
     }
 
 }
 
-// SPELLS MENU
+// TODO: SPELLS MENU
 void RenderSpellsMenu(game_state *GameState, menu *Menu, tree::node *FirstSibling)
 {
     v2 FontSize = {7.0f*2.0f, 9.0f*2.0f}; 
-    i32 XPos = -(WND_WIDTH*0.5f);
+    i32 XPos = 0;
     i32 YPos = (WND_HEIGHT*0.5f) - FontSize.Y;
     while(FirstSibling)
     {
         if(FirstSibling->ID == Menu->Option->ID)
         { 
-            RenderUIQuad(GameState, XPos, YPos, 400, FontSize.Y, 134.0f, 165.0f, 217.0f);
+            RenderUIQuad(GameState, XPos, YPos, WND_WIDTH*0.5f, FontSize.Y, 134.0f, 165.0f, 217.0f);
         }
         RenderString(GameState, FirstSibling->Name, XPos, YPos, FontSize.X, FontSize.Y);
         YPos -= FontSize.Y;
         FirstSibling = FirstSibling->NextSibling;
     }
+
+    XPos = -(WND_WIDTH*0.5f);
+    YPos = (WND_HEIGHT*0.5f) - FontSize.Y;
+    for(i32 Index = 0;
+        Index < GameState->HeroPartyCount;
+        ++Index)
+    {
+        if(Menu->Hero == Index)
+        {
+            RenderUIQuad(GameState, XPos, YPos, WND_WIDTH*0.5f, FontSize.Y, 134.0f, 165.0f, 217.0f);
+        }
+        entity *Hero = &GameState->Entities[Index];
+        RenderString(GameState, Hero->Name, XPos, YPos, FontSize.X, FontSize.Y);
+        YPos -= FontSize.Y;
+    }
 }
 
-// WEAPON MENU
+// TODO: WEAPON MENU
 void RenderWeaponMenu(game_state *GameState, menu *Menu, tree::node *FirstSibling)
 {
     v2 FontSize = {7.0f*2.0f, 9.0f*2.0f}; 
-    i32 XPos = -(WND_WIDTH*0.5f);
+    i32 XPos = 0;
     i32 YPos = (WND_HEIGHT*0.5f) - FontSize.Y;
     while(FirstSibling)
     {
         if(FirstSibling->ID == Menu->Option->ID)
         { 
-            RenderUIQuad(GameState, XPos, YPos, 400, FontSize.Y, 134.0f, 165.0f, 217.0f);
+            RenderUIQuad(GameState, XPos, YPos, WND_WIDTH*0.5f, FontSize.Y, 134.0f, 165.0f, 217.0f);
         }
         RenderString(GameState, FirstSibling->Name, XPos, YPos, FontSize.X, FontSize.Y);
         YPos -= FontSize.Y;
         FirstSibling = FirstSibling->NextSibling;
+    }
+
+    XPos = -(WND_WIDTH*0.5f);
+    YPos = (WND_HEIGHT*0.5f) - FontSize.Y;
+    for(i32 Index = 0;
+        Index < GameState->HeroPartyCount;
+        ++Index)
+    {
+        if(Menu->Hero == Index)
+        {
+            RenderUIQuad(GameState, XPos, YPos, WND_WIDTH*0.5f, FontSize.Y, 134.0f, 165.0f, 217.0f);
+        }
+        entity *Hero = &GameState->Entities[Index];
+        RenderString(GameState, Hero->Name, XPos, YPos, FontSize.X, FontSize.Y);
+        YPos -= FontSize.Y;
     }
 }
 
