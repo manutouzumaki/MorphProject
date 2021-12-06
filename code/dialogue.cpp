@@ -19,7 +19,6 @@ void InitDialogue(dialoque_state *Dialogue)
 void GetDialogueInput(game_state *GameState, input *Input, dialogue_action *DialogueAction)
 {
     dialoque_state *Dialogue = &GameState->Dialogue;
-   
     
     if(Dialogue->Writing)
     {

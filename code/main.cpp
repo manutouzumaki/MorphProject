@@ -8,6 +8,7 @@
 #include "combat.cpp"
 #include "init.cpp"
 #include "dialogue.cpp"
+#include "menu.cpp"
 
 void GameSetUp(memory *Memory)
 {
@@ -25,6 +26,7 @@ void GameSetUp(memory *Memory)
     InitArena(Memory, &GameState->TexListArena, Kilobytes(1));
     InitArena(Memory, &GameState->TreeArena, Kilobytes(1));
     InitArena(Memory, &GameState->EntityTreeArena, Kilobytes(1));
+    InitArena(Memory, &GameState->MenuArena, Kilobytes(1));
  
     // Init window and renderer stuff
     GameState->Window = PlatformCreateWindow(0, 0, WND_WIDTH, WND_HEIGHT, "MorphProject", &GameState->EngineArena);
@@ -116,6 +118,7 @@ void GameUpdateAndRender(memory *Memory, input *Input, r32 DeltaTime)
         {
             if(OnKeyDown(Input->Buttons->Back))
             {
+                InitMenu(GameState, &GameState->Menu, &GameState->MenuArena);
                 GameState->GamePlayState = MENU;
             }
 
@@ -232,8 +235,9 @@ void GameUpdateAndRender(memory *Memory, input *Input, r32 DeltaTime)
         }
         else if(GameState->GamePlayState == MENU) 
         {
-            SetProjMat4(GameState, OrthogonalProjMat4(WND_WIDTH, WND_HEIGHT, 1.0f, 100.0f));
-            UpdateAndRenderInventory(GameState, Input);
+            //SetProjMat4(GameState, OrthogonalProjMat4(WND_WIDTH, WND_HEIGHT, 1.0f, 100.0f));
+            //UpdateAndRenderInventory(GameState, Input);
+            UpdateAndRenderMenu(GameState, Input);
         }
     }
         
@@ -258,6 +262,7 @@ void GameUpdateAndRender(memory *Memory, input *Input, r32 DeltaTime)
     RenderMemoryData(GameState, &GameState->BatchArena, "Batch Renderer Arena", &XPos, &YPos);
     RenderMemoryData(GameState, &GameState->TreeArena, "Tree Arena", &XPos, &YPos);
     RenderMemoryData(GameState, &GameState->EntityTreeArena, "Entity Tree Arena", &XPos, &YPos);
+    RenderMemoryData(GameState, &GameState->MenuArena, "Menu Arena", &XPos, &YPos);
 #endif 
 
 }

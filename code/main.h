@@ -9,6 +9,7 @@
 #include "hero.h"
 #include "combat.h"
 #include "dialogue.h"
+#include "menu.h"
 
 struct vs_constant_buffer
 {
@@ -71,6 +72,7 @@ struct game_state
     arena BatchArena;
     arena TreeArena;
     arena EntityTreeArena;
+    arena MenuArena;
 
     const_buffer *ConstBuffer;
     const_buffer *ColorConstBuffer;
@@ -121,6 +123,7 @@ struct game_state
     u32 HeroPartyCount;
     dialogue_action DialogueAction;
     dialoque_state Dialogue;
+    menu Menu;
 
     editor Editor;
 };
