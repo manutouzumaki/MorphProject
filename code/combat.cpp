@@ -807,7 +807,8 @@ void SelectAction(combat *Combat, input *Input)
         {
             Combat->Node = Combat->Node->Child;
         }
-        else
+        // TODO: NOT PERMANENT FIX THISS !!!
+        else if(Combat->Node->ID != ITEMS) 
         {
             Combat->SelectingAction = false;
             Combat->Action = Combat->Node;

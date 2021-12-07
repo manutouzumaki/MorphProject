@@ -43,11 +43,8 @@ void UpdateItems(inventory *Inventory)
         Index < Inventory->ItemsCount;
         ++Index)
     {
-        if(Inventory->Items[Index].Count == 0 && Inventory->Items[Index].ID != 0)
+        while(Inventory->Items[Index].Count == 0 && Inventory->Items[Index].ID != 0)
         {
-            Inventory->NumberOfOptions = Inventory->ItemsCount;
-            inventory_item ZeroItem = {};
-            Inventory->Items[Index] = ZeroItem;
             ++ItemsDeleted;
             i32 I = Index;
             while(I < Inventory->ItemsCount)
@@ -58,6 +55,7 @@ void UpdateItems(inventory *Inventory)
                 }
                 else
                 {
+                    inventory_item ZeroItem = {};
                     Inventory->Items[I] = ZeroItem; 
                 }
                 ++I;
