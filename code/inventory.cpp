@@ -38,26 +38,33 @@ void AddItem(inventory *Inventory, i32 ItemID, i32 Count)
 
 void UpdateItems(inventory *Inventory)
 {
+    i32 ItemsDeleted = 0;
     for(i32 Index = 0;
         Index < Inventory->ItemsCount;
         ++Index)
     {
         if(Inventory->Items[Index].Count == 0 && Inventory->Items[Index].ID != 0)
         {
-            --Inventory->ItemsCount;
             Inventory->NumberOfOptions = Inventory->ItemsCount;
             inventory_item ZeroItem = {};
-            if(Index < 14)
+            Inventory->Items[Index] = ZeroItem;
+            ++ItemsDeleted;
+            i32 I = Index;
+            while(I < Inventory->ItemsCount)
             {
-                Inventory->Items[Index] = Inventory->Items[Index + 1];
-                Inventory->Items[Index + 1] = ZeroItem;
-            }
-            else
-            {
-                Inventory->Items[Index] = ZeroItem; 
-            }
+                if(I < Inventory->ItemsCount - 1)
+                {
+                    Inventory->Items[I] = Inventory->Items[I + 1];
+                }
+                else
+                {
+                    Inventory->Items[I] = ZeroItem; 
+                }
+                ++I;
+            } 
         }
     }
+    Inventory->ItemsCount -= ItemsDeleted;
 }
 
 void RenderHeroInfo(game_state *GameState, i32 *X, i32 *Y, i32 YOffset, entity *Hero, i32 Index)
@@ -232,7 +239,7 @@ void UpdateAndRenderInventory(game_state *GameState, input *Input)
         Inventory->NumberOfOptions = Inventory->ItemsCount;
     }
 
-    UpdateItems(Inventory);
+    //UpdateItems(Inventory);
     
     RenderUIQuad(GameState, -(WND_WIDTH*0.5f), -(WND_HEIGHT*0.5f), WND_WIDTH, WND_HEIGHT, 22.0f, 25.0f, 37.0f);
     i32 XPos = (WND_WIDTH*0.5f)*0.1f;

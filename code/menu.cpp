@@ -36,10 +36,11 @@ void InitMenu(game_state *GameState, menu *Menu, arena *Arena)
     CreateMenuTree(&Menu->Tree, &GameState->Inventory, GameState->Items, GameState->Spells, GameState->Weapons);
     Menu->Option = Menu->Tree.First->Child;
     Menu->Hero = -1;
-    Menu->SelectingHero = false; 
+    Menu->SelectingHero = false;
+    Menu->HeroSelected = false; 
 }
 
-void GetMenuOptionInput(menu *Menu, input *Input)
+void GetMenuOptionInput(game_state *GameState, menu *Menu, input *Input)
 {
     if(OnKeyDown(Input->Buttons->Up))
     {
@@ -68,12 +69,24 @@ void GetMenuOptionInput(menu *Menu, input *Input)
             Menu->Hero = 0;
             Menu->SelectingHero = true;
         }
+        else if(Menu->Option->ID == OP_SAVE)
+        { 
+        }
+        else if(Menu->Option->ID == OP_EXIT)
+        { 
+        }
+
     }
     if(OnKeyDown(Input->Buttons->Back))
     {
         if(Menu->Option->Parent)
         {
             Menu->Option = Menu->Option->Parent;
+            if(Menu->Option->ID == Menu->Tree.First->ID)
+            {
+                UpdateItems(&GameState->Inventory);
+                GameState->GamePlayState = WORLD;
+            }
         }
     }
 }
@@ -98,6 +111,7 @@ void GetMenuHeroInput(menu *Menu, input *Input, i32 HeroPartyCount)
     }
     if(OnKeyDown(Input->Buttons->Start))
     {
+        Menu->HeroSelected = true;
     }
     if(OnKeyDown(Input->Buttons->Back))
     {
@@ -139,7 +153,9 @@ void RenderInventoryMenu(game_state *GameState, menu *Menu, tree::node *FirstSib
         { 
             RenderUIQuad(GameState, XPos, YPos, WND_WIDTH*0.5f, FontSize.Y, 134.0f, 165.0f, 217.0f);
         }
-        RenderString(GameState, FirstSibling->Name, XPos, YPos, FontSize.X, FontSize.Y);
+        i32 XOffset = RenderString(GameState, FirstSibling->Name, XPos, YPos, FontSize.X, FontSize.Y);
+        RenderUInt(GameState,  GameState->Inventory.Items[FirstSibling->Value].Count, XPos + ((XOffset+1)*FontSize.X), YPos, FontSize.X, FontSize.Y);
+       
         YPos -= FontSize.Y;
         FirstSibling = FirstSibling->NextSibling;
     }
@@ -159,7 +175,7 @@ void RenderInventoryMenu(game_state *GameState, menu *Menu, tree::node *FirstSib
         entity *Hero = &GameState->Entities[Index];
         RenderString(GameState, Hero->Name, XPos, YPos, FontSize.X, FontSize.Y);
         YPos -= FontSize.Y;
-        
+        XPos += FontSize.X; 
         i32 NameIndex = 0;
         for(i32 Index = 0;
             Index < 4;
@@ -183,6 +199,7 @@ void RenderInventoryMenu(game_state *GameState, menu *Menu, tree::node *FirstSib
             RenderUInt(GameState, Hero->Stats.Stat[Index + 4], InnerXPos, YPos, FontSize.X, FontSize.Y);
             YPos -= FontSize.Y;
         }
+        XPos -= FontSize.X; 
     }
 
 }
@@ -212,11 +229,27 @@ void RenderSpellsMenu(game_state *GameState, menu *Menu, tree::node *FirstSiblin
     {
         if(Menu->Hero == Index)
         {
-            RenderUIQuad(GameState, XPos, YPos, WND_WIDTH*0.5f, FontSize.Y, 134.0f, 165.0f, 217.0f);
+            RenderUIQuad(GameState, XPos, YPos - (FontSize.Y*3), WND_WIDTH*0.5f, FontSize.Y*4, 134.0f, 165.0f, 217.0f);
         }
         entity *Hero = &GameState->Entities[Index];
         RenderString(GameState, Hero->Name, XPos, YPos, FontSize.X, FontSize.Y);
         YPos -= FontSize.Y;
+        XPos += FontSize.X; 
+        for(i32 Index = 0;
+            Index < 3;
+            ++Index)
+        {
+            if(Hero->Spells[Index] >= 0)
+            {
+                RenderString(GameState, GameState->Spells[Hero->Spells[Index]].Name, XPos, YPos, FontSize.X, FontSize.Y);
+            }
+            else
+            {
+                RenderString(GameState, "Empty", XPos, YPos, FontSize.X, FontSize.Y);
+            }
+            YPos -= FontSize.Y;
+        }
+        XPos -= FontSize.X; 
     }
 }
 
@@ -245,11 +278,22 @@ void RenderWeaponMenu(game_state *GameState, menu *Menu, tree::node *FirstSiblin
     {
         if(Menu->Hero == Index)
         {
-            RenderUIQuad(GameState, XPos, YPos, WND_WIDTH*0.5f, FontSize.Y, 134.0f, 165.0f, 217.0f);
+            RenderUIQuad(GameState, XPos, YPos - FontSize.Y, WND_WIDTH*0.5f, FontSize.Y*2.0f, 134.0f, 165.0f, 217.0f);
         }
         entity *Hero = &GameState->Entities[Index];
         RenderString(GameState, Hero->Name, XPos, YPos, FontSize.X, FontSize.Y);
         YPos -= FontSize.Y;
+        XPos += FontSize.X; 
+        if(Hero->Weapon >= 0)
+        {
+            RenderString(GameState, GameState->Weapons[Hero->Weapon].Name, XPos, YPos, FontSize.X, FontSize.Y);
+        }
+        else
+        {
+            RenderString(GameState, "ERROR", XPos, YPos, FontSize.X, FontSize.Y);
+        }
+        YPos -= FontSize.Y;
+        XPos -= FontSize.X; 
     }
 }
 
@@ -262,7 +306,37 @@ void UpdateAndRenderMenu(game_state *GameState, input *Input)
     }
     else
     {
-        GetMenuOptionInput(Menu, Input);
+        GetMenuOptionInput(GameState, Menu, Input);
+    }
+
+    if(Menu->Option->Parent && Menu->HeroSelected)
+    {
+        entity *Hero = &GameState->Entities[Menu->Hero];
+        switch(Menu->Option->Parent->ID)
+        {
+            case OP_INVENTORY:
+            {
+                if(GameState->Inventory.Items[Menu->Option->Value].Count != 0)
+                {
+                    item_stats Item = GameState->Items[GameState->Inventory.Items[Menu->Option->Value].ID - 1];
+                    Hero->Stats.HP_Now += Item.HP_Modifire;
+                    Hero->Stats.MP_Now += Item.MP_Modifire;
+                    --GameState->Inventory.Items[Menu->Option->Value].Count;
+                }
+            }break;
+            case OP_SPELLS:
+            {
+                Hero->Spells[2] = Hero->Spells[1]; 
+                Hero->Spells[1] = Hero->Spells[0]; 
+                Hero->Spells[0] = Menu->Option->Value;
+            }break;
+            case OP_WEAPON:
+                Hero->Weapon = Menu->Option->Value;
+            {}break;
+            default:
+            {}break;
+        };
+        Menu->HeroSelected = false;
     }
 
     SetProjMat4(GameState, OrthogonalProjMat4(WND_WIDTH, WND_HEIGHT, 1.0f, 100.0f)); 

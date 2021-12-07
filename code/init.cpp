@@ -125,7 +125,7 @@ void InitEntities(game_state *GameState)
     GameState->Entities[0].Stats.Strength = 12;
     GameState->Entities[0].Stats.Speed = 20;
     GameState->Entities[0].Stats.Intelligence = 5;
-    GameState->Entities[0].Weapon = 1;
+    GameState->Entities[0].Weapon = 2;
     GameState->Entities[0].Spells[0] = 0;
     GameState->Entities[0].Spells[1] = -1;
     GameState->Entities[0].Spells[2] = -1;
@@ -135,18 +135,21 @@ void InitEntities(game_state *GameState)
 
     GameState->Entities[1] = GameState->Entities[0];
     GameState->Entities[1].Name = "Hailee";
+    GameState->Entities[1].Weapon = 1;
     GameState->Entities[1].ID = 3;
     GameState->Entities[1].Skin = 2;
     SetEntityPosition(&GameState->Entities[1], &GameState->Tilemap, 8, 13);
     
     GameState->Entities[2] = GameState->Entities[0];
     GameState->Entities[2].Name = "Camila";
+    GameState->Entities[2].Weapon = 0;
     GameState->Entities[2].ID = 4;
     GameState->Entities[2].Skin = 7;
     SetEntityPosition(&GameState->Entities[2], &GameState->Tilemap, 8, 14);
     
     GameState->Entities[3] = GameState->Entities[0];
     GameState->Entities[3].Name = "Sabrina";
+    GameState->Entities[3].Weapon = 1;
     GameState->Entities[3].ID = 5;
     GameState->Entities[3].Skin =8;
     SetEntityPosition(&GameState->Entities[3], &GameState->Tilemap, 8, 15);

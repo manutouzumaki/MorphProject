@@ -19,6 +19,7 @@ struct menu
 
     i32 Hero;
     bool SelectingHero;
+    bool HeroSelected;
 };
 
 #endif
