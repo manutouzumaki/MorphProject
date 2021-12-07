@@ -962,7 +962,7 @@ void UpdateAndRenderCombat(game_state *GameState, combat *Combat, input *Input, 
     // Render Hero and Target selector
     if((Combat->NumberOfHeroSet < (Combat->NumberOfHeros - Combat->NumberOfHerosKill)) && !Combat->SelectingAction)
     {
-        if(!Combat->EntityNode->Disabled && !Combat->EntityNode->Dead)
+        if(!Combat->EntityNode->Dead)
         { 
             color_const_buffer ColorBuffer = {};
             if(Combat->EntityNode->Parent->ID == HEROES)

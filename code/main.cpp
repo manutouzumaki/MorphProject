@@ -235,8 +235,6 @@ void GameUpdateAndRender(memory *Memory, input *Input, r32 DeltaTime)
         }
         else if(GameState->GamePlayState == MENU) 
         {
-            //SetProjMat4(GameState, OrthogonalProjMat4(WND_WIDTH, WND_HEIGHT, 1.0f, 100.0f));
-            //UpdateAndRenderInventory(GameState, Input);
             UpdateAndRenderMenu(GameState, Input);
         }
     }
