@@ -195,7 +195,7 @@ void EndCombat(game_state *GameState, combat *Combat)
         Enemy->Alive = Combat->Enemies[Index].Alive;
         if(!Enemy->Alive)
         {
-            UnsetCollision(&GameState->Tilemap, Enemy->Position, Enemy->Layer);
+            UnsetCollision(GameState->ActualTilemap, Enemy->Position, Enemy->Layer);
         }
     }
 }
@@ -869,12 +869,6 @@ void SetHeroEvents(game_state *GameState, combat *Combat, entity *Player, invent
             SetCombatEventQueue(&Combat->EntitiesEventQueue, &Combat->ActionsEventQueue, Combat->Hero->Value + 1, Combat->Target_->Value + Offset, ATTACK, 1);
             NextHeroTurn(Combat); 
         }
-        /*
-        else if(Combat->Action->ID == RUN)
-        {
-            GameState->GamePlayState = WORLD;        
-        }
-        */
         else if(Combat->Action->Parent->ID == SPELLS)
         {
             u32 SpellIndex = Player->Spells[Combat->Action->Value] + 1;

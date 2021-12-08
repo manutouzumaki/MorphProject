@@ -38,7 +38,22 @@ void RenderLayer(game_state *GameState, tilemap *Tilemap, layer *Layer, bool Col
     i32 XMax = (GameState->CamPosition.X + (WND_WIDTH*0.5f*Ratio)) / 16;
     i32 YMin = (GameState->CamPosition.Y - (WND_HEIGHT*0.5f*Ratio)) / 16;
     i32 YMax = (GameState->CamPosition.Y + (WND_HEIGHT*0.5f*Ratio)) / 16;
-
+    if(XMin < 0)
+    {
+        XMin = 0;
+    }
+    if(YMin < 0)
+    {
+        YMin = 0;
+    }
+    if(XMax > 63)
+    {
+        XMax = 63;
+    }
+    if(YMax > 63)
+    {
+        YMax = 63;
+    }
     BeginBatch(GameState->TilemapBatch);
     for(i32 Y = YMin;
         Y <= YMax;
@@ -118,7 +133,7 @@ bool IsCollision(v2 Position, u32 Layer, tilemap *Tilemap)
 
         return ActualLayer->Tiles[TileY * Tilemap->Cols + TileX].Collision != 0;
     }
-    return true;
+    return false;
 }
 
 i32 GetTilemapValue(tilemap *Tilemap, v2 Position, u32 Layer)

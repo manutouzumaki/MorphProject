@@ -2,6 +2,10 @@ void SetEntityPosition(entity *Entity, tilemap *Tilemap, i32 TileX, i32 TileY)
 {
     Entity->Position.X = TileX * 16.0f;
     Entity->Position.Y = TileY * 16.0f;
+    Entity->OldPosiotion.X = TileX * 16.0f;
+    Entity->OldPosiotion.Y = TileY * 16.0f;
+    Entity->NextPosition.X = TileX * 16.0f;
+    Entity->NextPosition.Y = TileY * 16.0f;
     SetCollition(Tilemap, Entity->Position, Entity->Layer, Entity->ID);
 }
 

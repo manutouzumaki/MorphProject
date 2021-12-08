@@ -9,6 +9,7 @@
 #include "init.cpp"
 #include "dialogue.cpp"
 #include "menu.cpp"
+#include "tp.cpp"
 
 void GameSetUp(memory *Memory)
 {
@@ -47,7 +48,15 @@ void GameSetUp(memory *Memory)
     };   
     GameState->Mesh = CreateMesh(GameState->Renderer, Vertices, ArrayCount(Vertices), &GameState->EngineArena); 
     GameState->TilemapBatch = CreateBatch(GameState->Renderer, &GameState->BatchArena, 64*64, &GameState->EngineArena);
-    GameState->Tilemap = LoadMap(GameState, "../data/map.save");
+    
+    GameState->Tilemap[0][0] = LoadMap(GameState, "../data/map.save");
+    GameState->Tilemap[0][1] = LoadMap(GameState, "../data/map-1.save");
+    GameState->Tilemap[1][0] = LoadMap(GameState, "../data/map.save");
+    GameState->Tilemap[1][1] = LoadMap(GameState, "../data/map-1.save");
+    
+    GameState->ActualTilemapX = 1;
+    GameState->ActualTilemapY = 0;
+    GameState->ActualTilemap = &GameState->Tilemap[GameState->ActualTilemapY][GameState->ActualTilemapX];
     
     // Init gameplay
     InitEntities(GameState);
@@ -90,6 +99,7 @@ void GameSetUp(memory *Memory)
     GameState->HeroPartyCount = 4;
 
     InitInventory(&GameState->Inventory);
+    i32 ActualTilemapX = 1;
     AddItem(&GameState->Inventory, 1, 2);
     AddItem(&GameState->Inventory, 2, 3);
     AddItem(&GameState->Inventory, 1, 2);
@@ -124,7 +134,7 @@ void GameUpdateAndRender(memory *Memory, input *Input, r32 DeltaTime)
 
             if(!GameState->DialogueAction.ShowingDialogue)
             {
-                GetHeroInput(Input ,&GameState->Entities[0], &GameState->Tilemap, GameState->Entities);
+                GetHeroInput(Input ,&GameState->Entities[0], GameState->ActualTilemap, GameState->Entities);
                 for(i32 Index = 0;
                     Index < ArrayCount(GameState->Entities);
                     ++Index)
@@ -132,12 +142,12 @@ void GameUpdateAndRender(memory *Memory, input *Input, r32 DeltaTime)
                     entity *Entity = &GameState->Entities[Index];
                     if((Index > 3) && (Entity->TimeToWait >= 0.0f) && Entity->Alive)
                     {
-                        SetEntityInRandomDirection(Entity, &GameState->Tilemap);
+                        SetEntityInRandomDirection(Entity, GameState->ActualTilemap);
                     }
 
                     if(((Entity->ID - 2) < GameState->HeroPartyCount) || ((Entity->ID - 2) >= 4))
                     {
-                        MoveEntity(Entity, &GameState->Tilemap, DeltaTime);
+                        MoveEntity(Entity, GameState->ActualTilemap, DeltaTime);
                     }
                 }
             }
@@ -146,22 +156,71 @@ void GameUpdateAndRender(memory *Memory, input *Input, r32 DeltaTime)
                 GetDialogueInput(GameState, Input, &GameState->DialogueAction); 
             }
             
-            v2 NewCamPos = GameState->Entities[0].Position;
-
-            if(NewCamPos.X - (WND_WIDTH*0.5f*0.5f) < 0 ||
-               NewCamPos.X + (WND_WIDTH*0.5f*0.5f) > 64*16)
+            // TODO: Change Hero to the next map
+            i32 TileX = GameState->Entities[0].Position.X / 16;
+            i32 TileY = GameState->Entities[0].Position.Y / 16;
+            if(TileX < 0 && GameState->ActualTilemapX > 0)
             {
-                NewCamPos.X = GameState->CamPosition.X;
+                --GameState->ActualTilemapX;
+                GameState->ActualTilemap = &GameState->Tilemap[GameState->ActualTilemapY][GameState->ActualTilemapX];
+                SetEntityPosition(&GameState->Entities[0], GameState->ActualTilemap, GameState->ActualTilemap->Cols - 1, TileY);
+                SetEntityPosition(&GameState->Entities[1], GameState->ActualTilemap, GameState->ActualTilemap->Cols, TileY);
+                SetEntityPosition(&GameState->Entities[2], GameState->ActualTilemap, GameState->ActualTilemap->Cols + 1, TileY);
+                SetEntityPosition(&GameState->Entities[3], GameState->ActualTilemap, GameState->ActualTilemap->Cols + 2, TileY);
             }
-            if(NewCamPos.Y - (WND_HEIGHT*0.5f*0.5f) < 0 ||
-               NewCamPos.Y + (WND_HEIGHT*0.5f*0.5f) > 64*16)
+            else if(TileX >= (i32)GameState->ActualTilemap->Cols && GameState->ActualTilemapX < 1)
+            {
+                ++GameState->ActualTilemapX;
+                GameState->ActualTilemap = &GameState->Tilemap[GameState->ActualTilemapY][GameState->ActualTilemapX];
+                SetEntityPosition(&GameState->Entities[0], GameState->ActualTilemap, 0, TileY);
+                SetEntityPosition(&GameState->Entities[1], GameState->ActualTilemap, -1, TileY);
+                SetEntityPosition(&GameState->Entities[2], GameState->ActualTilemap, -2, TileY);
+                SetEntityPosition(&GameState->Entities[3], GameState->ActualTilemap, -3, TileY);
+            }
+            else if(TileY < 0 && GameState->ActualTilemapY < 1)
+            {
+                ++GameState->ActualTilemapY;
+                GameState->ActualTilemap = &GameState->Tilemap[GameState->ActualTilemapY][GameState->ActualTilemapX];
+                SetEntityPosition(&GameState->Entities[0], GameState->ActualTilemap, TileX, GameState->ActualTilemap->Rows - 1);
+                SetEntityPosition(&GameState->Entities[1], GameState->ActualTilemap, TileX, GameState->ActualTilemap->Rows);
+                SetEntityPosition(&GameState->Entities[2], GameState->ActualTilemap, TileX, GameState->ActualTilemap->Rows + 1);
+                SetEntityPosition(&GameState->Entities[3], GameState->ActualTilemap, TileX, GameState->ActualTilemap->Rows + 2);
+            }
+            else if(TileY >= (i32)GameState->ActualTilemap->Rows && GameState->ActualTilemapY > 0)
+            {
+                --GameState->ActualTilemapY;
+                GameState->ActualTilemap = &GameState->Tilemap[GameState->ActualTilemapY][GameState->ActualTilemapX];
+                SetEntityPosition(&GameState->Entities[0], GameState->ActualTilemap, TileX, 0);
+                SetEntityPosition(&GameState->Entities[1], GameState->ActualTilemap, TileX, -1);
+                SetEntityPosition(&GameState->Entities[2], GameState->ActualTilemap, TileX, -2);
+                SetEntityPosition(&GameState->Entities[3], GameState->ActualTilemap, TileX, -3);
+            }
+
+
+            v2 NewCamPos = GameState->Entities[0].Position;
+#if 1
+            if(NewCamPos.X - (WND_WIDTH*0.5f*0.5f) < 0)
+            {
+                NewCamPos.X = 0 + (WND_WIDTH*0.5f*0.5f); 
+            }
+            if(NewCamPos.X + (WND_WIDTH*0.5f*0.5f) > 64*16)
+            {
+                NewCamPos.X = 64*16 - (WND_WIDTH*0.5f*0.5f);
+            }
+            if(NewCamPos.Y - (WND_HEIGHT*0.5f*0.5f) < 0)
+            {
+                NewCamPos.Y = 0 + (WND_HEIGHT*0.5f*0.5f);
+            }
+            if(NewCamPos.Y + (WND_HEIGHT*0.5f*0.5f) > 64*16)
             { 
-                NewCamPos.Y = GameState->CamPosition.Y;
+                NewCamPos.Y = 64*16 - (WND_HEIGHT*0.5f*0.5f);
             }
+#endif
             GameState->CamPosition.X = NewCamPos.X;
             GameState->CamPosition.Y = NewCamPos.Y;
             GameState->CamTarget.X = GameState->CamPosition.X;
             GameState->CamTarget.Y = GameState->CamPosition.Y;
+ 
             SetViewMat4(GameState, ViewMat4(GameState->CamPosition, GameState->CamTarget, {0.0f, 1.0f, 0.0f}));
             
             SetProjMat4(GameState, OrthogonalProjMat4(WND_WIDTH*0.5f, WND_HEIGHT*0.5f, 1.0f, 100.0f));
@@ -190,7 +249,7 @@ void GameUpdateAndRender(memory *Memory, input *Input, r32 DeltaTime)
             }
 
             // Render...
-            tilemap *Tilemap = &GameState->Tilemap;        
+            tilemap *Tilemap = GameState->ActualTilemap;        
             if(Tilemap->LayersCount > 0)
             {
                 for(i32 Index = 0;

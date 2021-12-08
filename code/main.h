@@ -10,6 +10,7 @@
 #include "combat.h"
 #include "dialogue.h"
 #include "menu.h"
+#include "tp.h"
 
 struct vs_constant_buffer
 {
@@ -118,7 +119,12 @@ struct game_state
     item_stats Items[2];
  
     inventory Inventory;
-    tilemap Tilemap; 
+
+    tilemap Tilemap[2][2];
+    i32 ActualTilemapX;
+    i32 ActualTilemapY;
+    tilemap *ActualTilemap;
+
     combat Combat;
     u32 HeroPartyCount;
     dialogue_action DialogueAction;

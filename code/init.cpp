@@ -131,28 +131,28 @@ void InitEntities(game_state *GameState)
     GameState->Entities[0].Spells[2] = -1;
     GameState->Entities[0].SpellsCount = 1;
     GameState->Entities[0].Alive = true;
-    SetEntityPosition(&GameState->Entities[0], &GameState->Tilemap, 8, 12);
+    SetEntityPosition(&GameState->Entities[0], GameState->ActualTilemap, 8, 12);
 
     GameState->Entities[1] = GameState->Entities[0];
     GameState->Entities[1].Name = "Hailee";
     GameState->Entities[1].Weapon = 1;
     GameState->Entities[1].ID = 3;
     GameState->Entities[1].Skin = 2;
-    SetEntityPosition(&GameState->Entities[1], &GameState->Tilemap, 8, 13);
+    SetEntityPosition(&GameState->Entities[1], GameState->ActualTilemap, 8, 13);
     
     GameState->Entities[2] = GameState->Entities[0];
     GameState->Entities[2].Name = "Camila";
     GameState->Entities[2].Weapon = 0;
     GameState->Entities[2].ID = 4;
     GameState->Entities[2].Skin = 7;
-    SetEntityPosition(&GameState->Entities[2], &GameState->Tilemap, 8, 14);
+    SetEntityPosition(&GameState->Entities[2], GameState->ActualTilemap, 8, 14);
     
     GameState->Entities[3] = GameState->Entities[0];
     GameState->Entities[3].Name = "Sabrina";
     GameState->Entities[3].Weapon = 1;
     GameState->Entities[3].ID = 5;
     GameState->Entities[3].Skin =8;
-    SetEntityPosition(&GameState->Entities[3], &GameState->Tilemap, 8, 15);
+    SetEntityPosition(&GameState->Entities[3], GameState->ActualTilemap, 8, 15);
 
     GameState->Entities[4].Name = "Thomex";
     GameState->Entities[4].ID = 6;
@@ -175,7 +175,7 @@ void InitEntities(game_state *GameState)
     GameState->Entities[4].Spells[2] = -1;
     GameState->Entities[4].SpellsCount = 0;
     GameState->Entities[4].Alive = true;
-    SetEntityPosition(&GameState->Entities[4], &GameState->Tilemap, 15, 11);
+    SetEntityPosition(&GameState->Entities[4], GameState->ActualTilemap, 15, 11);
 
     GameState->Entities[5].Name = "Big Daddy";
     GameState->Entities[5].ID = 7;
@@ -197,7 +197,7 @@ void InitEntities(game_state *GameState)
     GameState->Entities[5].Spells[2] = -1;
     GameState->Entities[5].SpellsCount = 0;
     GameState->Entities[5].Alive = true;
-    SetEntityPosition(&GameState->Entities[5], &GameState->Tilemap, 3, 3);
+    SetEntityPosition(&GameState->Entities[5], GameState->ActualTilemap, 3, 3);
 
     GameState->Entities[6].Name = "Gonzitron";
     GameState->Entities[6].ID = 8;
@@ -219,7 +219,7 @@ void InitEntities(game_state *GameState)
     GameState->Entities[6].Spells[2] = -1;
     GameState->Entities[6].SpellsCount = 0;
     GameState->Entities[6].Alive = true;
-    SetEntityPosition(&GameState->Entities[6], &GameState->Tilemap, 3, 4);
+    SetEntityPosition(&GameState->Entities[6], GameState->ActualTilemap, 3, 4);
 
     GameState->Entities[7].Name = "Jhosep";
     GameState->Entities[7].ID = 9;
@@ -241,7 +241,7 @@ void InitEntities(game_state *GameState)
     GameState->Entities[7].Spells[2] = -1;
     GameState->Entities[7].SpellsCount = 0;
     GameState->Entities[7].Alive = true;
-    SetEntityPosition(&GameState->Entities[7], &GameState->Tilemap, 3, 5);
+    SetEntityPosition(&GameState->Entities[7], GameState->ActualTilemap, 3, 5);
 }
 
 void InitWeapons(game_state *GameState)
