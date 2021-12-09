@@ -49,12 +49,12 @@ void GameSetUp(memory *Memory)
     GameState->Mesh = CreateMesh(GameState->Renderer, Vertices, ArrayCount(Vertices), &GameState->EngineArena); 
     GameState->TilemapBatch = CreateBatch(GameState->Renderer, &GameState->BatchArena, 64*64, &GameState->EngineArena);
     
-    GameState->Tilemap[0][0] = LoadMap(GameState, "../data/map.save");
-    GameState->Tilemap[0][1] = LoadMap(GameState, "../data/map-1.save");
-    GameState->Tilemap[1][0] = LoadMap(GameState, "../data/map.save");
-    GameState->Tilemap[1][1] = LoadMap(GameState, "../data/map-1.save");
+    GameState->Tilemap[0][0] = LoadMap(GameState, "../data/map0x0.save");
+    GameState->Tilemap[0][1] = LoadMap(GameState, "../data/map0x1.save");
+    GameState->Tilemap[1][0] = LoadMap(GameState, "../data/map1x0.save");
+    GameState->Tilemap[1][1] = LoadMap(GameState, "../data/map1x1.save");
     
-    GameState->ActualTilemapX = 1;
+    GameState->ActualTilemapX = 0;
     GameState->ActualTilemapY = 0;
     GameState->ActualTilemap = &GameState->Tilemap[GameState->ActualTilemapY][GameState->ActualTilemapX];
     
@@ -198,7 +198,6 @@ void GameUpdateAndRender(memory *Memory, input *Input, r32 DeltaTime)
 
 
             v2 NewCamPos = GameState->Entities[0].Position;
-#if 1
             if(NewCamPos.X - (WND_WIDTH*0.5f*0.5f) < 0)
             {
                 NewCamPos.X = 0 + (WND_WIDTH*0.5f*0.5f); 
@@ -215,7 +214,6 @@ void GameUpdateAndRender(memory *Memory, input *Input, r32 DeltaTime)
             { 
                 NewCamPos.Y = 64*16 - (WND_HEIGHT*0.5f*0.5f);
             }
-#endif
             GameState->CamPosition.X = NewCamPos.X;
             GameState->CamPosition.Y = NewCamPos.Y;
             GameState->CamTarget.X = GameState->CamPosition.X;
