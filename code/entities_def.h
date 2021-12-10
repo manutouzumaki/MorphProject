@@ -202,7 +202,7 @@ entity EntitiesDef[] = {
             5,              // mp max
             5,              // mp now
             12,             // strength
-            10,              // speed
+            10,             // speed
             5               // intelligence
         },         
         0,                  // weapon index

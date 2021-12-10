@@ -49,16 +49,13 @@ void GameSetUp(memory *Memory)
     GameState->Mesh = CreateMesh(GameState->Renderer, Vertices, ArrayCount(Vertices), &GameState->EngineArena); 
     GameState->TilemapBatch = CreateBatch(GameState->Renderer, &GameState->BatchArena, 64*64, &GameState->EngineArena);
    
-    //GameState->Tilemap[0][1] = LoadMap(GameState, "../data/map0x1.save");
-    //GameState->Tilemap[1][0] = LoadMap(GameState, "../data/map1x0.save");
-    //GameState->Tilemap[1][1] = LoadMap(GameState, "../data/map1x1.save");
-
     // load first map
     //GameState->Tilemap[0][0] = LoadMap(GameState, MapToLoad[][]);    
     GameState->ActualTilemapX = 0;
     GameState->ActualTilemapY = 0;
     GameState->ActualTilemap = LoadMap(GameState, MapToLoad[GameState->ActualTilemapY][GameState->ActualTilemapX]);
 
+    GameState->EntitiesCount = 8;
     // The 4 first element on the array always has to be the heroes
     // HEROES
     GameState->Entities[0] = EntitiesDef[MANUTO];
@@ -147,7 +144,7 @@ void GameUpdateAndRender(memory *Memory, input *Input, r32 DeltaTime)
             {
                 GetHeroInput(Input ,&GameState->Entities[0], &GameState->ActualTilemap, GameState->Entities);
                 for(i32 Index = 0;
-                    Index < ArrayCount(GameState->Entities);
+                    Index < GameState->EntitiesCount;
                     ++Index)
                 {
                     entity *Entity = &GameState->Entities[Index];
@@ -176,7 +173,6 @@ void GameUpdateAndRender(memory *Memory, input *Input, r32 DeltaTime)
                 ClearMap(GameState, &GameState->ActualTilemap);
                 GameState->ActualTilemap = LoadMap(GameState, MapToLoad[GameState->ActualTilemapY][GameState->ActualTilemapX]);
                 InitFuncs[GameState->ActualTilemapY][GameState->ActualTilemapX](GameState); 
-                //GameState->ActualTilemap = &GameState->Tilemap[GameState->ActualTilemapY][GameState->ActualTilemapX];
                 SetEntityPosition(&GameState->Entities[0], &GameState->ActualTilemap, GameState->ActualTilemap.Cols - 1, TileY);
                 SetEntityPosition(&GameState->Entities[1], &GameState->ActualTilemap, GameState->ActualTilemap.Cols, TileY);
                 SetEntityPosition(&GameState->Entities[2], &GameState->ActualTilemap, GameState->ActualTilemap.Cols + 1, TileY);
@@ -188,7 +184,6 @@ void GameUpdateAndRender(memory *Memory, input *Input, r32 DeltaTime)
                 ClearMap(GameState, &GameState->ActualTilemap);
                 GameState->ActualTilemap = LoadMap(GameState, MapToLoad[GameState->ActualTilemapY][GameState->ActualTilemapX]);
                 InitFuncs[GameState->ActualTilemapY][GameState->ActualTilemapX](GameState);  
-                //GameState->ActualTilemap = &GameState->Tilemap[GameState->ActualTilemapY][GameState->ActualTilemapX];
                 SetEntityPosition(&GameState->Entities[0], &GameState->ActualTilemap, 0, TileY);
                 SetEntityPosition(&GameState->Entities[1], &GameState->ActualTilemap, -1, TileY);
                 SetEntityPosition(&GameState->Entities[2], &GameState->ActualTilemap, -2, TileY);
@@ -200,7 +195,6 @@ void GameUpdateAndRender(memory *Memory, input *Input, r32 DeltaTime)
                 ClearMap(GameState, &GameState->ActualTilemap);
                 GameState->ActualTilemap = LoadMap(GameState, MapToLoad[GameState->ActualTilemapY][GameState->ActualTilemapX]);
                 InitFuncs[GameState->ActualTilemapY][GameState->ActualTilemapX](GameState); 
-                //GameState->ActualTilemap = &GameState->Tilemap[GameState->ActualTilemapY][GameState->ActualTilemapX];
                 SetEntityPosition(&GameState->Entities[0], &GameState->ActualTilemap, TileX, GameState->ActualTilemap.Rows - 1);
                 SetEntityPosition(&GameState->Entities[1], &GameState->ActualTilemap, TileX, GameState->ActualTilemap.Rows);
                 SetEntityPosition(&GameState->Entities[2], &GameState->ActualTilemap, TileX, GameState->ActualTilemap.Rows + 1);
@@ -212,7 +206,6 @@ void GameUpdateAndRender(memory *Memory, input *Input, r32 DeltaTime)
                 ClearMap(GameState, &GameState->ActualTilemap);
                 GameState->ActualTilemap = LoadMap(GameState, MapToLoad[GameState->ActualTilemapY][GameState->ActualTilemapX]);
                 InitFuncs[GameState->ActualTilemapY][GameState->ActualTilemapX](GameState); 
-                //GameState->ActualTilemap = &GameState->Tilemap[GameState->ActualTilemapY][GameState->ActualTilemapX];
                 SetEntityPosition(&GameState->Entities[0], &GameState->ActualTilemap, TileX, 0);
                 SetEntityPosition(&GameState->Entities[1], &GameState->ActualTilemap, TileX, -1);
                 SetEntityPosition(&GameState->Entities[2], &GameState->ActualTilemap, TileX, -2);
@@ -282,11 +275,11 @@ void GameUpdateAndRender(memory *Memory, input *Input, r32 DeltaTime)
                     layer *ActualLayer = FirstLayer + Index;
 
                     RenderLayer(GameState, Tilemap, ActualLayer, false, 0.5f);
-                    entity Entities[8];
-                    memcpy(Entities, GameState->Entities, 8*sizeof(entity));
-                    InsertionSort(Entities, 8); 
+                    entity Entities[MAX_NUM_OF_ENTITIES];
+                    memcpy(Entities, GameState->Entities, GameState->EntitiesCount*sizeof(entity));
+                    InsertionSort(Entities, GameState->EntitiesCount); 
                     for(i32 I = 0;
-                        I < ArrayCount(Entities);
+                        I < GameState->EntitiesCount;
                         ++I)
                     {
                         if(Index == Entities[I].Layer)

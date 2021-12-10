@@ -7,8 +7,6 @@
 #define LEFT 2
 #define RIGHT 3
 
-#define MAX_NUM_OF_ENTITIES 20;
-
 enum entity_type
 {
     HERO,

@@ -174,7 +174,6 @@ char *MapToLoad[2][2] = {
     {{"../data/map1x0.save"}, {"../data/map1x1.save"}}
 };
 
-
 void InitWeapons(game_state *GameState)
 {
     // TODO(manuto): Weapons

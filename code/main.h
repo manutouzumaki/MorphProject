@@ -56,6 +56,8 @@ enum gameplay_state
     MENU,
 };
 
+#define MAX_NUM_OF_ENTITIES 255
+
 struct game_state
 {
     window *Window;
@@ -114,14 +116,14 @@ struct game_state
     v3 CamOffset;
     v3 CamTarget;
     
-    entity Entities[8];
+    entity Entities[MAX_NUM_OF_ENTITIES];
+    i32 EntitiesCount;
+
     weapon_stats Weapons[3];
     spells_stats Spells[3];
-    item_stats Items[2];
- 
+    item_stats Items[2]; 
     inventory Inventory;
 
-    tilemap Tilemap[2][2];
     i32 ActualTilemapX;
     i32 ActualTilemapY;
     tilemap ActualTilemap;
