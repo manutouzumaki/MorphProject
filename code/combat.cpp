@@ -195,7 +195,7 @@ void EndCombat(game_state *GameState, combat *Combat)
         Enemy->Alive = Combat->Enemies[Index].Alive;
         if(!Enemy->Alive)
         {
-            UnsetCollision(GameState->ActualTilemap, Enemy->Position, Enemy->Layer);
+            UnsetCollision(&GameState->ActualTilemap, Enemy->Position, Enemy->Layer);
         }
     }
 }

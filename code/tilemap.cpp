@@ -31,6 +31,11 @@ tilemap LoadMap(game_state *GameState, char *FileName)
     return Map;
 }
 
+void ClearMap(game_state *GameState, tilemap *Map)
+{
+    GameState->TileMapArena.Used -= Map->LayersCount*sizeof(layer);
+}
+
 void RenderLayer(game_state *GameState, tilemap *Tilemap, layer *Layer, bool Collision, r32 Ratio)
 {
     // Batch Rendering

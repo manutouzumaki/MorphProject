@@ -6,10 +6,10 @@ void UpdateTPs(game_state *GameState, tp *TPs, entity *Heroes)
     
     if((HeroTileX == TPs->FromTileX) && (HeroTileY == TPs->FromTileY))
     {
-        GameState->ActualTilemap = &GameState->Tilemap[0][0];
-        SetEntityPosition(&Heroes[0], GameState->ActualTilemap, TPs->ToTileX, TPs->ToTileY);
-        SetEntityPosition(&Heroes[1], GameState->ActualTilemap, TPs->ToTileX, TPs->ToTileY);
-        SetEntityPosition(&Heroes[2], GameState->ActualTilemap, TPs->ToTileX, TPs->ToTileY);
-        SetEntityPosition(&Heroes[3], GameState->ActualTilemap, TPs->ToTileX, TPs->ToTileY);
+        //GameState->ActualTilemap = GameState->Tilemap[0][0];
+        SetEntityPosition(&Heroes[0], &GameState->ActualTilemap, TPs->ToTileX, TPs->ToTileY);
+        SetEntityPosition(&Heroes[1], &GameState->ActualTilemap, TPs->ToTileX, TPs->ToTileY);
+        SetEntityPosition(&Heroes[2], &GameState->ActualTilemap, TPs->ToTileX, TPs->ToTileY);
+        SetEntityPosition(&Heroes[3], &GameState->ActualTilemap, TPs->ToTileX, TPs->ToTileY);
     }
 }

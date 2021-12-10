@@ -7,6 +7,7 @@
 #include "tree.h"
 #include "inventory.h"
 #include "hero.h"
+#include "entities_def.h"
 #include "combat.h"
 #include "dialogue.h"
 #include "menu.h"
@@ -123,7 +124,7 @@ struct game_state
     tilemap Tilemap[2][2];
     i32 ActualTilemapX;
     i32 ActualTilemapY;
-    tilemap *ActualTilemap;
+    tilemap ActualTilemap;
 
     combat Combat;
     u32 HeroPartyCount;
