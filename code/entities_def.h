@@ -156,7 +156,7 @@ entity EntitiesDef[] = {
     },
     // THOMEX
     {
-        6,                  // id
+        0,                  // id
         NPC,                // type
         {-1, -1, -1, -1},   // actions
         0,                  // num of acitions
@@ -191,7 +191,7 @@ entity EntitiesDef[] = {
     },
     // BIG DADDY
     {
-        7,                  // id
+        0,                  // id
         NPC,                // type
         {-1, -1, -1, -1},   // actions
         0,                  // num of acitions
@@ -226,7 +226,7 @@ entity EntitiesDef[] = {
     },
     // GONZITRON
     {
-        8,                  // id
+        0,                  // id
         ENEMY,              // type
         {-1, -1, -1, -1},   // actions
         0,                  // num of acitions
@@ -261,7 +261,7 @@ entity EntitiesDef[] = {
     },
     // JHOSEP
     {
-        9,                  // id
+        0,                  // id
         ENEMY,              // type
         {-1, -1, -1, -1},   // actions
         0,                  // num of acitions

@@ -112,54 +112,67 @@ void InitEntities00(game_state *GameState)
 {
     // NPCS
     GameState->Entities[4] = EntitiesDef[THOMEX];
+    GameState->Entities[4].ID = 6;
     SetEntityPosition(&GameState->Entities[4], &GameState->ActualTilemap, 15, 11);
     GameState->Entities[5] = EntitiesDef[BIG_DADDY];
+    GameState->Entities[5].ID = 7;
     SetEntityPosition(&GameState->Entities[5], &GameState->ActualTilemap, 3, 3);
-    // ENEMIES
-    GameState->Entities[6] = EntitiesDef[GONZITRON];
-    SetEntityPosition(&GameState->Entities[6], &GameState->ActualTilemap, 3, 4);
-    GameState->Entities[7] = EntitiesDef[JHOSEP];
-    SetEntityPosition(&GameState->Entities[7], &GameState->ActualTilemap, 3, 5);
+    GameState->EntitiesCount = 6;
 }
 
 void InitEntities01(game_state *GameState)
 {
     // NPCS
     GameState->Entities[4] = EntitiesDef[THOMEX];
+    GameState->Entities[4].ID = 6;
     SetEntityPosition(&GameState->Entities[4], &GameState->ActualTilemap, 15, 11);
     GameState->Entities[5] = EntitiesDef[BIG_DADDY];
+    GameState->Entities[5].ID = 7;
     SetEntityPosition(&GameState->Entities[5], &GameState->ActualTilemap, 3, 3);
     // ENEMIES
     GameState->Entities[6] = EntitiesDef[GONZITRON];
+    GameState->Entities[6].ID = 8;
     SetEntityPosition(&GameState->Entities[6], &GameState->ActualTilemap, 3, 4);
     GameState->Entities[7] = EntitiesDef[JHOSEP];
+    GameState->Entities[7].ID = 9;
     SetEntityPosition(&GameState->Entities[7], &GameState->ActualTilemap, 3, 5);
+    GameState->EntitiesCount = 8;
 }
 
 void InitEntities10(game_state *GameState)
 {
     // NPCS
     GameState->Entities[4] = EntitiesDef[THOMEX];
+    GameState->Entities[4].ID = 6;
     SetEntityPosition(&GameState->Entities[4], &GameState->ActualTilemap, 3, 2);
     GameState->Entities[5] = EntitiesDef[THOMEX];
+    GameState->Entities[5].ID = 7;
     SetEntityPosition(&GameState->Entities[5], &GameState->ActualTilemap, 3, 3);
     GameState->Entities[6] = EntitiesDef[THOMEX];
+    GameState->Entities[6].ID = 8;
     SetEntityPosition(&GameState->Entities[6], &GameState->ActualTilemap, 3, 4);
     GameState->Entities[7] = EntitiesDef[THOMEX];
+    GameState->Entities[7].ID = 9;
     SetEntityPosition(&GameState->Entities[7], &GameState->ActualTilemap, 3, 5);
+    GameState->EntitiesCount = 8;
 }
 
 void InitEntities11(game_state *GameState)
 {
     // ENEMIES
     GameState->Entities[4] = EntitiesDef[JHOSEP];
+    GameState->Entities[4].ID = 6;
     SetEntityPosition(&GameState->Entities[4], &GameState->ActualTilemap, 3, 3);
     GameState->Entities[5] = EntitiesDef[JHOSEP];
+    GameState->Entities[5].ID = 7;
     SetEntityPosition(&GameState->Entities[5], &GameState->ActualTilemap, 4, 3);
     GameState->Entities[6] = EntitiesDef[JHOSEP];
+    GameState->Entities[6].ID = 8;
     SetEntityPosition(&GameState->Entities[6], &GameState->ActualTilemap, 5, 3);
     GameState->Entities[7] = EntitiesDef[JHOSEP];
+    GameState->Entities[7].ID = 9;
     SetEntityPosition(&GameState->Entities[7], &GameState->ActualTilemap, 6, 3);
+    GameState->EntitiesCount = 8;
 }
 
 typedef void (*init_entites)(game_state *GameState);

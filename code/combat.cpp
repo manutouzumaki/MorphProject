@@ -127,6 +127,7 @@ void RenderCombatOptionUI(game_state *GameState, tree::node *Node)
 
 void InitCombat(game_state *GameState, combat *Combat, entity *Player)
 {
+    Combat->NumberOfHeroSet = 0;
     Combat->NumberOfHeros = 0;
     Combat->NumberOfEnemies = 0;
     Combat->NumberOfEnemiesKill = 0;
